@@ -25,10 +25,21 @@
 // over it, and hands the result to the same buildLetterPack() the workflow
 // calls. The numbers are the sim profile's own; nothing is retyped here.
 //
-// THE PRINTER. printBlackReports() prefers WeasyPrint when a local Python has
-// it and falls back to the in-process pdf-lib printer otherwise. Netlify has no
-// WeasyPrint, so production is the Node printer, so that is what this pack is
-// printed with by default — same choice the 2026-09-04 pack made and said so.
+// THE PRINTER, AND HOW WE KNOW WHICH ONE PRODUCTION USES.
+// printBlackReports() resolves in four steps: an explicit "node" request, a
+// local Python with WeasyPrint, the remote render service, then the Node
+// pdf-lib printer as the last resort.
+//
+// MEASURED 2026-09-06 against the live site, not read off a document:
+//   netlify env:list --context production --plain | cut -d= -f1
+// returns 82 names and NONE of them is BLACK_REPORT_RENDER_URL or
+// FUNDHUB_RENDER_KEY — same for deploy-preview, branch-deploy and dev. So
+// resolveRenderService() returns null on Netlify, step 3 cannot be taken, and
+// with no Python on the Node runtime either, production lands on the pdf-lib
+// printer with reason `render_service_not_configured`. That is why this pack is
+// printed with --engine=node by default: it is what a real client receives
+// today. Run `--engine=python` to see the designed set, which is what
+// production will print once those two variables are set.
 
 import { mkdirSync, mkdtempSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -149,6 +160,47 @@ const HARD_CASES = Object.freeze({
   }
 });
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. NO LIMIT ANYWHERE — the file that produced the worst sentence in the pack.
+
+   One open card, an AMEX with no preset spending limit, and nothing else. The
+   vendor engine sums `effectiveLimit || 0`
+   (vendor/underwriteiq-full/api/lite/crs/derive-consumer-signals.js:186), so its
+   total limit is 0 and its pct is null. Ten percent of 0 is 0, and
+   `balance - 0` is the client's WHOLE balance, so on 2026-09-06 the roadmap
+   printed:
+
+       AMEX PLATINUM (NPSL)   $5,200   -   -   -
+       Total paydown to reach 10% utilization: $5,200.
+
+   — three lines under the same card's row that correctly printed dashes. The
+   WeasyPrint printer's version of the same line read "$0", which tells the same
+   client he owes nothing. Both are gone; this case is in the pack so the
+   sentence that replaced them is a document somebody can open.
+   ───────────────────────────────────────────────────────────────────────────── */
+const NO_LIMIT_ANYWHERE = Object.freeze({
+  outcome: "FULL_FUNDING",
+  pulledAt: PULLED_AT,
+  consumerSignals: {
+    scores: { median: 700, perBureau: { ex: 700, eq: 705, tu: 695 } },
+    utilization: { totalBalance: 5200, totalLimit: 0, pct: null }
+  },
+  preapprovals: { totalCombined: 50000 },
+  projectedPreapproval: { totalCombined: 60000 },
+  businessSignals: { available: false },
+  findings: [],
+  normalized: {
+    tradelines: [
+      { source: "experian", creditorName: "AMEX PLATINUM (NPSL)", accountIdentifier: "AMEX-1",
+        accountType: "revolving", status: "open", isAU: false, isDerogatory: false,
+        currentBalance: 5200, effectiveLimit: null, openedDate: null,
+        currentRatingType: "AsAgreed" }
+    ],
+    inquiries: [],
+    identity: {}
+  }
+});
+
 const HARD_CASES_PERSONAL = Object.freeze({
   name: "Fixture Client",
   address: "100 Test Ave\nDenton, TX 76205",
@@ -176,7 +228,9 @@ async function main() {
     { dir: "with-company", label: "sim academy, one businesses row (72 months)",
       crsResult: academy, personal: SIM_PERSONAL, business: WITH_COMPANY },
     { dir: "hard-cases", label: "hand-built: tri-merge, no-limit card, AU card",
-      crsResult: HARD_CASES, personal: HARD_CASES_PERSONAL, business: null }
+      crsResult: HARD_CASES, personal: HARD_CASES_PERSONAL, business: null },
+    { dir: "no-limit", label: "hand-built: NO open card reports a credit limit",
+      crsResult: NO_LIMIT_ANYWHERE, personal: HARD_CASES_PERSONAL, business: null }
   ];
 
   const outRoot = CHECK_ONLY ? mkdtempSync(join(tmpdir(), "w10-regen-")) : PACK_DIR;

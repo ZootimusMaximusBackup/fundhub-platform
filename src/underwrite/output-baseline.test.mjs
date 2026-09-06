@@ -213,7 +213,32 @@ const BUREAUS_NONE = Object.freeze({});
    That the other six pins did NOT move is the evidence that the Node printer's
    matching fix — the same defect at its one remaining site, the 6-month
    checklist — changed no byte for a client whose cards all report a limit. It
-   only changes the document for the client who has one that does not. */
+   only changes the document for the client who has one that does not.
+
+   MOVED AGAIN 2026-09-06, W10 ROUND 4 REPAIR — generatorScript ONLY for the
+   THIRD time, and the other six pins are unchanged for the third time. Two
+   defects moved in fundhub_gen.py:
+
+     F52. A TOTAL BUILT FROM UNKNOWNS IS UNKNOWN. The vendor engine sums
+     `effectiveLimit || 0`, so a file whose open cards report no limit gives a
+     total limit of 0 and a 10% target of 0. This printer's Month 1 line then
+     read "Total paydown to reach 10% utilization: $0." — telling a client who
+     owes $5,200 that he owes nothing — while the Node printer's version of the
+     same line printed his ENTIRE balance. black-report-client.mjs now leaves
+     that total null and every overall figure here asks util_totals_known()
+     first.
+
+     F45. THE LENDER SPLIT REACHED ONLY THE NODE PRINTER. The matcher answers in
+     two buckets and black-report-client.mjs:761-762 has carried both across
+     since 2026-09-04. This printer still read the flattened `lenders` list, so
+     every document it made said "No lenders are matched for immediate funding
+     right now" and showed all fifteen as locked, for a client with five open to
+     him today. lender_buckets() reads the two buckets and falls back to the flat
+     list for a client.json written before they existed.
+
+   blackReportClient did NOT move, which is the evidence that F52's mapper change
+   touches only a file where no open card reports a limit — the baseline fixture
+   has limits, so its record is byte-identical. */
 const BASELINE = Object.freeze({
   engineMaxed:            "0581c1b9b5f713dc7958b5e3e1e961b0be245beac174814d9a04068e1a692d0a",
   engineMaxedSuggestions: "d06e816746ef7dddb015f77ebf605b9a7f30f15df1d233b8e47702f4577f2d19",
@@ -221,7 +246,7 @@ const BASELINE = Object.freeze({
   engineNoBureaus:        "79f0c7c1d8eb1853e314681051005eeafd3b07550da2855ab9eb6bbffe8a8260",
   blackReportClient:      "d4ead7287903034f5100f0b80ff5e85925e514a34611164beb727bef969599a8",
   emptyBlackReportClient: "21826d2ea2496e6674a8bb909de81d2aef49a277c3470c1f854094950fb2ca79",
-  generatorScript:        "cf92209e335872ddfd3b9fed21dd306b6398a410d2974b09576e2cfc7ddd2cba"
+  generatorScript:        "6538c280797b9420cc62cfffdb2df57d0af6e254da4fb87cd37493bef48750f1"
 });
 
 /** The four PDFs the in-process printer produces, and the words inside each. */

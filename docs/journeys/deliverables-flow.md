@@ -38,10 +38,12 @@ flowchart TD
     BUILD[buildLetterPackForClient pack=funding<br/>src/underwrite/letter-pack.mjs] --> ENGINE
     ENGINE[Tier engine re-runs the stored pull<br/>src/finance/crs-tier.mjs] --> DICT
     DICT[buildBlackReportClient<br/>src/underwrite/black-report-client.mjs] --> PRINT
-    PRINT{WeasyPrint on this machine?}
-    PRINT -->|yes, never on Netlify| PY[fundhub_gen.py]
-    PRINT -->|no, always in production| NODE[printBlackReportsNode<br/>pdf-lib]
+    PRINT{"printBlackReports resolves in order<br/>src/underwrite/black-report-pdf.mjs"}
+    PRINT -->|"1. WeasyPrint on this machine?<br/>a laptop: yes. Netlify: never"| PY[fundhub_gen.py]
+    PRINT -->|"2. BLACK_REPORT_RENDER_URL +<br/>FUNDHUB_RENDER_KEY both set?<br/>NEITHER IS SET ANYWHERE — measured 2026-09-06"| SVC[render-service/<br/>runs the SAME fundhub_gen.py]
+    PRINT -->|"3. neither — so this is<br/>every live print today"| NODE[printBlackReportsNode<br/>pdf-lib · logs DEGRADED]
     PY --> FILES
+    SVC --> FILES
     NODE --> FILES
     FILES[5 files] --> SAVE
 
@@ -64,7 +66,42 @@ flowchart TD
 
 The fifth was built and then dropped by the saver until 2026-09-04 (F46).
 
-## Two rules that decide what these documents SAY
+### Which printer production actually uses, measured not assumed
+
+`netlify env:list --context production --plain | cut -d= -f1` on 2026-09-06
+returns 82 names. Neither `BLACK_REPORT_RENDER_URL` nor `FUNDHUB_RENDER_KEY` is
+one of them, and the same is true of deploy-preview, branch-deploy and dev. So
+`resolveRenderService()` returns null on Netlify, step 2 above cannot be taken,
+and every live print is the pdf-lib printer with
+`reason=render_service_not_configured` in the function log and `engine=pdf-lib`
+on the stored document row. The designed WeasyPrint documents are not what a
+client receives today. `render-service/README.md` step 7 is the two commands
+that change that.
+
+### THREE renderers, not two
+
+Enumerated from the filesystem, not from memory —
+`grep -rln "Total paydown to reach" .` excluding `node_modules` and `.git`:
+
+| Renderer | What it makes | Reached by |
+|---|---|---|
+| `scripts/black-reports/fundhub_gen.py` | the designed PDFs | a laptop with WeasyPrint, and `render-service/`, which copies this same file into its image (`render-service/Dockerfile:51`) and shells out to it |
+| `src/underwrite/black-report-node.mjs` | the short pdf-lib PDFs | every live print today |
+| `src/deliverables/*.mjs` | the same four documents as hosted WEB PAGES | not wired into the live document path yet |
+
+`render-service/` is **not** a fourth renderer. The two remaining hits are a
+captured document (`docs/workflows/gold-deliverables-v5/compare/`) and a captured
+body (`src/deliverables/fixtures/python-bodies.json`), neither of which renders
+anything.
+
+A defect fixed in one of the three and live in another is not fixed.
+`src/deliverables/port-parity.test.mjs` and the no-limit half of
+`src/deliverables/no-limit.test.mjs` compare the web pages to the Python's own
+output character for character, and
+`src/underwrite/output-baseline.test.mjs` pins the sha of the Python file, so
+none of the three can move on its own without a test going red.
+
+## Three rules that decide what these documents SAY
 
 ```mermaid
 flowchart TD
@@ -94,6 +131,20 @@ flowchart TD
   limit is unknown instead of naming a figure. The 6-month checklist said "down
   to under 10% of its limit" until 2026-09-06 while the table two pages earlier
   said "-".
+* **A TOTAL BUILT FROM UNKNOWNS IS UNKNOWN.** The vendor engine sums
+  `effectiveLimit || 0` (`derive-consumer-signals.js:186`), so a file whose open
+  cards report no limit gives it a total limit of **0**, and 10% of 0 is 0.
+  Until 2026-09-06 `buildBlackReportClient` took that 0 at face value, so
+  `util_target_balance` was $0 and `balance - 0` was the client's WHOLE balance:
+  the roadmap printed "Total paydown to reach 10% utilization: $5,200" three
+  lines under the same card's row that correctly printed dashes. The mapper now
+  leaves both `util_total_limit` and `util_target_balance` null, and every
+  overall figure — the utilization bar, the "get total balances to $X" callout,
+  the "#1 problem" verdict, the utilization penalty sentence — asks first and
+  prints nothing rather than a number nobody has. Where SOME cards report a limit
+  and some do not, the total is real for the ones it covers and says out loud how
+  many it does not: "1 card on this file reports no limit, so nothing for it is
+  in this number." Proof: `docs/workflows/w10-pack-2026-09-04/no-limit/`.
 * **A company is a `businesses` row.** That is the owner's F15 rule, reused here
   rather than restated. A client whose only company fact is
   `clients.custom_fields.business_age_months` — the sim academy profile is one —

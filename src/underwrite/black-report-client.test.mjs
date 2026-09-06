@@ -548,7 +548,11 @@ test("the WeasyPrint printer can still unpack a lender row", () => {
   const script = readFileSync(
     new URL("../../scripts/black-reports/fundhub_gen.py", import.meta.url), "utf8"
   );
-  const sites = [...script.matchAll(/for\s+([^\n]+?)\s+in\s+c\["lenders"\]:/g)];
+  /* The three loops used to read `c["lenders"]` directly. F45 split that list
+     into the matcher's own two buckets, so they now read the `locked` / `after`
+     names lender_buckets() hands back — the UNPACK is unchanged and is still
+     what breaks, so this matches the unpack rather than the source list. */
+  const sites = [...script.matchAll(/for\s+(nm,[^\n]+?)\s+in\s+\w+:/g)];
   assert.equal(sites.length, 3, "the three unpack sites must all still be found");
   const client = buildBlackReportClient({ crsResult: TRIPLED, personal: FIXTURE_PERSONAL });
   const width = client.lenders[0].length;

@@ -317,6 +317,77 @@ def paydown_sentence(row):
             f"so there is no 10% target to pay down to")
 
 
+def lender_buckets(c):
+    """(open to this client today, still locked) out of the CLIENT dict.
+
+    F45. The vendor matcher answers in two buckets and
+    black-report-client.mjs:761-762 carries both across as `lenders_now` and
+    `lenders_after`. This printer only ever read the flattened `lenders` list,
+    so every document it made said "No lenders are matched for immediate
+    funding right now" and filed all fifteen under "after optimization" --
+    including for a client with five open to him today.
+
+    A client.json written before those two keys existed carries only the flat
+    list. The honest reading of that file is that it does not say which are open
+    now, so nothing goes in the "now" bucket.
+    """
+    if c.get("lenders_now") is not None or c.get("lenders_after") is not None:
+        return list(c.get("lenders_now") or []), list(c.get("lenders_after") or [])
+    return [], list(c.get("lenders") or [])
+
+
+def util_totals_known(c):
+    """True only when the file supports an OVERALL 10% target.
+
+    F52. black-report-client.mjs used to take 10% of the engine's total limit
+    without asking whether that total was real. The engine sums
+    `effectiveLimit or 0`, so a file whose only open cards report NO limit gives
+    a total limit of 0, and 10% of 0 is 0 -- which made "pay down to $0" and a
+    paydown equal to the client's ENTIRE balance. The mapper now leaves both
+    null on that file, and every site that prints an overall figure asks here
+    first. A total built from unknowns is unknown.
+    """
+    return c.get("util_total_limit") is not None and c.get("util_target_balance") is not None
+
+
+def cards_with_no_target(c):
+    """Open revolving rows whose 10% target the file cannot produce."""
+    n = 0
+    for row in c.get("revolving") or []:
+        if not row or not row[0]:
+            continue
+        if len(row) > 6 and row[6] == "CLOSED":
+            continue
+        if target_bal(row) is None:
+            n += 1
+    return n
+
+
+def total_paydown_sentence(c, total_pd, start):
+    """The Month 1 paydown total, which is a claim and so has to be earned.
+
+    Three cases, and the middle one is the one that is easy to miss:
+      * no open card reports a limit -> there is no total, and saying $0 would
+        tell the client they owe nothing;
+      * some do and some do not -> the total is real for the cards it covers and
+        cannot cover the rest, so it says so;
+      * all do -> the sentence as it always read.
+    """
+    if not util_totals_known(c):
+        return ("<p><b>No open card on this file reports a credit limit, so there is no 10% "
+                "total to work back to.</b> Keep the balances moving down and we will set a "
+                "target as soon as a limit reports.</p>")
+    missing = cards_with_no_target(c)
+    tail = ""
+    if missing:
+        tail = (f" That covers the cards that report a limit. {missing} "
+                f"card{'' if missing == 1 else 's'} on this file "
+                f"report{'s' if missing == 1 else ''} no limit, so nothing for "
+                f"{'it' if missing == 1 else 'them'} is in this number.")
+    return (f"<p><b>Total paydown to reach 10% utilization: {usd(total_pd)}.</b>{tail} "
+            f"You do not have to do this all at once. {esc(start)}</p>")
+
+
 def bureau_status(c, label):
     for name, status, count, note in c.get("bureaus") or []:
         if str(name).lower() == label.lower():
@@ -957,8 +1028,10 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
     rows = []
     for cr, br, bal, lim, util, tgt, st in c["revolving"]:
         cls = {"CRITICAL": "tag solid", "HIGH": "tag grey"}.get(st, "tag open")
-        rows.append((esc(cr), br, usd(bal), usd(lim), util, tgt,
-                     f'<span class="{cls}">{st}</span>'))
+        # util and tgt are the empty string when no limit is reported. A dash
+        # says "we do not know"; a blank cell says "nothing to do here".
+        rows.append((esc(cr), br, usd(bal), usd(lim), util or TARGET_UNKNOWN,
+                     tgt or TARGET_UNKNOWN, f'<span class="{cls}">{st}</span>'))
     h.append(table(["creditor", "bureau", "balance", "limit", "utilization",
                     "target balance", "status"], rows))
     hero = hero_card(c)
@@ -983,10 +1056,14 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
                 continue
             h.append(util_bar(row[0], f"{usd(row[2])} of {usd(row[3])} · pay down to "
                               f"{tgt}", pct))
-    overall_pct = parse_pct(c.get("util_pct")) or 0
-    h.append(util_bar("Overall revolving",
-                      f"{usd(c['util_total_balance'])} of {usd(c['util_total_limit'])} · "
-                      f"pay down to under {usd(c['util_target_balance'])}", overall_pct))
+    # F52. An overall bar needs an overall percentage AND an overall target. On a
+    # file whose cards report no limit the engine gives neither, and drawing the
+    # bar anyway put it at 0% next to "pay down to under $0".
+    overall_pct = parse_pct(c.get("util_pct"))
+    if overall_pct is not None and util_totals_known(c):
+        h.append(util_bar("Overall revolving",
+                          f"{usd(c['util_total_balance'])} of {usd(c['util_total_limit'])} · "
+                          f"pay down to under {usd(c['util_target_balance'])}", overall_pct))
     h.append(f'<div class="note">{spaced("dashed line marks the 10% utilization threshold lenders look for")}</div>')
     if hero:
         # hero_card() only returns a card with a known target, so this is never
@@ -996,10 +1073,11 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
           {esc(hero[0])} is the highest-utilization card at {hero[4]}. Get that card to
           {target_text(hero)}. This is the fastest win on your
           entire report.</p>""")
-    h.append(f'<div class="callout bar">TARGET: Get total revolving balances from '
-             f'{usd(c["util_total_balance"])} down to under {usd(c["util_target_balance"])}. '
-             f'That moves you from {c["util_pct"]} utilization to under 10%. That one move alone '
-             f'can add 40-80 points to your score.</div>')
+    if util_totals_known(c) and c.get("util_pct"):
+        h.append(f'<div class="callout bar">TARGET: Get total revolving balances from '
+                 f'{usd(c["util_total_balance"])} down to under {usd(c["util_target_balance"])}. '
+                 f'That moves you from {c["util_pct"]} utilization to under 10%. That one move alone '
+                 f'can add 40-80 points to your score.</div>')
 
     # 04 AU
     au = c["au_account"]
@@ -1066,8 +1144,13 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
         f'<div class="card"><div class="lbl">{spaced("current pre-approval")}</div>'
         f'<div class="big">{usd(c["preapproval_now"])}</div>'
         f'<div class="sub">{spaced("personal loan - starter band")}</div>'
-        f'<div class="body">This is what you qualify for right now. Your utilization penalty '
-        f'({c["util_pct"]}) is cutting your base approval hard.</div></div>',
+        # F52. "Your utilization penalty () is cutting your base approval hard" is
+        # an accusation built on a figure the file does not have. No percentage,
+        # no penalty sentence.
+        f'<div class="body">This is what you qualify for right now.'
+        + (f' Your utilization penalty ({c["util_pct"]}) is cutting your base approval hard.'
+           if c.get("util_pct") else "")
+        + '</div></div>',
         f'<div class="card"><div class="lbl">{spaced("projected pre-approval")}</div>'
         f'<div class="big">{usd(c["preapproval_after"])}</div>'
         f'<div class="sub">{spaced("after utilization fix")}</div>'
@@ -1088,7 +1171,7 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
       <div class="fs">{" + ".join(pay_bits) if pay_bits else "see table"}</div></div>
   <div class="flowarrow">&#10132;</div>
   <div class="flowbox"><div class="fl">WHAT CHANGES</div><div class="ft">Cards drop under 10%</div>
-      <div class="fs">utilization falls from {c['util_pct']}</div></div>
+      <div class="fs">{"utilization falls from " + c["util_pct"] if c.get("util_pct") else "utilization falls"}</div></div>
   <div class="flowarrow">&#10132;</div>
   <div class="flowbox"><div class="fl">WHAT LENDERS SEE</div><div class="ft">Score jumps</div>
       <div class="fs">+40 to 80 points</div></div>
@@ -1169,9 +1252,15 @@ def build_funding_snapshot(c):
     for cr, br, bal, lim, util, tgt, st in c["revolving"]:
         cls = {"CRITICAL": "tag solid", "HIGH": "tag grey"}.get(st, "tag open")
         rows.append((esc(cr), f'<span class="tag open">{st.title()}</span>', usd(bal),
-                     usd(lim), f'{util} <span class="{cls}">{st}</span>'))
+                     usd(lim),
+                     # A dash says "we do not know"; a blank cell says "fine".
+                     f'{util or TARGET_UNKNOWN} <span class="{cls}">{st}</span>'))
     h.append(table(["account", "status", "balance", "limit", "utilization"], rows))
-    h.append(f'<p><b>Overall utilization: {c["util_pct"]} - This is your #1 problem right now.</b></p>')
+    # F52. "Overall utilization: - This is your #1 problem right now" calls a
+    # figure the file does not have the client's biggest problem. No percentage,
+    # no verdict.
+    if c.get("util_pct"):
+        h.append(f'<p><b>Overall utilization: {c["util_pct"]} - This is your #1 problem right now.</b></p>')
 
     h.append("<h3>Installment Loans</h3>")
     h.append(table(["account", "status", "balance", "notes"], c["installments"]))
@@ -1232,17 +1321,24 @@ def build_funding_snapshot(c):
       </ul>""")
 
     h.append(PB)
-    h.append(section("05", "after optimization", "Where You Could Be - After Optimization"))
-    rows = []
-    # `*_extra` is load-bearing. These rows are unpacked POSITIONALLY in three
-    # places here, and black-report-client.mjs lenderRow() now appends two more
-    # columns (bucket, whatNeeded) that only the Node printer reads. Without the
-    # star this raises ValueError, black-report-pdf.mjs silently falls back to the
-    # Node printer, and no test or log ever says this printer died.
-    for nm, cat, typ, lo, hi, sc, tib, rev, why, *_extra in c["lenders"]:
-        need = f"Score {sc}+" if tib is None else f"LLC + Score {sc}+"
-        rows.append((esc(nm), typ, money_range(lo, hi), need))
-    h.append(table(["lender", "type", "est. range", "what you need"], rows))
+    # F45. "Where You Could Be" is the LOCKED list. It used to print every lender
+    # the matcher knew, including the ones already open today, so a client saw
+    # his own available lenders filed under "after optimization".
+    # src/underwrite/black-report-node.mjs:821 prints this section only when the
+    # locked bucket has something in it.
+    _now_unused, locked = lender_buckets(c)
+    if locked:
+        h.append(section("05", "after optimization", "Where You Could Be - After Optimization"))
+        rows = []
+        # `*_extra` is load-bearing. These rows are unpacked POSITIONALLY in three
+        # places here, and black-report-client.mjs lenderRow() now appends two more
+        # columns (bucket, whatNeeded) that only the Node printer reads. Without the
+        # star this raises ValueError, black-report-pdf.mjs silently falls back to the
+        # Node printer, and no test or log ever says this printer died.
+        for nm, cat, typ, lo, hi, sc, tib, rev, why, *_extra in locked:
+            need = f"Score {sc}+" if tib is None else f"LLC + Score {sc}+"
+            rows.append((esc(nm), typ, money_range(lo, hi), need))
+        h.append(table(["lender", "type", "est. range", "what you need"], rows))
 
     h.append(section("06", "next step", "Your Next Step"))
     h.append("<p><b>Do NOT open new accounts before funding.</b> Every new card or loan drops your "
@@ -1266,9 +1362,28 @@ def build_lender_list(c):
 
     h.append(section("01", "available now", "Available Right Now"))
     h.append(f"""<p><b>{esc(c['applicant'].split()[0])}, here's the honest truth.</b></p>
-      <p>Your Experian score sits at {c['scores']['experian']}. Your median score is {med}. And
-      your utilization is at {c['util_pct']} - that's critical.</p>""")
-    h.append('<div class="callout bar">No lenders are matched for immediate funding right now.</div>')
+      <p>Your Experian score sits at {c['scores']['experian']}. Your median score is {med}.{
+        " And your utilization is at " + c["util_pct"] + " - that's critical." if c.get("util_pct")
+        else " No open card on this file reports a credit limit, so there is no overall utilization figure to read."}</p>""")
+    # F45, ported from src/underwrite/black-report-node.mjs:861-899. The matcher
+    # returns TWO buckets -- availableNow and afterOptimization -- and this
+    # printer read only the flattened list, so it told every client "No lenders
+    # are matched for immediate funding right now" and showed all fifteen as
+    # locked. A client with five lenders open to him today was told he had none.
+    # lenders_now / lenders_after are already on the CLIENT dict
+    # (black-report-client.mjs:761-762); this printer just never looked.
+    now, after = lender_buckets(c)
+    if now:
+        h.append(table(["lender", "type", "est. range", "score floor"],
+                       [(esc(row[0]), row[2] or row[1], money_range(row[3], row[4]), row[5])
+                        for row in now]))
+        verb = "lender is" if len(now) == 1 else "lenders are"
+        h.append(f'<div class="callout bar">{len(now)} {verb} open to you today. Work them in the '
+                 f'order in section 03 - one at a time, lowest score floor first.</div>')
+    else:
+        h.append('<div class="callout bar">No lenders are matched for immediate funding right now. '
+                 'You are not far off. The score ladder below shows exactly how many points stand '
+                 'between you and each one.</div>')
     hero = hero_card(c)
     if hero:
         h.append(f"<p>But here's the good news. You are not far off. Fix the utilization on "
@@ -1276,9 +1391,14 @@ def build_lender_list(c):
     else:
         h.append("<p>But here's the good news. You are not far off. Weeks, not years.</p>")
 
-    # score ladder
+    # score ladder — only the lenders still out of reach belong on it.
     tiers = {}
-    for nm, cat, typ, lo, hi, sc, tib, rev, why, *_extra in c["lenders"]:
+    for nm, cat, typ, lo, hi, sc, tib, rev, why, *_extra in after:
+        # scoreLadder() in black-report-client.mjs:776-789 drops any floor at or
+        # below the median: a lender the client already clears on score is locked
+        # by something else, and "+-45 PTS" is not a gap.
+        if sc is None or med == "" or sc <= med:
+            continue
         tiers.setdefault(sc, []).append(nm)
     rows = []
     for sc in sorted(tiers):
@@ -1287,13 +1407,18 @@ def build_lender_list(c):
                      "<b>" + esc(", ".join(tiers[sc])) + "</b>",
                      len(tiers[sc])))
     h.append(svg_score_ruler(med))
-    h.append(table(["score", "gap", "lenders that unlock", "count"], rows, numeric_cols=(3,)))
+    if rows:
+        h.append(table(["score", "gap", "lenders that unlock", "count"], rows, numeric_cols=(3,)))
     h.append(f'<div class="note">{spaced("business products additionally require an llc and time in business")}</div>')
 
     h.append(PB)
     h.append(section("02", "shortlist", "After Optimization - Your Shortlist"))
-    h.append(f"<p>These {len(c['lenders'])} lenders unlock once you repair the key items. "
-             f"Here is who fits you and why.</p>")
+    if after:
+        h.append(f"<p>These {len(after)} lenders unlock once you repair the key items. "
+                 f"Here is who fits you and why.</p>")
+    else:
+        h.append("<p>Nothing on this list is out of reach. Every lender the matcher knows is "
+                 "already open to you.</p>")
 
     cat_notes = {
         "Personal Loans": "(No business required. These are your fastest path.)",
@@ -1303,7 +1428,7 @@ def build_lender_list(c):
         "Business Term Loans": "",
     }
     seen = []
-    for nm, cat, typ, lo, hi, sc, tib, rev, why, *_extra in c["lenders"]:
+    for nm, cat, typ, lo, hi, sc, tib, rev, why, *_extra in after:
         if cat not in seen:
             seen.append(cat)
             h.append(f'<h3>{esc(cat)}</h3><p class="small">{cat_notes.get(cat,"")}</p>')
@@ -1329,9 +1454,12 @@ def build_lender_list(c):
     util_line = "PAY DOWN THE HIGHEST CARD FIRST"
     if hero:
         util_line = f"PAY {str(hero[0]).upper()} DOWN TO {target_text(hero)}"
+    lowest = sorted(after, key=lambda r: r[5])[0] if after else None
+    lowest_line = (f"{str(lowest[0]).upper()} ASKS FOR {lowest[5]}. THAT IS YOUR FIRST TARGET"
+                   if lowest else "START WITH THE LOWEST SCORE FLOOR ON THIS LIST")
     order = [
         ("Fix utilization first", util_line),
-        ("Lowest score floor first", "START WITH THE LOWEST SCORE FLOOR ON THIS LIST"),
+        ("Lowest score floor first", lowest_line),
         ("One at a time", "WAIT FOR THE DECISION"),
         ("Work up the list", "HIGHER-FLOOR LENDERS ONLY AFTER THE SCORE MOVES"),
         ("Personal before business", "LOCK PERSONAL · THEN FORM THE LLC"),
@@ -1348,9 +1476,10 @@ def build_lender_list(c):
     h.append(section("04", "at a glance", "Your Numbers at a Glance"))
     h.append(table(["", "today", "after optimization"], [
         ("Median Score", med, "680-700 projected"),
-        ("Utilization", c["util_pct"], "Under 10% target"),
+        ("Utilization", c["util_pct"] or TARGET_UNKNOWN, "Under 10% target"),
         ("Personal Loan Pre-Approval", usd(c["preapproval_now"]), usd(c["preapproval_after"])),
-        ("Lenders Available", 0, len(c["lenders"])),
+        # F45. "0" said nobody would lend to this client today. Five would.
+        ("Lenders Available", len(now), len(now) + len(after)),
     ]))
     h.append(cta_page(c))
     return "".join(h)
@@ -1412,11 +1541,16 @@ def build_roadmap(c):
             else f"{usd(row[2])} owed, no limit reported",
             f"Under 10% ({tgt})" if tgt is not None else "No limit reported - no target"
         ))
+    # F45. lenders_now are open TODAY. Printing 0 told a client with five
+    # matches that nobody would lend to him.
+    _now_rows, _after_rows = lender_buckets(c)
+    now_n = len(_now_rows)
+    after_n = len(_after_rows)
     stand.extend([
-        ("Overall Utilization", c["util_pct"], "Under 10%"),
+        ("Overall Utilization", c["util_pct"] or TARGET_UNKNOWN, "Under 10%"),
         ("Negative items", len(c.get("negatives") or []), 0),
         ("Pre-Approval Estimate", usd(c["preapproval_now"]), usd(c["preapproval_after"])),
-        ("Lenders on this shortlist", 0, len(c["lenders"])),
+        ("Lenders on this shortlist", now_n, now_n + after_n),
     ])
     h.append(table(["", "today", "month 6"], stand))
 
@@ -1441,8 +1575,7 @@ def build_roadmap(c):
     total_pd = sum(paydown_amt(r) or 0 for r in ranked_revolving(c))
     hero = hero_card(c)
     start = f"Even getting {hero[0]} down first moves your score." if hero else "Start with the highest card."
-    h.append(f"<p><b>Total paydown to reach 10% utilization: {usd(total_pd)}.</b> You do not have "
-             f"to do this all at once. {esc(start)}</p>")
+    h.append(total_paydown_sentence(c, total_pd, start))
     h.append("<h3>Step 2: Round 1 Dispute Letters - Experian First</h3>")
     ex_negs = [n for n in c["negatives"] if str(n.get("bureau") or "").lower() == "experian"]
     if ex_negs:
@@ -1561,7 +1694,7 @@ def build_roadmap(c):
                            "Lower - no limit reported, so no 10% target"))
             continue
         reveal.append((f"{row[0]} utilization", row[4], "Under 10%"))
-    reveal.append(("Overall utilization", c["util_pct"], "Under 10%"))
+    reveal.append(("Overall utilization", c["util_pct"] or TARGET_UNKNOWN, "Under 10%"))
     ex_s, ex_c, _ = bureau_status(c, "Experian")
     eq_s, eq_c, _ = bureau_status(c, "Equifax")
     reveal.append(("Experian negatives", ex_c, 0))
@@ -1579,14 +1712,14 @@ def build_roadmap(c):
         ("Experian Score", c["scores"]["experian"], "690+"),
         ("Equifax Score", c["scores"]["equifax"], "670+"),
         ("TransUnion Score", c["scores"]["transunion"], "725+"),
-        ("Overall Utilization", c["util_pct"], "Under 10%"),
+        ("Overall Utilization", c["util_pct"] or TARGET_UNKNOWN, "Under 10%"),
         ("Negative items", len(c.get("negatives") or []), 0),
         ("Experian Negatives", ex_c, 0),
         ("Equifax Negatives", eq_c, "reduced"),
         ("Identity mismatches", len(c.get("personal_data") or []), 0 if c.get("personal_data") else 0),
         ("Personal Pre-Approval", usd(c["preapproval_now"]), usd(c["preapproval_after"])),
         ("Business Pre-Approval", "$0", "$5K-$20K (LLC dependent)"),
-        ("Lenders Available", 0, f"10-{len(c['lenders'])} unlocked"),
+        ("Lenders Available", now_n, f"{now_n + after_n} unlocked"),
         ("LLC Formed", "No", "Yes (4-6 months old)"),
         ("Business Credit Profile", "None", "Active (Paydex building)"),
     ]))

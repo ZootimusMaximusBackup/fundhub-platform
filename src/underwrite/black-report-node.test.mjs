@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildBlackReportClient } from "./black-report-client.mjs";
 import { printBlackReports } from "./black-report-pdf.mjs";
+import { extractPdfText } from "../company-brain/pdf-text.mjs";
 
 const FIXTURE = {
   outcome: "FULL_FUNDING",
@@ -129,4 +130,84 @@ test("live pdf-lib printer writes four real PDFs — no Python, no LLM", async (
       assert.match(text, /BANK/);
     }
   }
+});
+
+/* NOTHING on the file reports a limit. This is the client the ROADMAP TOTAL
+   lied to: the vendor engine sums `effectiveLimit || 0`
+   (vendor/underwriteiq-full/api/lite/crs/derive-consumer-signals.js:186), so the
+   total limit is 0, the 10% target was Math.round(0 * 0.1) = 0, and
+   `balance - 0` is the client's ENTIRE balance. */
+const NO_LIMIT_ANYWHERE = {
+  ...FIXTURE,
+  consumerSignals: {
+    scores: { median: 610, perBureau: { ex: 600, eq: 610, tu: 620 } },
+    utilization: { totalBalance: 5200, totalLimit: 0, pct: null }
+  },
+  normalized: {
+    ...FIXTURE.normalized,
+    tradelines: [
+      { source: "experian", creditorName: "AMEX PLATINUM (NPSL)", accountIdentifier: "AMEX-1",
+        accountType: "revolving", status: "open", currentBalance: 5200, effectiveLimit: null }
+    ]
+  }
+};
+
+test("F52 — the roadmap never prints a paydown total it worked out from an unknown limit", async () => {
+  /* THE DEFECT, reproduced 2026-09-06 by printing this client:
+       AMEX PLATINUM (NPSL)   $5,200   -   -   -
+       Total paydown to reach 10% utilization: $5,200.
+     The table row is right and the callout three lines under it told the client
+     to pay his whole balance, because 10% of a limit the file does not have came
+     out as $0. A total built from unknowns is unknown. */
+  const client = buildBlackReportClient({
+    crsResult: NO_LIMIT_ANYWHERE,
+    personal: { name: "Fixture Client", address: "100 Test Ave", state: "TX" }
+  });
+  assert.equal(client.util_total_limit, null, "a zero total limit is unknown, not zero");
+  assert.equal(client.util_target_balance, null);
+  assert.equal(client.util_total_balance, 5200, "the balance itself IS known");
+
+  const printed = await printBlackReports({ client, engine: "node" });
+  assert.equal(printed.engine, "pdf-lib");
+  /* extractPdfText, not pdftotext: it is pdfjs-dist, already a dependency, so
+     this reads the PDFs back everywhere Node runs. The older tests above shell
+     out to poppler and go quiet on a box that has none. */
+  let checked = 0;
+  for (const file of printed.files) {
+    const text = (await extractPdfText(file.content)).text.replace(/\s+/g, " ");
+    checked += 1;
+    assert.doesNotMatch(text, /Total paydown to reach 10% utilization/,
+      `${file.filename} states a total it cannot work out`);
+    assert.doesNotMatch(text, /under \$0|balances to \$0|down to \$0/,
+      `${file.filename} targets $0`);
+    if (file.type === "roadmap") {
+      assert.match(text, /AMEX PLATINUM \(NPSL\) \$5,200 - - -/);
+      assert.match(text,
+        /No open card on this file reports a credit limit, so there is no 10% total to work back to\./);
+    }
+  }
+  assert.equal(checked, 4, "all four documents were read back and checked");
+});
+
+test("F52 — a total that covers only some cards says which ones it does not", async () => {
+  const client = buildBlackReportClient({
+    crsResult: NO_LIMIT_CARD,
+    personal: { name: "Fixture Client", address: "100 Test Ave", state: "TX" }
+  });
+  assert.equal(client.util_total_limit, 2000, "the one card that reports a limit");
+  assert.equal(client.util_target_balance, 200);
+
+  const printed = await printBlackReports({ client, engine: "node" });
+  let sawRoadmap = false;
+  for (const file of printed.files) {
+    if (file.type !== "roadmap") continue;
+    sawRoadmap = true;
+    const text = (await extractPdfText(file.content)).text.replace(/\s+/g, " ");
+    assert.match(text, /Total paydown to reach 10% utilization: \$600\./,
+      "the cards that DO report a limit still get a real total");
+    assert.match(text,
+      /1 card on this file reports no limit, so nothing for it is in this number\./,
+      "and the client is told the total is partial");
+  }
+  assert.ok(sawRoadmap, "the roadmap was not among the printed documents");
 });

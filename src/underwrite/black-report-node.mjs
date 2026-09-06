@@ -59,6 +59,37 @@ function paydownInstruction(row) {
   return `${account} - ${balance} owed. No credit limit is reported for this card, so there is no 10% target to pay down to. Keep the balance moving down and we will set a target when a limit reports.`;
 }
 
+/* THE PAYDOWN TOTAL, AND WHY IT IS NOT ARITHMETIC.
+   F52. util_target_balance used to be Math.round(0 * 0.1) whenever the file's
+   only open cards reported no credit limit, because the vendor engine sums
+   `effectiveLimit || 0`. balance - 0 is the WHOLE BALANCE, so this callout told
+   the client to pay $5,200 three lines under the same card's row that correctly
+   printed dashes. black-report-client.mjs now leaves that total null, and a
+   total that is unknown has to READ as unknown rather than vanish.
+
+   The middle case is the one that is easy to miss: some cards report a limit and
+   some do not. The total is then real for the cards it covers and cannot cover
+   the rest, so it says which. */
+function openRevolving(c) {
+  return (c.revolving || []).filter((row) => row && row[0] && row[6] !== "CLOSED");
+}
+
+function cardsWithNoTarget(c) {
+  return openRevolving(c).filter((row) => !String(row[5] || "").trim()).length;
+}
+
+function totalPaydownSentence(c) {
+  if (c.util_target_balance == null || c.util_total_balance == null) {
+    return "No open card on this file reports a credit limit, so there is no 10% total to work back to. Keep the balances moving down and we will set a target as soon as a limit reports.";
+  }
+  const owed = usd(Math.max(0, c.util_total_balance - c.util_target_balance));
+  const missing = cardsWithNoTarget(c);
+  const tail = missing
+    ? ` That covers the cards that report a limit. ${missing} card${missing === 1 ? "" : "s"} on this file report${missing === 1 ? "s" : ""} no limit, so nothing for ${missing === 1 ? "it" : "them"} is in this number.`
+    : "";
+  return `Total paydown to reach 10% utilization: ${owed}.${tail} You do not have to do it all at once - start with the card at the highest percentage.`;
+}
+
 function moneyRange(lo, hi) {
   const k = (v) => (v % 1000 === 0 ? `$${v / 1000}K` : usd(v));
   if (lo == null || hi == null) return "-";
@@ -666,8 +697,12 @@ function analysis(c, r) {
   r.heading("Primary Revolving Cards - Utilization Analysis");
   r.table(
     ["creditor", "bureau", "balance", "limit", "util", "target balance", "status"],
+    /* row[4] and row[5] are the empty string when the file reports no limit for
+       that card. A blank cell reads as "nothing to do here"; a dash reads as "we
+       do not know", which is the truth, and is what the Month 1 paydown table
+       already printed for the same card. */
     (c.revolving || []).map((row) => [
-      row[0], row[1], usd(row[2]), usd(row[3]), row[4], row[5], row[6]
+      row[0], row[1], usd(row[2]), usd(row[3]), row[4] || "-", row[5] || "-", row[6]
     ])
   );
   r.bars(utilBars(c));
@@ -761,7 +796,7 @@ function snapshot(c, r) {
   r.table(["", "today", "after optimization"], [
     ["Median score", String(median(s)), afterScore(c, "median")],
     ["Experian score", String(s.experian ?? ""), afterScore(c, "experian")],
-    ["Utilization", c.util_pct || "", "Under 10% target"],
+    ["Utilization", c.util_pct || "-", "Under 10% target"],
     ["Pre-approval", usd(c.preapproval_now), usd(c.preapproval_after)],
     ["Funding gap", "", gap > 0 ? `${usd(gap)} left on the table` : "None - you are at the top of this file"]
   ]);
@@ -891,7 +926,7 @@ function lenders(c, r) {
   r.heading("Your Numbers at a Glance");
   r.table(["", "today", "after optimization"], [
     ["Median score", String(med || ""), afterScore(c, "median")],
-    ["Utilization", c.util_pct || "", "Under 10% target"],
+    ["Utilization", c.util_pct || "-", "Under 10% target"],
     ["Pre-approval", usd(c.preapproval_now), usd(c.preapproval_after)],
     ["Lenders available", String(now.length), String(now.length + after.length)]
   ]);
@@ -919,7 +954,7 @@ function roadmap(c, r) {
     ["Experian score", String(s.experian ?? ""), afterScore(c, "experian")],
     ["Equifax score", String(s.equifax ?? ""), afterScore(c, "equifax")],
     ["TransUnion score", String(s.transunion ?? ""), afterScore(c, "transunion")],
-    ["Overall utilization", c.util_pct || "", "Under 10%"],
+    ["Overall utilization", c.util_pct || "-", "Under 10%"],
     ["Negative items", String((c.negatives || []).length),
       (c.negatives || []).length ? "Targeted for removal" : "None on file"],
     ["Pre-approval", usd(c.preapproval_now), usd(c.preapproval_after)],
@@ -950,9 +985,7 @@ function roadmap(c, r) {
       return [row[0], usd(row[2]), usd(row[3]), row[5] || "-", owe];
     })
   );
-  if (c.util_target_balance != null) {
-    r.callout(`Total paydown to reach 10% utilization: ${usd(Math.max(0, (c.util_total_balance || 0) - c.util_target_balance))}. You do not have to do it all at once - start with the card at the highest percentage.`);
-  }
+  r.callout(totalPaydownSentence(c));
   if ((c.negatives || []).length) {
     step("Round 1 dispute letters. One letter per bureau, naming these items:");
     c.negatives.forEach((n) => r.para(`${n.n}. ${n.creditor} - ${n.type} - ${n.bureau}${n.balance ? ` - ${n.balance}` : ""}`));

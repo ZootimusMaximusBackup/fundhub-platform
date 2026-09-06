@@ -5,7 +5,8 @@
 
 import { esc } from "./escape.mjs";
 import { usd, median, spaced, parseMoney } from "./format.mjs";
-import { rankedRevolving, targetBal, paydownAmt, bureauStatus, heroCard, fastestWins } from "./derive.mjs";
+import { rankedRevolving, targetText, paydownAmt, bureauStatus, heroCard, fastestWins,
+  lenderBuckets, utilTotalsKnown, cardsWithNoTarget } from "./derive.mjs";
 import { cover, ctaPage, section, table, PB } from "./chrome.mjs";
 import { svgProjection, svgDisputeFlow } from "./charts.mjs";
 
@@ -66,17 +67,23 @@ export function buildRoadmap(client) {
     ["Equifax Score", c.scores?.equifax ?? "", st.equifax || ""]
   ];
   for (const row of rankedRevolving(c).slice(0, 2)) {
-    const tgt = targetBal(row);
-    stand.push([
-      `${row[0]} Utilization`,
-      `${row[4]} (${usd(row[2])} / ${usd(row[3])})`,
-      tgt !== null ? `Under 10% (${usd(tgt)})` : "Under 10%"
-    ]);
+    const tgt = targetText(row);
+    // F52. No reported limit means no "$X / $Y" and no 10% target. Both cells
+    // say what the file actually holds instead of implying a limit it does not.
+    stand.push(tgt !== null
+      ? [`${row[0]} Utilization`, `${row[4]} (${usd(row[2])} / ${usd(row[3])})`,
+        `Under 10% (${tgt})`]
+      : [`${row[0]} Utilization`, `${usd(row[2])} owed, no limit reported`,
+        "No limit reported - no target"]);
   }
-  stand.push(["Overall Utilization", c.util_pct, "Under 10%"]);
+  // F45. lenders_now are open TODAY. Printing 0 told a client with five matches
+  // that nobody would lend to him.
+  const [lendersNow, lendersAfter] = lenderBuckets(c);
+  stand.push(["Overall Utilization", c.util_pct || "-", "Under 10%"]);
   stand.push(["Negative items", negatives.length, 0]);
   stand.push(["Pre-Approval Estimate", usd(c.preapproval_now), usd(c.preapproval_after)]);
-  stand.push(["Lenders on this shortlist", 0, (c.lenders || []).length]);
+  stand.push(["Lenders on this shortlist", lendersNow.length,
+    lendersNow.length + lendersAfter.length]);
   h.push(table(["", "today", "month 6"], stand.map((r) => r.map(esc))));
 
   // 02 month 1
@@ -87,11 +94,14 @@ export function buildRoadmap(client) {
   h.push(`<p>This is your single biggest score lever. Lenders see ${esc(c.util_pct || "your")} `
     + "utilization and they slow down.</p>");
   const payRows = rankedRevolving(c).map((row) => {
-    const tgt = targetBal(row);
+    const tgt = targetText(row);
     const pd = paydownAmt(row);
+    /* A blank cell reads as "nothing to do here". A dash reads as "we do not
+       know", which is the truth for a card with no reported limit, and is what
+       both other printers put in the same two cells. */
     return [row[0], usd(row[2]), usd(row[3]),
-      tgt !== null ? usd(tgt) : (row[5] || ""),
-      pd !== null ? usd(pd) : ""];
+      tgt !== null ? tgt : "-",
+      pd !== null ? usd(pd) : "-"];
   });
   h.push(table(["account", "balance", "limit", "pay down to", "amount to pay"],
     payRows.map((r) => r.map(esc))));
@@ -100,8 +110,28 @@ export function buildRoadmap(client) {
   const start = hero
     ? `Even getting ${hero[0]} down first moves your score.`
     : "Start with the highest card.";
-  h.push(`<p><b>Total paydown to reach 10% utilization: ${esc(usd(totalPd))}.</b> You do not have `
-    + `to do this all at once. ${esc(start)}</p>`);
+  /* F52. THE PAYDOWN TOTAL IS A CLAIM AND HAS TO BE EARNED.
+     util_target_balance used to be 10% of a total limit the engine reports as 0
+     when no open card states one, so this line printed "$0" — telling a client
+     who owes $5,200 that he owes nothing — while the Node printer's version of
+     the same line printed his ENTIRE balance. Three cases now, and the middle
+     one is the one that is easy to miss: some cards report a limit and some do
+     not, so the total is real for the cards it covers and says what it cannot
+     cover. */
+  if (!utilTotalsKnown(c)) {
+    h.push("<p><b>No open card on this file reports a credit limit, so there is no 10% total "
+      + "to work back to.</b> Keep the balances moving down and we will set a target as soon "
+      + "as a limit reports.</p>");
+  } else {
+    const missing = cardsWithNoTarget(c);
+    const tail = missing
+      ? ` That covers the cards that report a limit. ${missing} card${missing === 1 ? "" : "s"} `
+        + `on this file report${missing === 1 ? "s" : ""} no limit, so nothing for `
+        + `${missing === 1 ? "it" : "them"} is in this number.`
+      : "";
+    h.push(`<p><b>Total paydown to reach 10% utilization: ${esc(usd(totalPd))}.</b>${esc(tail)} `
+      + `You do not have to do this all at once. ${esc(start)}</p>`);
+  }
 
   h.push("<h3>Step 2: Round 1 Dispute Letters - Experian First</h3>");
   const exNegs = negatives.filter((n) => String(n.bureau || "").toLowerCase() === "experian");
@@ -220,9 +250,18 @@ export function buildRoadmap(client) {
     reveal.push([`${n.creditor} ${n.type}`, n.balance || "showing", "Deleted or settled"]);
   }
   for (const row of rankedRevolving(c).slice(0, 2)) {
+    /* A card with no reported limit has no utilization today and no 10% to
+       reach by month 6. "Under 10%" beside a blank cell is a target the client
+       cannot check themselves against. Same rows as
+       scripts/black-reports/fundhub_gen.py:1686-1692. */
+    if (targetText(row) === null) {
+      reveal.push([`${row[0]} balance`, usd(row[2]),
+        "Lower - no limit reported, so no 10% target"]);
+      continue;
+    }
     reveal.push([`${row[0]} utilization`, row[4], "Under 10%"]);
   }
-  reveal.push(["Overall utilization", c.util_pct, "Under 10%"]);
+  reveal.push(["Overall utilization", c.util_pct || "-", "Under 10%"]);
   const [, exC] = bureauStatus(c, "Experian");
   const [, eqC] = bureauStatus(c, "Equifax");
   reveal.push(["Experian negatives", exC, 0]);
@@ -245,14 +284,15 @@ export function buildRoadmap(client) {
     ["Experian Score", c.scores?.experian ?? "", "690+"],
     ["Equifax Score", c.scores?.equifax ?? "", "670+"],
     ["TransUnion Score", c.scores?.transunion ?? "", "725+"],
-    ["Overall Utilization", c.util_pct, "Under 10%"],
+    ["Overall Utilization", c.util_pct || "-", "Under 10%"],
     ["Negative items", negatives.length, 0],
     ["Experian Negatives", exC, 0],
     ["Equifax Negatives", eqC, "reduced"],
     ["Identity mismatches", personal.length, 0],
     ["Personal Pre-Approval", usd(c.preapproval_now), usd(c.preapproval_after)],
     ["Business Pre-Approval", "$0", "$5K-$20K (LLC dependent)"],
-    ["Lenders Available", 0, `10-${(c.lenders || []).length} unlocked`],
+    ["Lenders Available", lendersNow.length,
+      `${lendersNow.length + lendersAfter.length} unlocked`],
     ["LLC Formed", "No", "Yes (4-6 months old)"],
     ["Business Credit Profile", "None", "Active (Paydex building)"]
   ].map((r) => r.map(esc))));

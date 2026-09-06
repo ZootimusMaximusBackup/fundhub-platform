@@ -1,4 +1,4 @@
-REGENERATED 2026-09-06 (ROUND 3). Every file in this directory came out of the
+REGENERATED 2026-09-06 (ROUND 4). Every file in this directory came out of the
 code as it stands, by one command:
 
     node scripts/black-reports/regen-w10-pack.mjs
@@ -42,14 +42,35 @@ lender lists with two names and two different counts is exactly the confusion
 this pack is supposed to prevent.
 
 
-THE PRINTER
------------
-Printed by the NODE printer (src/underwrite/black-report-node.mjs), the same
-choice the 2026-09-04 pack made and for the same reason: WeasyPrint is not
-installed on Netlify, so black-report-pdf.mjs falls through to Node on
-production. A laptop with WeasyPrint prints the same five documents through
+THE PRINTER, AND HOW WE KNOW WHICH ONE PRODUCTION USES
+------------------------------------------------------
+Printed by the NODE printer (src/underwrite/black-report-node.mjs), which is
+what a real client receives today. Round 3 said so and gave one reason —
+"WeasyPrint is not installed on Netlify". That reason is true and it is not the
+only one, and the earlier wording read as if the render service were already the
+live path. MEASURED 2026-09-06 against the real site:
+
+    netlify env:list --context production --plain | cut -d= -f1
+
+returns 82 names and NEITHER `BLACK_REPORT_RENDER_URL` NOR `FUNDHUB_RENDER_KEY`
+is one of them. Same for deploy-preview, branch-deploy and dev. So
+resolveRenderService() (src/underwrite/black-report-pdf.mjs:138-143) returns
+null on Netlify, the remote step cannot be taken at all, and with no Python on
+the Node runtime either, every live print lands on the pdf-lib printer. Run
+against that env the resolver says so out loud:
+
+    [black-report] engine=pdf-lib
+      reason=render_service_not_configured (local_python_not_attempted)
+      files=4 DEGRADED — short documents, not the designed set
+
+Until those two settings exist, the designed WeasyPrint documents are not what
+production prints. render-service/README.md step 7 carries the same note.
+
+A laptop with WeasyPrint prints the same five documents through
 scripts/black-reports/fundhub_gen.py and the bytes differ — pass
-`--engine=python` to produce that set instead. That path is proved separately in
+`--engine=python` to produce that set instead. Both printers were run against
+the same two fixtures this round and the words they print for the two defects
+below are the same words. That path is proved separately in
 docs/workflows/w10-proof-2026-09-03.md.
 
 PDFs are not byte-reproducible; every one carries a creation timestamp, so the
@@ -67,10 +88,10 @@ tier engine and the real buildLetterPack(). Pull date fixed at 2026-07-25 so the
 cover date is a property of the input.
 
    13273  7 pages  Bank-Lender-Match-List.pdf
-    1598  1 page   Capital-Readiness-Summary.pdf
+    1601  1 page   Capital-Readiness-Summary.pdf
     8952  5 pages  Credit-Analysis-Report.pdf
-    9534  5 pages  Credit-Optimization-Roadmap.pdf
-   11315  5 pages  Funding-Snapshot.pdf
+    9535  5 pages  Credit-Optimization-Roadmap.pdf
+   11316  5 pages  Funding-Snapshot.pdf
 
 READ THIS BEFORE QUOTING THE PACK ON F44. This client reads "No business entity
 on file… Forming an LLC is fast", and that is correct under the owner's F15
@@ -94,7 +115,7 @@ with-company/ — the same file with one `businesses` row
 Sim Five Holdings LLC, 72 months. What F44 actually fixes.
 
    11168  6 pages  Bank-Lender-Match-List.pdf
-    1598  1 page   Capital-Readiness-Summary.pdf
+    1601  1 page   Capital-Readiness-Summary.pdf
     8952  5 pages  Credit-Analysis-Report.pdf
     9573  5 pages  Credit-Optimization-Roadmap.pdf
    10854  5 pages  Funding-Snapshot.pdf
@@ -129,7 +150,7 @@ the summary generator produces none for this file, same as the 2026-09-04 set.
 
    13256  7 pages  Bank-Lender-Match-List.pdf
     9180  5 pages  Credit-Analysis-Report.pdf
-    9410  5 pages  Credit-Optimization-Roadmap.pdf
+    9482  5 pages  Credit-Optimization-Roadmap.pdf
     8684  4 pages  Funding-Snapshot.pdf
 
   · TRI-MERGE. One card at $4,500 of $10,000 reported by all three bureaus. The
@@ -155,3 +176,60 @@ the summary generator produces none for this file, same as the 2026-09-04 set.
     Credit Analysis Report with the engine's own sentences under it, and the same
     finding is ranked under "What Does Not Affect Your Funding" in the snapshot —
     never under "What Is Costing You Money".
+
+
+no-limit/ — NO open card reports a credit limit
+------------------------------------------------
+NEW IN ROUND 4, and the reason round 4 exists. One open card, an AMEX with no
+preset spending limit, and nothing else. The vendor engine sums
+`effectiveLimit || 0` (derive-consumer-signals.js:186), so its total limit is 0
+and its utilization percentage is null. Ten percent of 0 is 0, and
+`balance - 0` is the client's WHOLE balance.
+
+   13248  7 pages  Bank-Lender-Match-List.pdf
+    7310  4 pages  Credit-Analysis-Report.pdf
+    9241  5 pages  Credit-Optimization-Roadmap.pdf
+    7418  4 pages  Funding-Snapshot.pdf
+
+  · WHAT IT USED TO SAY. Reproduced 2026-09-06 by printing this exact fixture
+    through the code as it stood:
+        AMEX PLATINUM (NPSL)   $5,200   -   -   -
+        Total paydown to reach 10% utilization: $5,200.
+    The table row is right. The line three under it told a client to pay his
+    entire balance. The WeasyPrint printer's version of the same line read "$0",
+    which tells the same client he owes nothing, and these four documents as
+    hosted web pages (src/deliverables/) read "$0" too.
+
+  · WHAT IT SAYS NOW, page 2 of the roadmap in this directory, read back out of
+    the committed PDF:
+        AMEX PLATINUM (NPSL)   $5,200   -   -   -
+        "No open card on this file reports a credit limit, so there is no 10%
+         total to work back to. Keep the balances moving down and we will set a
+         target as soon as a limit reports."
+
+  · NO FIGURE IS INVENTED ANYWHERE ELSE EITHER. "Overall utilization" reads "-"
+    in every table that carries it. The Credit Analysis Report prints no overall
+    utilization bar and no "TARGET: get total balances to $X" callout, because it
+    has neither number. The Funding Snapshot does not call a dash the client's
+    "#1 problem". The Bank and Lender Match List reads "your utilization is -."
+    rather than "at -, that's critical".
+
+  · AND HE IS STILL TOLD THE TRUTH ABOUT LENDERS. "5 lenders are open to you
+    today", "Lenders available 5 15". Not zero.
+
+
+hard-cases/, ROUND 4 ADDITION — a PARTIAL total says it is partial
+-------------------------------------------------------------------
+This file has one card that reports a limit and one that does not, so a total IS
+available and cannot cover everything. Page 2 of
+hard-cases/Credit-Optimization-Roadmap.pdf, read back from the committed PDF:
+
+    TEST CARD   $4,500   $10,000   $1,000 or less   $3,500
+    AMEX PLATINUM (NPSL)   $5,200   -   -   -
+    "Total paydown to reach 10% utilization: $3,500. That covers the cards that
+     report a limit. 1 card on this file reports no limit, so nothing for it is
+     in this number. You do not have to do it all at once - start with the card
+     at the highest percentage."
+
+Round 3 printed the $3,500 with no such qualifier, so the $5,200 the client also
+owes sat silently outside a total that claimed to reach 10%.

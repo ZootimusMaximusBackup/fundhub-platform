@@ -5,7 +5,8 @@
 
 import { esc } from "./escape.mjs";
 import { usd, median, moneyRange, parsePct } from "./format.mjs";
-import { rankedRevolving, targetBal, fastestWins } from "./derive.mjs";
+import { rankedRevolving, targetText, fastestWins, lenderBuckets, utilTotalsKnown }
+  from "./derive.mjs";
 import { cover, ctaPage, section, table, PB } from "./chrome.mjs";
 import { svgWaterfall } from "./charts.mjs";
 
@@ -45,10 +46,15 @@ export function buildFundingSnapshot(client) {
   const cardRows = (c.revolving || []).map(([cr, , bal, lim, util, , st]) => {
     const cls = st === "CRITICAL" ? "tag solid" : (st === "HIGH" ? "tag grey" : "tag open");
     return [esc(cr), `<span class="tag open">${esc(titleCase(st))}</span>`, esc(usd(bal)),
-      esc(usd(lim)), `${esc(util)} <span class="${cls}">${esc(st)}</span>`];
+      esc(usd(lim)), `${esc(util || "-")} <span class="${cls}">${esc(st)}</span>`];
   });
   h.push(table(["account", "status", "balance", "limit", "utilization"], cardRows));
-  h.push(`<p><b>Overall utilization: ${esc(c.util_pct)} - This is your #1 problem right now.</b></p>`);
+  /* F52. "Overall utilization: - This is your #1 problem right now" calls a
+     figure the file does not have the client's biggest problem. No percentage,
+     no verdict. */
+  if (c.util_pct) {
+    h.push(`<p><b>Overall utilization: ${esc(c.util_pct)} - This is your #1 problem right now.</b></p>`);
+  }
 
   h.push("<h3>Installment Loans</h3>");
   h.push(table(["account", "status", "balance", "notes"],
@@ -71,14 +77,17 @@ export function buildFundingSnapshot(client) {
   for (const row of rankedRevolving(c)) {
     const pct = parsePct(row[4]);
     if (pct === null || pct < 20) continue;
-    const tgt = targetBal(row);
+    const tgt = targetText(row);
+    /* F52. No reported limit, so "on a $X limit" and a 10% target are both
+       figures this file does not have. The row is dropped from a list whose
+       whole point is a number to aim at. */
+    if (tgt === null) continue;
     costing.push([
       `${row[0]} - ${row[4]} Utilization`,
-      `You owe ${usd(row[2])} on a ${usd(row[3])} limit. Pay it down to `
-      + `${tgt !== null ? usd(tgt) : row[5]}.`
+      `You owe ${usd(row[2])} on a ${usd(row[3])} limit. Pay it down to ${tgt}.`
     ]);
   }
-  if (c.util_pct) {
+  if (c.util_pct && utilTotalsKnown(c)) {
     costing.push([
       `Overall Utilization - ${c.util_pct}`,
       `You are using ${usd(c.util_total_balance)} out of ${usd(c.util_total_limit)} in `
@@ -112,12 +121,20 @@ export function buildFundingSnapshot(client) {
 
   // 05 after optimization
   h.push(PB);
-  h.push(section("05", "after optimization", "Where You Could Be - After Optimization"));
-  const lenderRows = (c.lenders || []).map(([nm, , typ, lo, hi, sc, tib]) => {
-    const need = tib === null || tib === undefined ? `Score ${sc}+` : `LLC + Score ${sc}+`;
-    return [esc(nm), esc(typ), esc(moneyRange(lo, hi)), esc(need)];
-  });
-  h.push(table(["lender", "type", "est. range", "what you need"], lenderRows));
+  /* F45. "Where You Could Be" is the LOCKED list. It used to print every lender
+     the matcher knew, including the ones already open today, so a client saw his
+     own available lenders filed under "after optimization".
+     src/underwrite/black-report-node.mjs:821 prints this section only when the
+     locked bucket has something in it. */
+  const [, locked] = lenderBuckets(c);
+  if (locked.length) {
+    h.push(section("05", "after optimization", "Where You Could Be - After Optimization"));
+    const lenderRows = locked.map(([nm, , typ, lo, hi, sc, tib]) => {
+      const need = tib === null || tib === undefined ? `Score ${sc}+` : `LLC + Score ${sc}+`;
+      return [esc(nm), esc(typ), esc(moneyRange(lo, hi)), esc(need)];
+    });
+    h.push(table(["lender", "type", "est. range", "what you need"], lenderRows));
+  }
 
   // 06 next step
   h.push(section("06", "next step", "Your Next Step"));

@@ -1126,7 +1126,19 @@ export function buildBlackReportClient({
       client.util_target_balance = Math.round(totals.limit * 0.1);
     } else if (util) {
       client.util_total_balance = finiteNumber(util.totalBalance);
-      client.util_total_limit = finiteNumber(util.totalLimit);
+      /* F52. A TOTAL BUILT FROM UNKNOWNS IS UNKNOWN.
+         The engine sums `effectiveLimit || 0`
+         (vendor/underwriteiq-full/api/lite/crs/derive-consumer-signals.js:186),
+         so ZERO is what it emits when no open revolving card reported a limit
+         at all — it is not a real ceiling of nothing. Taking 10% of it made
+         util_target_balance 0, and the roadmap then printed the client's WHOLE
+         balance as the amount to pay, three lines under the same card's row
+         that correctly printed dashes. The engine agrees the figure is
+         unknowable: it returns pct null on the same condition. So an
+         unusable total limit stays null here and every printer renders it as
+         unknown. */
+      const rawLimit = finiteNumber(util.totalLimit);
+      client.util_total_limit = rawLimit != null && rawLimit > 0 ? rawLimit : null;
       if (client.util_total_limit != null) {
         client.util_target_balance = Math.round(client.util_total_limit * 0.1);
       }

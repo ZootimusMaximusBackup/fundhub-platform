@@ -5,7 +5,8 @@
 
 import { esc } from "./escape.mjs";
 import { usd, median, spaced, parsePct } from "./format.mjs";
-import { rankedRevolving, targetBal, paydownAmt, bureauStatus, heroCard } from "./derive.mjs";
+import { rankedRevolving, targetBal, targetText, paydownAmt, paydownSentence, bureauStatus,
+  heroCard, utilTotalsKnown } from "./derive.mjs";
 import { cover, ctaPage, section, table, utilBar, PB } from "./chrome.mjs";
 import { svgTwoTrack, svgPaydownBars, svgSeverity } from "./charts.mjs";
 
@@ -139,7 +140,9 @@ bureaus. Your best and worst are ${esc(spread)} points apart. Closing that gap i
   h.push(section("03", "utilization", "Primary Revolving Cards - Utilization Analysis"));
   const revRows = (c.revolving || []).map(([cr, br, bal, lim, util, tgt, st]) => {
     const cls = st === "CRITICAL" ? "tag solid" : (st === "HIGH" ? "tag grey" : "tag open");
-    return [esc(cr), esc(br), esc(usd(bal)), esc(usd(lim)), esc(util), esc(tgt),
+    // util and tgt are the empty string when no limit is reported. A dash says
+    // "we do not know"; a blank cell says "nothing to do here".
+    return [esc(cr), esc(br), esc(usd(bal)), esc(usd(lim)), esc(util || "-"), esc(tgt || "-"),
       `<span class="${cls}">${esc(st)}</span>`];
   });
   h.push(table(["creditor", "bureau", "balance", "limit", "utilization",
@@ -159,28 +162,37 @@ bureaus. Your best and worst are ${esc(spread)} points apart. Closing that gap i
     for (const row of rankedRevolving(c).slice(0, 2)) {
       const pct = parsePct(row[4]);
       if (pct === null) continue;
-      const tgt = targetBal(row);
-      h.push(utilBar(row[0], `${usd(row[2])} of ${usd(row[3])} · pay down to `
-        + `${tgt !== null ? usd(tgt) : row[5]}`, pct));
+      const tgt = targetText(row);
+      // F52. No target, no bar. The bar's whole caption is "pay down to <x>".
+      if (tgt === null) continue;
+      h.push(utilBar(row[0], `${usd(row[2])} of ${usd(row[3])} · pay down to ${tgt}`, pct));
     }
   }
-  const overallPct = parsePct(c.util_pct) ?? 0;
-  h.push(utilBar("Overall revolving",
-    `${usd(c.util_total_balance)} of ${usd(c.util_total_limit)} · `
-    + `pay down to under ${usd(c.util_target_balance)}`, overallPct));
+  /* F52. An overall bar needs an overall percentage AND an overall target. On a
+     file whose cards report no limit the engine gives neither, and drawing the
+     bar anyway put it at 0% next to "pay down to under $0". */
+  const overallPct = parsePct(c.util_pct);
+  if (overallPct !== null && utilTotalsKnown(c)) {
+    h.push(utilBar("Overall revolving",
+      `${usd(c.util_total_balance)} of ${usd(c.util_total_limit)} · `
+      + `pay down to under ${usd(c.util_target_balance)}`, overallPct));
+  }
   h.push(`<div class="note">${esc(spaced("dashed line marks the 10% utilization threshold lenders look for"))}</div>`);
-  if (hero) {
-    const hTgt = targetBal(hero);
+  if (hero && utilTotalsKnown(c) && c.util_pct) {
+    // heroCard() only returns a card with a known target, so this never ends the
+    // sentence at "Get that card to ."
     h.push(`<p>Right now you are using ${esc(c.util_pct)} of your available revolving credit -
       ${esc(usd(c.util_total_balance))} in balances against ${esc(usd(c.util_total_limit))} in limits.
       ${esc(hero[0])} is the highest-utilization card at ${esc(hero[4])}. Get that card to
-      ${esc(hTgt !== null ? usd(hTgt) : hero[5])}. This is the fastest win on your
+      ${esc(targetText(hero))}. This is the fastest win on your
       entire report.</p>`);
   }
-  h.push('<div class="callout bar">TARGET: Get total revolving balances from '
-    + `${esc(usd(c.util_total_balance))} down to under ${esc(usd(c.util_target_balance))}. `
-    + `That moves you from ${esc(c.util_pct)} utilization to under 10%. That one move alone `
-    + "can add 40-80 points to your score.</div>");
+  if (utilTotalsKnown(c) && c.util_pct) {
+    h.push('<div class="callout bar">TARGET: Get total revolving balances from '
+      + `${esc(usd(c.util_total_balance))} down to under ${esc(usd(c.util_target_balance))}. `
+      + `That moves you from ${esc(c.util_pct)} utilization to under 10%. That one move alone `
+      + "can add 40-80 points to your score.</div>");
+  }
 
   // 04 AU
   const au = c.au_account || {};
@@ -253,8 +265,14 @@ bureaus. Your best and worst are ${esc(spread)} points apart. Closing that gap i
     `<div class="card"><div class="lbl">${esc(spaced("current pre-approval"))}</div>`
     + `<div class="big">${esc(usd(c.preapproval_now))}</div>`
     + `<div class="sub">${esc(spaced("personal loan - starter band"))}</div>`
-    + "<div class=\"body\">This is what you qualify for right now. Your utilization penalty "
-    + `(${esc(c.util_pct)}) is cutting your base approval hard.</div></div>`,
+    /* F52. "Your utilization penalty () is cutting your base approval hard" is
+       an accusation built on a figure the file does not have. No percentage, no
+       penalty sentence. */
+    + "<div class=\"body\">This is what you qualify for right now."
+    + (c.util_pct
+      ? ` Your utilization penalty (${esc(c.util_pct)}) is cutting your base approval hard.`
+      : "")
+    + "</div></div>",
     `<div class="card"><div class="lbl">${esc(spaced("projected pre-approval"))}</div>`
     + `<div class="big">${esc(usd(c.preapproval_after))}</div>`
     + `<div class="sub">${esc(spaced("after utilization fix"))}</div>`
@@ -276,7 +294,7 @@ bureaus. Your best and worst are ${esc(spread)} points apart. Closing that gap i
       <div class="fs">${esc(payBits.length ? payBits.join(" + ") : "see table")}</div></div>
   <div class="flowarrow">&#10132;</div>
   <div class="flowbox"><div class="fl">WHAT CHANGES</div><div class="ft">Cards drop under 10%</div>
-      <div class="fs">utilization falls from ${esc(c.util_pct)}</div></div>
+      <div class="fs">${c.util_pct ? `utilization falls from ${esc(c.util_pct)}` : "utilization falls"}</div></div>
   <div class="flowarrow">&#10132;</div>
   <div class="flowbox"><div class="fl">WHAT LENDERS SEE</div><div class="ft">Score jumps</div>
       <div class="fs">+40 to 80 points</div></div>
@@ -292,10 +310,10 @@ bureaus. Your best and worst are ${esc(spread)} points apart. Closing that gap i
       `${usd(c.preapproval_now)} available today`]
   ];
   for (const row of rankedRevolving(c).slice(0, 2)) {
-    const tgt = targetBal(row);
     stages.push([
       "Step 1 - Fast Win",
-      `Pay ${row[0]} from ${usd(row[2])} to ${tgt !== null ? usd(tgt) : row[5]}`,
+      // F52. This used to end at "from $5,200 to " for a card with no limit.
+      paydownSentence(row),
       "Utilization drop",
       `Pre-approval target ${usd(c.preapproval_after)}`
     ]);
