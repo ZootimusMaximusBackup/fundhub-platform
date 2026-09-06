@@ -74,7 +74,13 @@ export async function upsertWaypoint(db, {
   completedAt = null,
   paidAlternativePriceCents = null,
   paidAlternativeLabel = null,
-  paidAlternativeKind = null
+  paidAlternativeKind = null,
+  /* db/migrations/360. NULL verifyKind means NOTHING THE PLATFORM CAN SEE
+     closes this waypoint — not "we have not checked yet". `params` carries the
+     per-client facts that check needs, money in integer cents under keys ending
+     _cents. Both default to null so every existing caller is unchanged. */
+  verifyKind = null,
+  params = null
 } = {}) {
   if (!orgId || !clientId) throw new WaypointError("orgId and clientId are required");
   if (!key) throw new WaypointError("key is required", { code: "key_required" });
@@ -91,12 +97,21 @@ export async function upsertWaypoint(db, {
     }
   }
 
+  if (verifyKind !== null && verifyKind !== undefined && !/^[a-z0-9_]{2,64}$/.test(String(verifyKind))) {
+    throw new WaypointError("verifyKind must be a lower_snake name, or null for not checkable", { code: "verify_kind" });
+  }
+  if (params !== null && params !== undefined
+      && (typeof params !== "object" || Array.isArray(params))) {
+    throw new WaypointError("params must be a plain object, or null", { code: "params_shape" });
+  }
+
   const r = await db.query(
     `INSERT INTO client_waypoints
        (org_id, client_id, key, title, detail, position, owner_kind, state,
         due_at, completed_at,
-        paid_alternative_price_cents, paid_alternative_label, paid_alternative_kind)
-     VALUES ($1::uuid,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        paid_alternative_price_cents, paid_alternative_label, paid_alternative_kind,
+        verify_kind, params)
+     VALUES ($1::uuid,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb)
      ON CONFLICT (client_id, key) DO UPDATE
         SET title                        = EXCLUDED.title,
             detail                       = EXCLUDED.detail,
@@ -105,14 +120,18 @@ export async function upsertWaypoint(db, {
             due_at                       = EXCLUDED.due_at,
             paid_alternative_price_cents = EXCLUDED.paid_alternative_price_cents,
             paid_alternative_label       = EXCLUDED.paid_alternative_label,
-            paid_alternative_kind        = EXCLUDED.paid_alternative_kind
+            paid_alternative_kind        = EXCLUDED.paid_alternative_kind,
+            verify_kind                  = EXCLUDED.verify_kind,
+            params                       = EXCLUDED.params
       RETURNING *`,
     [
       orgId, clientId, key, title, detail, position, ownerKind, state,
       dueAt, completedAt,
       paidAlternativePriceCents ?? null,
       paidAlternativeLabel,
-      paidAlternativeKind
+      paidAlternativeKind,
+      verifyKind ?? null,
+      params == null ? null : JSON.stringify(params)
     ]
   );
   return r.rows[0];
@@ -129,6 +148,57 @@ export async function completeWaypoint(db, { orgId, clientId, key, at = null } =
       WHERE org_id = $1::uuid AND client_id = $2::uuid AND key = $3
       RETURNING *`,
     [orgId, clientId, key, at]
+  );
+  return r.rows[0] || null;
+}
+
+/**
+ * The still-open waypoints on this client that name a machine check.
+ *
+ * A row with a NULL verify_kind is not in this list and never will be: NULL
+ * means nothing the platform can see closes it (db/migrations/360), so a sweep
+ * that touched those rows would be guessing by definition.
+ */
+export async function listVerifiableWaypoints(db, { orgId, clientId } = {}) {
+  if (!orgId || !clientId) throw new WaypointError("orgId and clientId are required");
+  const r = await db.query(
+    `SELECT * FROM client_waypoints
+      WHERE org_id = $1::uuid AND client_id = $2::uuid
+        AND verify_kind IS NOT NULL
+        AND state NOT IN ('done', 'skipped')
+      ORDER BY position ASC, key ASC`,
+    [orgId, clientId]
+  );
+  return r.rows || [];
+}
+
+/**
+ * Move a waypoint to a state that is NOT done, with the reason on the row.
+ *
+ * 'done' is refused here on purpose. completeWaypoint() is the only way to
+ * close a waypoint, because state and completed_at have to be written together
+ * or a CHECK in the database refuses the row, and having one function that can
+ * do both is how you end up with a half-written completion.
+ *
+ * completed_at is cleared, for the same CHECK: a row that is not done may not
+ * carry a completion time.
+ */
+export async function markWaypointState(db, { orgId, clientId, key, state, reason = null } = {}) {
+  if (!orgId || !clientId) throw new WaypointError("orgId and clientId are required");
+  if (!key) throw new WaypointError("key is required", { code: "key_required" });
+  const allowed = ["not_started", "in_progress", "blocked", "skipped"];
+  if (!allowed.includes(state)) {
+    throw new WaypointError(
+      `state must be one of ${allowed.join(", ")} — use completeWaypoint() to finish one`,
+      { code: "state" }
+    );
+  }
+  const r = await db.query(
+    `UPDATE client_waypoints
+        SET state = $4, state_reason = $5, completed_at = NULL
+      WHERE org_id = $1::uuid AND client_id = $2::uuid AND key = $3
+      RETURNING *`,
+    [orgId, clientId, key, state, reason]
   );
   return r.rows[0] || null;
 }

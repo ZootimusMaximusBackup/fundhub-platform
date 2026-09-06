@@ -15,7 +15,36 @@
    5. bureau rotation — rank by how little the planned set already leans on
       each lender's expected bureau(s).
 
+   6. no business on file, no business credit cards (owner rule 2026-09-06).
+
    Returns { matches, skipped, summary } — never fabricates lenders. */
+
+import { isBusinessLenderTable } from "./tables.mjs";
+
+/* Full names, because the summary strings below are read out loud on a call
+   and printed on a screen. "EX" means nothing to a client. */
+const BUREAU_FULL_NAME = Object.freeze({
+  EX: "Experian",
+  EQ: "Equifax",
+  TU: "TransUnion",
+  "D&B": "Dun & Bradstreet",
+  "EX Biz": "Experian Business",
+  "EQ Biz": "Equifax Business"
+});
+
+/** "Experian, Equifax and TransUnion" — an English list, not a slash list. */
+function nameList(codes = []) {
+  const names = (Array.isArray(codes) ? codes : [])
+    .map((c) => BUREAU_FULL_NAME[c] || String(c))
+    .filter(Boolean);
+  if (!names.length) return "";
+  if (names.length === 1) return names[0];
+  return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+}
+
+function plural(n, one, many) {
+  return Number(n) === 1 ? one : many;
+}
 
 const BUREAU_ALIASES = Object.freeze({
   ex: "EX", experian: "EX",
@@ -488,6 +517,10 @@ function bureauOverlap(lenderBureaus, avoid) {
  * @param {object|null} [opts.credit]   resolveCreditProfile result, or null
  *   when no pull is on file. Null means the score gate does not run — it does
  *   NOT mean everybody passes it silently; `summary.credit.available` says so.
+ * @param {boolean|null} [opts.businessOnFile]  Does this client have a company?
+ *   `false` holds back every business product (owner rule 2026-09-06: no
+ *   business on file, no business credit cards). `null`/undefined means we do
+ *   not know, and an unknown never blocks — same rule as an unknown state.
  * @returns {{ matches: object[], skipped: object[], summary: object }}
  */
 export function matchLenders({
@@ -503,6 +536,7 @@ export function matchLenders({
   includeDemo = false,
   recentInquiryDays = 30,
   credit = null,
+  businessOnFile = null,
   now = new Date()
 } = {}) {
   /* THE TWO LANES. `home` and `business` name the lanes; `states` is what the
@@ -538,6 +572,19 @@ export function matchLenders({
   let unreadable = 0;       // lenders that talk about a score we could not read
   let excludedOnScore = 0;
 
+  /* NO BUSINESS ON FILE, NO BUSINESS CREDIT CARDS. Owner rule, 2026-09-06.
+     Only an explicit `false` blocks. A caller that does not know whether the
+     client has a company passes nothing, and nothing is blocked — the same
+     way an unknown state has always been read. */
+  const noBusiness = businessOnFile === false;
+  let heldNoBusiness = 0;
+  /* Held back because the client is protecting that bureau, counted per
+     bureau so the screen can name the reason instead of quietly showing a
+     shorter list. A lender that pulls two hot bureaus counts once in
+     `heldSensitive` and once under each bureau. */
+  let heldSensitive = 0;
+  const heldByBureau = new Map();
+
   /* DEMO MODE, EXCLUDED BY DEFAULT.
 
      listLenders() already applies this gate in SQL, so the normal path never
@@ -561,6 +608,14 @@ export function matchLenders({
       skipped.push({ id: L.id, name: L.name, reason: "inactive" });
       continue;
     }
+    if (noBusiness && isBusinessLenderTable(L.lender_table)) {
+      heldNoBusiness++;
+      skipped.push({
+        id: L.id, name: L.name, reason: "no_business_on_file",
+        lender_table: L.lender_table
+      });
+      continue;
+    }
     if (!eligibleForAnyState(L.eligible_states, states)) {
       skipped.push({
         id: L.id, name: L.name, reason: "state_ineligible",
@@ -571,9 +626,12 @@ export function matchLenders({
     const bureaus = parseBureaus(L.bureaus_pulled);
     const hit = bureauOverlap(bureaus, avoid);
     if (hit.length) {
+      heldSensitive++;
+      for (const b of hit) heldByBureau.set(b, (heldByBureau.get(b) || 0) + 1);
       skipped.push({
         id: L.id, name: L.name, reason: "inquiry_sensitive",
-        bureaus: hit
+        bureaus: hit,
+        bureau_names: hit.map((b) => BUREAU_FULL_NAME[b] || b)
       });
       continue;
     }
@@ -601,7 +659,19 @@ export function matchLenders({
     matches.push({
       id: L.id,
       name: L.name,
+      /* THE PRODUCT. One bank can offer several cards — American Express
+         alone has four personal cards in the book — and without this the
+         screen draws four rows that all read "American Express". Carried
+         through as it is stored; a bank row with no product named keeps a
+         null, and null means the row is the bank itself. */
+      product_name: L.product_name ?? null,
       lender_table: L.lender_table,
+      /* THE LOGO. 244 logo files ship in public/assets/lenders/ and the
+         column is filled on import, but the matcher used to drop it here, so
+         no screen built off a match result could ever draw one. Carried
+         through untouched — null stays null, and a null is a missing logo,
+         never a placeholder invented at this layer. */
+      logo_path: L.logo_path ?? null,
       bureaus_pulled: L.bureaus_pulled,
       bureaus,
       eligible_states: L.eligible_states,
@@ -654,6 +724,32 @@ export function matchLenders({
     unclassified: matches.filter((m) => m.lane === "unclassified")
   };
 
+  /* WHY THE LIST IS SHORTER THAN IT WAS. Two gates take lenders away for a
+     reason the client can be told out loud, and both used to be invisible:
+     the count simply came out lower and nobody could say why. These two
+     blocks are the sentence the screen prints. */
+  const protectedBureaus = [...avoid].filter((b) => heldByBureau.has(b));
+  const heldForBureau = {
+    count: heldSensitive,
+    bureaus: protectedBureaus,
+    bureau_names: protectedBureaus.map((b) => BUREAU_FULL_NAME[b] || b),
+    by_bureau: Object.fromEntries([...heldByBureau].map(([b, n]) => [b, n])),
+    message: heldSensitive
+      ? `${heldSensitive} ${plural(heldSensitive, "lender is", "lenders are")} held back `
+        + `because you are protecting ${nameList(protectedBureaus)}.`
+      : null
+  };
+  const heldForBusiness = {
+    /* null = we were not told whether this client has a company, so nothing
+       was held back on that basis and the screen must not claim otherwise. */
+    business_on_file: businessOnFile === true ? true : (noBusiness ? false : null),
+    count: heldNoBusiness,
+    message: heldNoBusiness
+      ? `${heldNoBusiness} business ${plural(heldNoBusiness, "card is", "cards are")} held back `
+        + "because there is no business on file. Business cards are issued to a company."
+      : null
+  };
+
   return {
     matches,
     skipped,
@@ -663,6 +759,9 @@ export function matchLenders({
       match_count: matches.length,
       skipped_count: skipped.length,
       sensitive_bureaus: [...avoid],
+      sensitive_bureau_names: [...avoid].map((b) => BUREAU_FULL_NAME[b] || b),
+      held_for_bureau_protection: heldForBureau,
+      held_for_no_business: heldForBusiness,
       client_state: primaryState,
       client_states: [...states],
       home_state: home,

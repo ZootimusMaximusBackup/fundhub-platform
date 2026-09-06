@@ -147,6 +147,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .fos-r.bill{grid-template-columns:minmax(0,1fr) 90px 96px}
 .fos-r.tx{grid-template-columns:64px minmax(0,1fr) 90px}
 .fos-r.cat{grid-template-columns:minmax(0,1fr) 1fr 74px}
+/* money in / invoiced — the two rows this screen gained when the sale, the
+   payments and the receivable finally landed on it. Same .fos-r frame as the
+   account and bill rows above so all four read as one list style. */
+.fos-r.pay{grid-template-columns:minmax(0,1fr) 120px 112px}
+.fos-r.inv{grid-template-columns:minmax(0,1fr) 116px 108px 108px}
+@media (max-width:560px){
+  #fosWrap .fos-r.pay,#fosWrap .fos-r.inv{grid-template-columns:minmax(0,1fr) 108px}
+}
 .fos-r .nm{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .fos-r .nm em{font-style:normal;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);margin-left:6px}
 .fos-r .num{font-family:var(--mono);font-size:var(--fs-body);text-align:right}
@@ -198,6 +206,32 @@ button,input,select,textarea{font:inherit;color:inherit}
 .fos-out{padding:0 15px 15px;display:flex;flex-direction:column;gap:6px}
 .fos-out .row{display:flex;justify-content:space-between;font-size:var(--fs-body);padding:4px 0;border-bottom:1px solid var(--soft)}
 .fos-out .row b{font-family:var(--mono)}
+
+/* ══ THIS SCREEN'S ONE ESCAPE HATCH — UI-STANDARDS §12.7 ═══════════════════
+   There is exactly one rule here with !important and this is it. Do not add a
+   second; a second is how a screen ends up with six sizes and no hierarchy.
+
+   WHY IT IS NEEDED. .fh-num comes from finance-os.css and is on the brand
+   file's --fs-metric whitelist, so every figure wearing it paints at 32px with
+   an !important the screen cannot out-rank by ordinary means. That is right for
+   ONE number. This page now stacks seven credit rows, a paid-so-far row and
+   three invoice totals — twelve 32px figures in a column, which is not a
+   hierarchy, it is a wall. The hero keeps the metric size (.fos-value, also on
+   that whitelist) and stays the biggest thing on the page, as §1 and §3 want.
+   An id in the selector is what wins: #fosWrap .fh-num is (1,1,0) against the
+   brand rule's (0,2,0), and both are important. */
+#fosWrap .fh-num{font-size:var(--fs-body) !important}
+
+/* client picker — the row that made this screen reachable at all.
+   A <select> sizes itself to its WIDEST option, and an option here is a name
+   plus an email — 458px measured, against a 375px phone. Left alone it pushed
+   the whole page sideways, which UI-STANDARDS §11 forbids outright. Pinned and
+   allowed to shrink; the option text ellipsises inside it instead. */
+.fos-pick-msg{color:var(--gray2)}
+#fosFind{flex:1 1 150px;min-width:0;max-width:240px}
+#fosClient{flex:1 1 200px;min-width:0;max-width:min(100%,380px);text-overflow:ellipsis}
+#fosWrap .fh-empty p + p{margin-top:8px}
+#fosWrap .fh-basis{font-family:var(--mono);letter-spacing:.04em}
 
 /* drawer */
 .fos-scrim{position:fixed;inset:0;background:rgba(10,10,10,.3);z-index:60}
@@ -277,20 +311,35 @@ button,input,select,textarea{font:inherit;color:inherit}
     <div class="topbar">
       <span class="crumb">Finance</span><h1>Finance OS</h1>
       <div class="spacer"></div>
+      <span class="crumb" id="fosWho">no client open</span>
     </div>
 
     <div class="content">
-      <div id="fosWrap">
-        <div class="fos-hero">
-          <div class="fos-hh">
-            <div>
-              <div class="k">Company money</div>
-              <div class="n">—</div>
-              <div class="s">Reading accounts…</div>
-            </div>
-          </div>
-        </div>
+      <!-- THE PICKER. This screen is about ONE client and until now nothing on
+           it could choose one: no list, no search, no dropdown, so opening it
+           from the sidebar always landed on an empty page and stayed there.
+           It sits below the sticky topbar, not inside it, because the fixed
+           session chip shell.js draws (top:12px, right:14px) covers the
+           topbar's own right edge on every screen. -->
+      <div class="fos-controlbar">
+        <label class="caption" for="fosFind">Find a client</label>
+        <input class="pick" id="fosFind" type="search" placeholder="name or email" autocomplete="off">
+        <select class="pick" id="fosClient" aria-label="Client to open">
+          <option value="">Reading the client list…</option>
+        </select>
+        <button class="btn dark" id="fosOpen" type="button" disabled>Open this client</button>
+        <!-- A BUTTON, NOT A LINK, AND THAT IS NOT A STYLE CHOICE. gateLinks() in
+             shell.js appends the client you are working to every link that points
+             at a screen which reads one, and finance-os.html is on that list. As
+             an <a href="finance-os.html"> this control was silently rewritten to
+             finance-os.html?client_id=<the client it was meant to close>, so
+             clicking it reloaded the same file. Measured 2026-09-06. A button is
+             not a link and nothing rewrites it. -->
+        <button class="btn" id="fosClear" type="button" hidden>Close this client</button>
+        <span class="caption fos-pick-msg" id="fosPickMsg"></span>
       </div>
+
+      <div id="fosWrap"></div>
     </div>
 
     <div class="foot"><span class="pulse"></span><span>systems nominal · fundhub.ai</span></div>
@@ -302,13 +351,55 @@ button,input,select,textarea{font:inherit;color:inherit}
 </script>
 <script defer src="data.js"></script>
 <script>
-/* Finance OS — Chris's company money. Personal, business, and investment
-   accounts, plus the recurring charges against those accounts.
-   Wired to GET /api/finance/bank-accounts and GET /api/finance/bills.
-   Those reads still need a client_id (existing contract). No client_id,
-   or no rows, is an honest empty — the Plaid seam is not connected and
-   this screen will not invent a balance. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   FINANCE OS — one client's money, on one page.
+
+   WHAT WAS WRONG WITH THIS FILE (walk findings 22.1 to 22.5, 2026-09-06).
+
+     1. It could not open a client. The page read client_id off the address bar
+        and nothing else — no list, no search, no dropdown, zero clickable
+        elements — so clicking Finance OS in the sidebar always landed on a
+        blank "Not connected" page and there was no way forward from it. The
+        picker at the top of the page is the fix.
+     2. It showed no money in. A paid sale, the deposit against it and anything
+        still invoiced appeared nowhere; the page had bank buckets and
+        subscriptions and that was all.
+     3. It never called its own endpoint. /api/read/finance-os has existed the
+        whole time, named after this screen, returning seven computed figures
+        about the client's revolving credit, and nothing on this page asked for
+        them.
+     4. The headline was a hardcoded em dash that could never fill in — it was
+        literally the character "—" in the markup, under a label ("Company
+        money") that no read on this page can answer.
+
+   WHY THE HEADLINE IS "AVAILABLE CREDIT" AND NOT A CASH TOTAL. There is
+   deliberately no single cash number to print. src/finance/banking-surface.mjs
+   is explicit about it: personal, business and investment money are not one
+   pile, and adding them produces a figure that describes nobody. So the hero is
+   the biggest number this screen can actually stand behind — headroom across
+   the client's open revolving lines, computed server-side by
+   src/finance/os-grid.mjs — and the bank buckets keep their own separate
+   figures below it.
+
+   MONEY IS INTEGER CENTS (src/commissions/money.mjs). Every amount that arrives
+   as dollars is converted to whole cents before it is added to anything, and
+   converted back for display. NULL is not zero anywhere on this page: an
+   unknown figure paints an em dash in the dim weight (.is-unknown), and a total
+   summed over rows with holes in it paints a "+" (.is-partial), because it is a
+   floor and not a total. Those two classes come from finance-os.css and the
+   rule is written down once, there.
+
+   FOUR READS, ALL EXISTING, ALL FAILING ON THEIR OWN.
+     /api/read/finance-os      the seven credit figures
+     /api/dashboard/client     the client's name, payments and invoices
+     /api/finance/bank-accounts the bank buckets
+     /api/finance/bills        the repeating charges
+   A refusal on one of them takes out one panel and says so in that panel's own
+   words. Before this pass a single failed read painted one line over the whole
+   page.
+   ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
+  "use strict";
 
   var $ = function (id) { return document.getElementById(id); };
   var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -323,16 +414,132 @@ button,input,select,textarea{font:inherit;color:inherit}
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return parts.join(".");
   }
-  function money(display) {
-    if (display === null || display === undefined || display === "") {
-      return '<span class="num dash">—</span>';
+
+  /* ── MONEY ────────────────────────────────────────────────────────────────
+     The browser half of src/commissions/money.mjs, and it matches that module
+     on the two things that matter: everything is added as whole cents, and an
+     unknown value stays null all the way to the screen. A float sum of dollar
+     strings is off by a penny on a long enough list, and a null coerced to 0 is
+     a made-up number printed under a real person's name. */
+  function toCents(value) {
+    if (value === null || value === undefined || value === "") return null;
+    var n = Number(String(value).trim());
+    if (!isFinite(n)) return null;
+    // Round half away from zero, exactly as roundHalfUp() does server-side, so
+    // a refund and the payment it reverses cancel to nothing rather than a cent.
+    return n < 0 ? -Math.round(-n * 100) : Math.round(n * 100);
+  }
+  function fromCents(cents) {
+    if (cents === null || cents === undefined) return null;
+    var neg = cents < 0;
+    var abs = Math.abs(cents);
+    var frac = String(abs % 100);
+    while (frac.length < 2) frac = "0" + frac;
+    return (neg ? "-" : "") + Math.floor(abs / 100) + "." + frac;
+  }
+  /* sumKnown — total what exists and COUNT what does not, the same rule
+     sumKnown() applies in src/finance/os-grid.mjs. Nothing usable means the
+     total is null, never 0. */
+  function sumKnown(values) {
+    var total = 0, known = 0, unknown = 0;
+    for (var i = 0; i < values.length; i++) {
+      if (values[i] === null || values[i] === undefined) unknown++;
+      else { total += values[i]; known++; }
     }
+    return { total: known ? total : null, known: known, unknown: unknown };
+  }
+
+  function moneyText(display) {
+    if (display === null || display === undefined || display === "") return null;
     var s = String(display);
     var neg = s.charAt(0) === "-";
     if (neg) s = s.slice(1);
-    return '<span class="num">' + (neg ? "−$" : "$") + esc(group(s)) + '</span>';
+    return (neg ? "−$" : "$") + group(s);
+  }
+  function money(display) {
+    var t = moneyText(display);
+    return t === null
+      ? '<span class="num dash">—</span>'
+      : '<span class="num">' + esc(t) + "</span>";
   }
 
+  /* day — the calendar day the server wrote, never the reader's local one.
+     A due date is stored as a timestamp at UTC midnight, and new Date(iso)
+     read back in any timezone west of UTC lands on the day BEFORE. Measured
+     here on 2026-09-06: an invoice due 2026-09-20 printed "due Sep 19, 2026"
+     in Mountain time. That is a wrong date on a bill, which is exactly the
+     off-by-one api/read/money-map.mjs casts its date columns to text to avoid.
+     Reading the Y-M-D out of the string and formatting it back in UTC cannot
+     shift, whatever timezone the browser is in. */
+  function day(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso == null ? "" : iso));
+    if (!m) return "no date";
+    var d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+    if (isNaN(d.getTime())) return "no date";
+    return d.toLocaleDateString(undefined, {
+      timeZone: "UTC", year: "numeric", month: "short", day: "numeric"
+    });
+  }
+
+  /* Plain words for a stored status. Chris reads these, not the database. */
+  function statusWords(s) {
+    var k = String(s == null ? "" : s).trim().toLowerCase();
+    if (!k) return "not recorded";
+    if (k === "paid" || k === "succeeded" || k === "complete" || k === "completed") return "paid";
+    if (k === "open" || k === "sent" || k === "issued" || k === "pending") return "not paid yet";
+    if (k === "refunded") return "refunded";
+    if (k === "failed" || k === "declined") return "failed";
+    if (k === "void" || k === "voided" || k === "cancelled" || k === "canceled") return "cancelled";
+    return k.replace(/_/g, " ");
+  }
+
+  /* ── the shared row shape, from finance-os.css ────────────────────────────
+     .is-unknown = the server sent null, we do not have this number.
+     .is-partial = we have a number but it was totalled over a set with holes,
+                   so it is a floor. Set from the response, never derived one
+                   from the other. */
+  function fhNum(display, isMoney, partial) {
+    var text = isMoney
+      ? moneyText(display)
+      : (display === null || display === undefined || display === "" ? null : String(display));
+    var cls = "fh-num" + (text === null ? " is-unknown" : "") + (partial ? " is-partial" : "");
+    return '<span class="' + cls + '">' + (text === null ? "—" : esc(text)) + "</span>";
+  }
+  function fhRow(label, basis, figure, partial) {
+    return '<div class="fh-row' + (partial ? " is-partial" : "") + '">' +
+      '<span class="fh-label">' + esc(label) +
+      (basis ? '<span class="fh-basis caption">' + esc(basis) + "</span>" : "") +
+      "</span>" + figure + "</div>";
+  }
+  function panel(title, sub, inner) {
+    return '<div class="fos-panel"><div class="fos-ph"><h2>' + esc(title) + "</h2>" +
+      (sub ? '<span class="sub">' + esc(sub) + "</span>" : "") + "</div>" + inner + "</div>";
+  }
+  function emptyPanel(title, sub, words) {
+    return panel(title, sub, '<div class="fh-empty">' + esc(words) + "</div>");
+  }
+
+  /* basisWords — how many rows a figure counted and how many it could not, in
+     a sentence. The server sends the counts; this only puts them into English.
+
+     `isFloor` IS NOT DECORATION. "So the real figure is higher" is true of a
+     SUM taken over part of a set — leave a card out of a credit-limit total and
+     the total can only go up. It is FALSE of a ratio or a weighted average:
+     leave a card out of utilization and the real number could land either side
+     of the one on screen. Saying "higher" there is a claim the page cannot
+     make, so those rows say what happened instead and say nothing about which
+     way it moves. */
+  function basisWords(b, noun, isFloor) {
+    if (!b || !b.lines) return "";
+    if (!b.unknown) return "counted all " + b.lines + " " + noun;
+    return "counted " + b.counted + " of " + b.lines + " " + noun + " — " + b.unknown +
+      (isFloor ? " did not report it, so the real figure is higher"
+               : " did not report enough to be counted");
+  }
+
+  /* ── the read ─────────────────────────────────────────────────────────────
+     Same classification data.js uses, kept local so the picker still works on a
+     page where data.js has not finished loading. */
   function apiGet(path) {
     var t = "";
     try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
@@ -376,33 +583,295 @@ button,input,select,textarea{font:inherit;color:inherit}
     });
   }
 
+  /* One sentence a person can act on, per failure. Deliberately shorter than
+     data.js explain(), because these land INSIDE a panel where the reader is
+     already looking, not along the bottom edge of the page. */
+  function whyWords(res, thing) {
+    var s = res && res.source;
+    if (s === "unauthorized") return "This account is not allowed to see " + thing + ", or needs to sign in again.";
+    if (s === "nodb") return "We could not read " + thing + " — the database is not answering. Try again in a few minutes.";
+    if (s === "notfound") return "There is no record of " + thing + " for this client.";
+    if (s === "badrequest") return "We could not read " + thing + " — the request was rejected.";
+    if (s === "offline") return "We could not reach the server to read " + thing + ". Check your connection and try again.";
+    return "We could not read " + thing + " just now. Try again in a few minutes.";
+  }
+  function explain(res, what) {
+    if (window.FHData && !(res && res.ok)) { try { FHData.explain(res, what); } catch (e) { /* banner only */ } }
+  }
+
   var rawClient = "";
   try { rawClient = new URLSearchParams(location.search).get("client_id") || ""; } catch (e) { rawClient = ""; }
   var clientId = UUID.test(String(rawClient).trim()) ? String(rawClient).trim() : "";
 
-  var S = { accounts: null, bills: null, details: {}, accountsRes: null, billsRes: null };
+  /* ═══ 1. THE CLIENT PICKER ════════════════════════════════════════════════
+     /api/dashboard/clients is the client book every other screen already reads.
+     Picking a name reloads this page with ?client_id=, which is the same shape
+     every link into this screen already uses and the shape shell.js carries
+     from screen to screen — so the client stays open when you walk away to the
+     control panel and back. */
+  var ALL = [];
 
+  function nameOf(c) {
+    var n = ((c.first_name || "") + " " + (c.last_name || "")).trim();
+    return n || c.email || "Unnamed client";
+  }
+
+  function fillOptions(filter) {
+    var sel = $("fosClient");
+    if (!sel) return;
+    var needle = String(filter || "").trim().toLowerCase();
+    var shown = ALL.filter(function (c) {
+      if (!needle) return true;
+      return (nameOf(c) + " " + (c.email || "")).toLowerCase().indexOf(needle) !== -1;
+    });
+    var html = '<option value="">' +
+      (shown.length ? "Choose a client…" : "No client matches that") + "</option>";
+    html += shown.map(function (c) {
+      return '<option value="' + esc(c.id) + '"' + (c.id === clientId ? " selected" : "") + ">" +
+        esc(nameOf(c)) + (c.email ? " — " + esc(c.email) : "") + "</option>";
+    }).join("");
+    sel.innerHTML = html;
+    syncOpen();
+    var msg = $("fosPickMsg");
+    if (msg) {
+      msg.textContent = needle
+        ? shown.length + " of " + ALL.length + " clients match"
+        : ALL.length + " client" + (ALL.length === 1 ? "" : "s") + " on file";
+    }
+  }
+
+  function syncOpen() {
+    var sel = $("fosClient");
+    var btn = $("fosOpen");
+    if (!sel || !btn) return;
+    var picked = sel.value;
+    btn.disabled = !picked || picked === clientId;
+    btn.textContent = picked && picked === clientId ? "Already open" : "Open this client";
+  }
+
+  function loadClients() {
+    apiGet("/api/dashboard/clients?limit=500").then(function (res) {
+      var sel = $("fosClient");
+      var msg = $("fosPickMsg");
+      if (!res.ok) {
+        if (sel) sel.innerHTML = '<option value="">Client list unavailable</option>';
+        if (msg) msg.textContent = whyWords(res, "the client list");
+        explain(res, "the client list");
+        return;
+      }
+      ALL = ((res.data && res.data.clients) || []).slice().sort(function (a, b) {
+        return nameOf(a).toLowerCase() < nameOf(b).toLowerCase() ? -1 : 1;
+      });
+      if (!ALL.length) {
+        if (sel) sel.innerHTML = '<option value="">No clients on file yet</option>';
+        if (msg) msg.textContent = "There are no clients in this company yet.";
+        return;
+      }
+      fillOptions($("fosFind") ? $("fosFind").value : "");
+    });
+  }
+
+  function wirePicker() {
+    var find = $("fosFind");
+    var sel = $("fosClient");
+    var btn = $("fosOpen");
+    var clear = $("fosClear");
+    if (find) find.addEventListener("input", function () { fillOptions(find.value); });
+    if (sel) sel.addEventListener("change", syncOpen);
+    if (btn) btn.addEventListener("click", function () {
+      var picked = sel && sel.value;
+      if (!picked || !UUID.test(picked)) return;
+      btn.disabled = true;
+      btn.textContent = "Opening…";
+      location.href = "finance-os.html?client_id=" + encodeURIComponent(picked);
+    });
+    if (clear) {
+      clear.hidden = !clientId;
+      clear.addEventListener("click", function () {
+        /* Forget the client as well as leaving the page. shell.js remembers the
+           one you are working in localStorage "fh_client" and puts it back on
+           every link, so without this the very next click would reopen the
+           client you just closed and the button would look broken. */
+        try { localStorage.removeItem("fh_client"); } catch (e) { /* nothing to forget */ }
+        location.href = "finance-os.html";
+      });
+    }
+  }
+
+  /* ═══ 2. THE HERO ═════════════════════════════════════════════════════════ */
+  function heroFor(name, grid, gridRes) {
+    var row = null;
+    if (grid && grid.rows) {
+      for (var i = 0; i < grid.rows.length; i++) {
+        if (grid.rows[i].key === "available") { row = grid.rows[i]; break; }
+      }
+    }
+    var text = row ? moneyText(row.display) : null;
+    var partial = !!(row && row.basis && row.basis.partial) && text !== null;
+    var lines = grid && typeof grid.lines === "number" ? grid.lines : null;
+    var sub;
+    if (!gridRes.ok) {
+      sub = whyWords(gridRes, "this client's credit");
+    } else if (!row) {
+      sub = "There is no credit report on file for this client yet.";
+    } else if (text === null) {
+      sub = "No card on this file reports both a limit and a balance, so there is no figure to give. " +
+        "That is not the same as zero.";
+    } else {
+      sub = "Money still available to draw across " + lines + " open credit card" +
+        (lines === 1 ? "" : "s") + ". This is the credit report only — it is not cash in the bank." +
+        (partial ? " Some cards did not report a limit, so the real figure is higher than this." : "");
+    }
+    return '<div class="fos-hero"><div class="fos-hh"><div>' +
+      '<div class="k caption">' + esc(name || "This client") + " · available credit</div>" +
+      '<div class="n fos-value">' + (text === null ? "—" : esc(text)) + (partial ? "+" : "") + "</div>" +
+      '<div class="s">' + esc(sub) + "</div>" +
+      "</div></div></div>";
+  }
+
+  /* ═══ 3. THE CREDIT GRID — /api/read/finance-os ═══════════════════════════
+     Seven figures, every one of them computed server-side so this screen and
+     any calculator cannot disagree. Nothing here is worked out in the browser;
+     it is formatting and nothing else. */
+  var CREDIT_IS_MONEY = { credit_limit: true, balance: true, available: true };
+
+  /* The cheapest-money row arrives as one sentence — "12.99% · Chase · 5000.00"
+     — and that last part is a dollars string with no $ and no separator,
+     because fromCents() is a storage format, not a display one. Format only
+     that part, and only when the sentence still has exactly three; anything
+     else is printed exactly as it came rather than guessed at. */
+  function cheapestText(display) {
+    var parts = String(display).split(" · ");
+    if (parts.length !== 3) return display;
+    var m = moneyText(parts[2]);
+    return m === null ? display : parts[0] + " · " + parts[1] + " · " + m;
+  }
+
+  function creditPanel(res) {
+    if (!res.ok) return emptyPanel("Credit picture", "credit report", whyWords(res, "this client's credit"));
+    var grid = res.data || {};
+    var rows = grid.rows || [];
+    if (!rows.length) {
+      return emptyPanel("Credit picture", "credit report",
+        "Nothing yet. These figures appear once a credit report is pulled for this client.");
+    }
+    var body = rows.map(function (r) {
+      var display = r.display;
+      if (r.key === "cheapest" && display) display = cheapestText(display);
+      var known = display !== null && display !== undefined && display !== "";
+      var partial = !!(r.basis && r.basis.partial) && known;
+      var isMoney = !!CREDIT_IS_MONEY[r.key];
+      // A count is never a floor and never unknown — we know exactly how many
+      // rows we hold — so it carries no basis line and no "+".
+      var basis = r.unit === "count" ? "" : basisWords(r.basis, "credit cards", isMoney);
+      // The "+" means "there is more than this", which only a partial SUM can
+      // claim. Utilization, the average APR and the cheapest line are not sums,
+      // so they carry the darkened basis line and no plus. See basisWords.
+      return fhRow(r.label, basis, fhNum(display, isMoney, partial && isMoney), partial);
+    }).join("");
+    return panel("Credit picture", "open revolving lines only", body);
+  }
+
+  /* ═══ 4. MONEY IN — /api/dashboard/client ═════════════════════════════════
+     What this client has actually paid us. Until this pass a paid sale showed
+     up nowhere on this screen at all. */
+  function moneyInPanel(res) {
+    if (!res.ok) return emptyPanel("Money in", "payments received", whyWords(res, "this client's payments"));
+    var txs = (res.data && res.data.transactions) || [];
+    var cents = txs.map(function (t) { return toCents(t.amount_paid); });
+    var s = sumKnown(cents);
+    var partial = s.unknown > 0 && s.total !== null;
+
+    var head = fhRow(
+      "Paid so far",
+      txs.length
+        ? (s.unknown
+            ? s.unknown + " of " + txs.length + " payments have no amount recorded, so the real figure is higher"
+            : "across " + txs.length + " payment" + (txs.length === 1 ? "" : "s"))
+        : "",
+      fhNum(fromCents(s.total), true, partial),
+      partial
+    );
+
+    var rows = txs.map(function (t, i) {
+      return '<div class="fos-r pay"><span class="nm">' + esc(t.product_name || "Payment") +
+        "<em>" + esc(day(t.created_at)) + "</em></span>" +
+        '<span class="num muted">' + esc(statusWords(t.status)) + "</span>" +
+        money(fromCents(cents[i])) + "</div>";
+    }).join("");
+
+    /* THE AGREED SUCCESS FEE PERCENT IS NOT PRINTED, ON PURPOSE. It lives on
+       sales.agreed_success_fee_percent (db/migrations/011_sales.sql) and no
+       read endpoint in this app returns it — not this screen's, not the client
+       detail read, not the invoice read. Saying "10%" here would be this page
+       inventing a number about somebody's contract. The absence is the finding;
+       it is written on the screen rather than filled in with a plausible guess. */
+    var feeNote = '<div class="fos-sug">The agreed success fee percent is not shown. ' +
+      "Nothing in the system hands it to this screen yet, and this page will not guess at it. " +
+      "A success fee appears under Invoiced below once it has been billed.</div>";
+
+    return panel("Money in", "payments received",
+      head + (rows || '<div class="fh-empty">No payment has been recorded against this client yet.</div>') + feeNote);
+  }
+
+  /* ═══ 5. INVOICED — the receivable ════════════════════════════════════════ */
+  function invoicedPanel(res) {
+    if (!res.ok) return emptyPanel("Invoiced", "billed and outstanding", whyWords(res, "this client's invoices"));
+    var invs = (res.data && res.data.invoices) || [];
+    if (!invs.length) {
+      return emptyPanel("Invoiced", "billed and outstanding",
+        "Nothing has been invoiced to this client yet.");
+    }
+    var due = sumKnown(invs.map(function (v) { return toCents(v.amount_due); }));
+    var paid = sumKnown(invs.map(function (v) { return toCents(v.amount_paid); }));
+    var open = sumKnown(invs.map(function (v) { return toCents(v.balance_due); }));
+
+    function total(label, s, noun) {
+      var partial = s.unknown > 0 && s.total !== null;
+      return fhRow(label,
+        s.unknown ? s.unknown + " of " + invs.length + " invoices do not record it" : "across " + invs.length + " " + noun,
+        fhNum(fromCents(s.total), true, partial), partial);
+    }
+
+    var rows = invs.map(function (v) {
+      return '<div class="fos-r inv"><span class="nm">' + esc(statusWords(v.status)) +
+        "<em>" + esc(v.due_at ? "due " + day(v.due_at) : "no due date") + "</em></span>" +
+        '<span class="num muted">' + esc(day(v.created_at)) + "</span>" +
+        money(fromCents(toCents(v.amount_due))) +
+        money(fromCents(toCents(v.balance_due))) + "</div>";
+    }).join("");
+
+    var head = '<div class="fos-r inv"><span class="nm muted">status</span>' +
+      '<span class="num muted">billed on</span>' +
+      '<span class="num muted">amount</span>' +
+      '<span class="num muted">still owed</span></div>';
+
+    return panel("Invoiced", "billed and outstanding",
+      total("Billed", due, invs.length === 1 ? "invoice" : "invoices") +
+      total("Paid", paid, invs.length === 1 ? "invoice" : "invoices") +
+      total("Still owed", open, invs.length === 1 ? "invoice" : "invoices") +
+      head + rows);
+  }
+
+  /* ═══ 6. THE BANK BUCKETS AND THE REPEATING CHARGES ═══════════════════════
+     Unchanged in what they show. They now fail on their own instead of taking
+     the whole page down with them. */
   function bucketOf(account, groupKey) {
     if (account && account.account_type === "investment") return "investment";
     if (groupKey === "personal" || groupKey === "business") return groupKey;
     return "unknown";
   }
-
   function collect(surface) {
     var out = { personal: [], business: [], investment: [], unknown: [] };
     var groups = (surface && surface.groups) || [];
     groups.forEach(function (g) {
-      (g.accounts || []).forEach(function (a) {
-        out[bucketOf(a, g.key)].push(a);
-      });
+      (g.accounts || []).forEach(function (a) { out[bucketOf(a, g.key)].push(a); });
     });
     return out;
   }
-
-  function countAccounts(buckets) {
-    return buckets.personal.length + buckets.business.length + buckets.investment.length + buckets.unknown.length;
+  function countAccounts(b) {
+    return b.personal.length + b.business.length + b.investment.length + b.unknown.length;
   }
-
   function anyHandEntered(buckets, details) {
     var all = buckets.personal.concat(buckets.business, buckets.investment, buckets.unknown);
     if (!all.length) return false;
@@ -411,129 +880,133 @@ button,input,select,textarea{font:inherit;color:inherit}
       return !d || d.hand_entered !== false;
     });
   }
-
   function renderAccountRow(a) {
     return '<div class="fos-r acct"><span class="nm">' + esc(a.name || "Unnamed account") +
-      (a.mask ? '<em>····' + esc(a.mask) + '</em>' : "") +
-      (a.closed_at ? ' <span class="fos-pill">closed</span>' : "") + '</span>' +
-      '<span class="num muted">' + esc(a.account_type || "—") + '</span>' +
-      money(a.current_display) + '</div>';
+      (a.mask ? "<em>····" + esc(a.mask) + "</em>" : "") +
+      (a.closed_at ? ' <span class="fos-pill">closed</span>' : "") + "</span>" +
+      '<span class="num muted">' + esc(a.account_type || "—") + "</span>" +
+      money(a.current_display) + "</div>";
   }
-
   function renderBucket(title, rows, empty) {
     var list = (rows || []).map(renderAccountRow).join("");
-    return '<div class="fos-panel"><div class="fos-ph"><h2>' + esc(title) + '</h2>' +
-      '<span class="sub">' + (rows && rows.length ? rows.length + ' account' + (rows.length === 1 ? "" : "s") : "none") + '</span></div>' +
-      (list || '<div class="fh-empty">' + esc(empty) + '</div>') +
-      '</div>';
+    return panel(title, rows && rows.length
+      ? rows.length + " account" + (rows.length === 1 ? "" : "s") : "none",
+      list || '<div class="fh-empty">' + esc(empty) + "</div>");
   }
-
-  function renderSubscriptions(bills) {
-    var rows = (bills || []).map(function (b) {
+  function bankPanels(res) {
+    if (!res.ok) return emptyPanel("Bank accounts", "cash", whyWords(res, "this client's bank accounts"));
+    var data = res.data || {};
+    var buckets = collect(data.surface || null);
+    if (countAccounts(buckets) === 0) {
+      return emptyPanel("Bank accounts", "cash",
+        "No bank account is on file. Nothing here is a made-up balance.");
+    }
+    return renderBucket("Personal", buckets.personal, "No personal account on file.") +
+      renderBucket("Business", buckets.business, "No business account on file.") +
+      renderBucket("Investment", buckets.investment, "No investment account on file.") +
+      (buckets.unknown.length ? renderBucket("Not classified", buckets.unknown, "") : "");
+  }
+  function billsPanel(res) {
+    if (!res.ok) return emptyPanel("Repeating charges", "on these accounts", whyWords(res, "the repeating charges"));
+    var bills = (res.data && res.data.bills) || [];
+    var rows = bills.map(function (b) {
       return '<div class="fos-r bill"><span class="nm">' + esc(b.merchant_display || b.merchant_key || "Unknown charge") +
-        '<em>' + esc(b.cadence || "") + '</em></span>' +
+        "<em>" + esc(b.cadence || "") + "</em></span>" +
         money(b.typical_amount_display) +
         '<span class="num' + (b.next_expected_on ? "" : " dash") + '">' +
         (b.next_expected_on ? esc(b.next_expected_on) : esc(b.next_expected_unknown_reason || "date unknown")) +
-        '</span></div>';
+        "</span></div>";
     }).join("");
-    return '<div class="fos-panel"><div class="fos-ph"><h2>Subscriptions</h2>' +
-      '<span class="sub">charges on these accounts</span></div>' +
-      (rows || '<div class="fh-empty">Recurring charges will show here once connected accounts have history.</div>') +
-      '</div>';
+    return panel("Repeating charges", "on these accounts",
+      rows || '<div class="fh-empty">Repeating charges show here once a connected account has some history.</div>');
   }
 
-  function renderSkeleton() {
-    return '<div class="fos-hero"><div class="fos-hh"><div>' +
-      '<div class="k">Company money</div><div class="n">—</div>' +
-      '<div class="s">Reading accounts…</div></div></div></div>';
-  }
-
-  function renderEmpty(reason) {
-    return '<div class="fos-hero"><div class="fos-hh"><div>' +
-      '<div class="k">Company money</div><div class="n">Not connected</div>' +
-      '<div class="s">' + esc(reason) + '</div></div></div></div>' +
-      '<div class="grid2"><div class="col">' +
-      renderBucket("Personal", [], "Personal accounts will show here once a bank is connected.") +
-      renderBucket("Business", [], "Business accounts will show here once a bank is connected.") +
-      renderBucket("Investment", [], "Investment accounts will show here once a bank is connected.") +
-      '</div><div class="col">' +
-      renderSubscriptions([]) +
-      '</div></div>';
-  }
-
-  function renderError(msg) {
-    return '<div class="fh-empty">Could not read company accounts — ' + esc(msg) + '.</div>';
-  }
-
-  function renderFull(buckets, bills, details) {
-    var typed = anyHandEntered(buckets, details);
-    var note = typed
-      ? "These numbers were typed in. The bank is not linked, so they are not live balances."
-      : "Balances as stored for these accounts.";
-    var extra = buckets.unknown.length
-      ? renderBucket("Not classified", buckets.unknown, "")
-      : "";
-    return '<div class="fos-hero"><div class="fos-hh"><div>' +
-      '<div class="k">Company money</div><div class="n">—</div>' +
-      '<div class="s">' + esc(note) + '</div></div></div></div>' +
-      '<div class="grid2"><div class="col">' +
-      renderBucket("Personal", buckets.personal, "No personal accounts on file.") +
-      renderBucket("Business", buckets.business, "No business accounts on file.") +
-      renderBucket("Investment", buckets.investment, "No investment accounts on file.") +
-      extra +
-      '</div><div class="col">' +
-      renderSubscriptions(bills) +
-      '</div></div>';
-  }
-
+  /* ═══ 7. PAINT ════════════════════════════════════════════════════════════ */
   function paint(html) {
     var wrap = $("fosWrap");
     if (wrap) wrap.innerHTML = html;
   }
 
-  function bootEmpty() {
-    paint(renderEmpty("The bank is not linked. Nothing here is a made-up balance."));
-    FHData.banner("real", "company money — bank not connected", "finance os");
+  function skeleton() {
+    return '<div class="fos-hero"><div class="fos-hh"><div>' +
+      '<div class="k caption">Available credit</div><div class="n fos-value">—</div>' +
+      '<div class="s">Reading this client’s file…</div></div></div></div>';
+  }
+
+  function pickFirst() {
+    paint(
+      '<div class="fos-hero"><div class="fos-hh"><div>' +
+      '<div class="k caption">No client open</div>' +
+      '<div class="n fos-value">Pick a client</div>' +
+      '<div class="s">Finance OS shows one client at a time. Use the picker at the top of the page.</div>' +
+      "</div></div></div>" +
+      panel("What appears once a client is open", "",
+        '<div class="fh-empty">' +
+        "<p>What credit they have, what they owe on it, and what is left to draw.</p>" +
+        "<p>The money they have paid us, and anything still invoiced and unpaid.</p>" +
+        "<p>Their bank accounts, and the charges that repeat against those accounts.</p>" +
+        "</div>")
+    );
+  }
+
+  function notesFor(bankRes) {
+    var out = [];
+    if (bankRes.ok) {
+      var data = bankRes.data || {};
+      var buckets = collect(data.surface || null);
+      if (countAccounts(buckets) && anyHandEntered(buckets, data.details || {})) {
+        out.push('<div class="fos-note warn">Some balances below were typed in by hand. ' +
+          "The bank is not linked, so they are not live figures and somebody has to keep them current.</div>");
+      }
+    }
+    return out.length ? '<div class="fos-notes">' + out.join("") + "</div>" : "";
   }
 
   function loadAll() {
-    paint(renderSkeleton());
+    paint(skeleton());
+    var q = encodeURIComponent(clientId);
     Promise.all([
-      apiGet("/api/finance/bank-accounts?client_id=" + encodeURIComponent(clientId)),
-      apiGet("/api/finance/bills?client_id=" + encodeURIComponent(clientId))
-    ]).then(function (results) {
-      S.accountsRes = results[0];
-      S.billsRes = results[1];
-      if (!results[0].ok) {
-        paint(renderError(results[0].error || "unknown error"));
-        FHData.explain(results[0], "finance os");
-        return;
-      }
-      var data = results[0].data || {};
-      S.accounts = data.surface || null;
-      S.details = data.details || {};
-      S.bills = (results[1].ok && results[1].data && results[1].data.bills) ? results[1].data.bills : [];
-      if (results[1].ok === false) {
-        FHData.explain(results[1], "finance os");
-      }
-      var buckets = collect(S.accounts);
-      if (countAccounts(buckets) === 0) {
-        paint(renderEmpty("No accounts on file. The bank is not linked. Nothing here is a made-up balance."));
-        FHData.banner("real", "company money — no accounts", "finance os");
-        return;
-      }
-      paint(renderFull(buckets, S.bills, S.details));
-      FHData.banner("real", "company money", "finance os");
+      apiGet("/api/read/finance-os?client_id=" + q),
+      apiGet("/api/dashboard/client?id=" + q),
+      apiGet("/api/finance/bank-accounts?client_id=" + q),
+      apiGet("/api/finance/bills?client_id=" + q)
+    ]).then(function (r) {
+      var gridRes = r[0], detailRes = r[1], bankRes = r[2], billRes = r[3];
+
+      explain(gridRes, "this client's credit");
+      explain(detailRes, "this client's payments and invoices");
+      explain(bankRes, "this client's bank accounts");
+      explain(billRes, "the repeating charges");
+
+      var c = detailRes.ok && detailRes.data ? detailRes.data.client : null;
+      /* A CLIENT IS OPEN EVEN WHEN THE READ THAT KNOWS HER NAME FAILED, and the
+         page must not then say "no client open" — that sends the reader back to
+         the picker to fix something that is not broken. Fall back to the start
+         of the id, which is at least true. */
+      var name = c ? ((c.first_name || "") + " " + (c.last_name || "")).trim() || c.email : "";
+      if (!name) name = "client " + clientId.slice(0, 8);
+      var who = $("fosWho");
+      if (who) who.textContent = name;
+
+      paint(
+        heroFor(name, gridRes.ok ? gridRes.data : null, gridRes) +
+        notesFor(bankRes) +
+        '<div class="grid2"><div class="col">' +
+        creditPanel(gridRes) +
+        moneyInPanel(detailRes) +
+        invoicedPanel(detailRes) +
+        bankPanels(bankRes) +
+        '</div><div class="col">' +
+        billsPanel(billRes) +
+        "</div></div>"
+      );
     });
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    if (!window.FHData) return;
-    if (!clientId) {
-      bootEmpty();
-      return;
-    }
+    wirePicker();
+    loadClients();
+    if (!clientId) { pickFirst(); return; }
     loadAll();
   });
 })();

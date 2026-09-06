@@ -469,3 +469,105 @@ test("buildObservation sets mismatch_flag", () => {
   assert.equal(row.mismatch_flag, true);
   assert.equal(row.review_status, "pending");
 });
+
+/* ── Held back, and the screen can say why (walk finding, lane 6, 2026-09-06) ── */
+
+const BOOK = [
+  { id: "a", name: "American Express", lender_table: "OnlineBizCC", bureaus_pulled: "EX",
+    eligible_states: "", active: true, logo_path: "/assets/lenders/american-express.png" },
+  { id: "b", name: "Goldman Sachs", lender_table: "OnlineBizCC", bureaus_pulled: "TU",
+    eligible_states: "", active: true, logo_path: "/assets/lenders/goldman-sachs.png" },
+  { id: "c", name: "Wells Fargo", lender_table: "InBranchBizCC", bureaus_pulled: "",
+    eligible_states: "", active: true, logo_path: null },
+  { id: "d", name: "Navy Federal", lender_table: "PersonalCC", bureaus_pulled: "",
+    eligible_states: "", active: true, logo_path: "/assets/lenders/navy-federal.png" }
+];
+
+const ALL_THREE_PROTECTED = [
+  { selected_bureaus_raw: "EX", case_status: "Blocked" },
+  { selected_bureaus_raw: "EQ", case_status: "Blocked" },
+  { selected_bureaus_raw: "TU", case_status: "Blocked" }
+];
+
+test("matchLenders carries logo_path onto every match", () => {
+  const r = matchLenders({ lenders: BOOK });
+  const amex = r.matches.find((m) => m.name === "American Express");
+  assert.equal(amex.logo_path, "/assets/lenders/american-express.png");
+  const wells = r.matches.find((m) => m.name === "Wells Fargo");
+  assert.equal(wells.logo_path, null, "a bank with no mark stays null, never a made-up path");
+});
+
+test("matchLenders carries product_name, so two cards from one bank read apart", () => {
+  const r = matchLenders({
+    lenders: [
+      { id: "p1", name: "American Express", product_name: "American Express Blue Cash",
+        lender_table: "PersonalCC", active: true },
+      { id: "p2", name: "American Express", product_name: "American Express Delta Gold",
+        lender_table: "PersonalCC", active: true },
+      { id: "p3", name: "SoFi", lender_table: "PersonalLoans", active: true }
+    ]
+  });
+  assert.deepEqual(
+    r.matches.map((m) => m.product_name),
+    ["American Express Blue Cash", "American Express Delta Gold", null]
+  );
+});
+
+test("matchLenders says how many lenders a protected bureau held back", () => {
+  const r = matchLenders({ lenders: BOOK, cases: ALL_THREE_PROTECTED });
+  const held = r.summary.held_for_bureau_protection;
+  assert.equal(held.count, 2, "American Express on Experian, Goldman Sachs on TransUnion");
+  assert.deepEqual(held.by_bureau, { EX: 1, TU: 1 });
+  assert.deepEqual(held.bureau_names, ["Experian", "TransUnion"]);
+  assert.equal(
+    held.message,
+    "2 lenders are held back because you are protecting Experian and TransUnion."
+  );
+  const skip = r.skipped.find((s) => s.name === "American Express");
+  assert.deepEqual(skip.bureau_names, ["Experian"]);
+});
+
+test("held_for_bureau_protection is silent when nothing was held back", () => {
+  const r = matchLenders({ lenders: BOOK });
+  assert.equal(r.summary.held_for_bureau_protection.count, 0);
+  assert.equal(r.summary.held_for_bureau_protection.message, null);
+});
+
+test("one held lender reads as one, not as 1 lenders", () => {
+  const r = matchLenders({
+    lenders: BOOK,
+    cases: [{ selected_bureaus_raw: "EX", case_status: "Blocked" }]
+  });
+  assert.equal(
+    r.summary.held_for_bureau_protection.message,
+    "1 lender is held back because you are protecting Experian."
+  );
+});
+
+test("no business on file holds back every business card and keeps the personal ones", () => {
+  const r = matchLenders({ lenders: BOOK, businessOnFile: false });
+  assert.deepEqual(r.matches.map((m) => m.name), ["Navy Federal"]);
+  assert.equal(r.summary.held_for_no_business.count, 3);
+  assert.equal(r.summary.held_for_no_business.business_on_file, false);
+  assert.equal(
+    r.summary.held_for_no_business.message,
+    "3 business cards are held back because there is no business on file. "
+      + "Business cards are issued to a company."
+  );
+  for (const s of r.skipped) assert.equal(s.reason, "no_business_on_file");
+});
+
+test("a business on file changes nothing", () => {
+  const r = matchLenders({ lenders: BOOK, businessOnFile: true });
+  assert.equal(r.matches.length, 4);
+  assert.equal(r.summary.held_for_no_business.count, 0);
+  assert.equal(r.summary.held_for_no_business.business_on_file, true);
+  assert.equal(r.summary.held_for_no_business.message, null);
+});
+
+test("not knowing whether there is a business blocks nobody, and says so", () => {
+  const r = matchLenders({ lenders: BOOK });
+  assert.equal(r.matches.length, 4);
+  assert.equal(r.summary.held_for_no_business.business_on_file, null);
+  assert.equal(r.summary.held_for_no_business.count, 0);
+});
