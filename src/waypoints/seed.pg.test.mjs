@@ -1,0 +1,449 @@
+// Seeding a real client's checklist, and closing it from a real re-pull.
+//
+// WHY THESE ARE POSTGRES TESTS. Every claim here is a claim about what happens
+// to ROWS: that enrolment creates them, that enrolling twice makes one set and
+// not two, and that a waypoint moves to done only when the data says so. None
+// of that can be proved against a fake db object.
+//
+// THE CREDIT FILES ARE NOT HAND-WRITTEN FIXTURES. They come from
+// scripts/sim/push-credit.mjs — the manual-walkthrough simulator — through the
+// real tier engine, which is the same path src/deliverables/preview.mjs uses. So
+// what is seeded here is what a real tri-merge produces, including the part that
+// caught a design mistake: the same card is reported once by each bureau.
+//
+// Skipped without DATABASE_URL, like every other *.pg.test.mjs (CLAUDE.md §12 —
+// a skipped pg test is not a green one).
+
+import { test, before, after, describe } from "node:test";
+import assert from "node:assert";
+import { db, close } from "../db.mjs";
+import { resolveDefaultOrg } from "../auth/org.mjs";
+import { buildPayload } from "../../scripts/sim/push-credit.mjs";
+import { runTierEngineFromCrsResult } from "../finance/crs-tier.mjs";
+import { seedClientWaypoints } from "./seed.mjs";
+import { evaluateWaypoints } from "./verify.mjs";
+import { listWaypoints } from "./store.mjs";
+import { enrollRepairProgram } from "../repair/enroll.mjs";
+
+const HAVE_DB = !!process.env.DATABASE_URL;
+const EMAIL_LIKE = "waypoint.seed.pg.%@example.com";
+const ENROLLED_AT = new Date("2026-09-06T12:00:00.000Z");
+const ENROLL_EMAIL_LIKE = "waypoint.enrol.pg.%@example.com";
+
+/** A credit file the way a real pull produces one. */
+function creditFile(profile, overrides = {}) {
+  const payload = buildPayload(profile, {
+    email: null,
+    name: "Seed Subject",
+    pulledAt: "2026-09-05T00:00:00.000Z"
+  });
+  const engine = runTierEngineFromCrsResult(payload, {
+    submittedName: "Seed Subject",
+    submittedAddress: "100 Test Ave, Denton, TX 76205"
+  });
+  return { ...engine, ...overrides };
+}
+
+/** Re-pull the same file with one card's balance rewritten on every bureau. */
+function withBalance(file, creditorFragment, newBalance) {
+  const clone = JSON.parse(JSON.stringify(file));
+  for (const list of [clone?.normalized?.tradelines, clone?.tradelines]) {
+    if (!Array.isArray(list)) continue;
+    for (const t of list) {
+      const name = String(t.creditorName || t.creditor || "");
+      if (name.toLowerCase().includes(creditorFragment.toLowerCase())) {
+        if ("currentBalance" in t) t.currentBalance = newBalance;
+        if ("balance" in t) t.balance = newBalance;
+        if ("currentBalanceAmount" in t) t.currentBalanceAmount = newBalance;
+      }
+    }
+  }
+  return clone;
+}
+
+/** Re-pull the same file with a card that was never on it before. */
+function withNewCard(file, creditor) {
+  const clone = JSON.parse(JSON.stringify(file));
+  for (const key of ["tradelines"]) {
+    const list = clone?.normalized?.[key];
+    if (!Array.isArray(list) || !list.length) continue;
+    const model = list.find((t) => String(t.accountType || "").toLowerCase() === "revolving") || list[0];
+    list.push({
+      ...JSON.parse(JSON.stringify(model)),
+      creditorName: creditor,
+      creditor,
+      currentBalance: 900,
+      balance: 900,
+      creditLimit: 2000,
+      effectiveLimit: 2000
+    });
+  }
+  return clone;
+}
+
+describe("nothing seeds a waypoint — until enrolment does", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
+  let org, client;
+
+  async function purge() {
+    const ids = (await db.query(`SELECT id FROM clients WHERE email LIKE $1`, [EMAIL_LIKE]))
+      .rows.map((r) => r.id);
+    if (ids.length) await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
+  }
+
+  async function freshClient(email, customFields = {}) {
+    return (await db.query(
+      `INSERT INTO clients (org_id, first_name, last_name, email, custom_fields)
+       VALUES ($1,'Seed','Subject',$2,$3::jsonb) RETURNING id`,
+      [org, email, JSON.stringify(customFields)]
+    )).rows[0].id;
+  }
+
+  before(async () => {
+    org = await resolveDefaultOrg(db);
+    await purge();
+    client = await freshClient("waypoint.seed.pg.subject@example.com", { state: "TX", city: "Denton" });
+    await db.query(
+      `INSERT INTO crs_results (org_id, client_id, result, outcome_tier)
+       VALUES ($1,$2,$3::jsonb,'repair')`,
+      [org, client, JSON.stringify(creditFile("repair"))]
+    );
+  });
+
+  /* close() is deliberately NOT called here. node:test runs the two describes in
+     this file one after the other against the SAME module-level pool, so
+     closing it now would kill the second suite before its first query. The last
+     describe closes it. */
+  after(async () => {
+    await purge();
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // THE CATALOG
+  // ─────────────────────────────────────────────────────────────────────────
+
+  test("the catalog holds the six client tasks and NOT the ones the owner ruled out", async () => {
+    const rows = (await db.query(
+      `SELECT key, verify_kind, due_offset_days, paid_alternative_price_cents
+         FROM waypoint_definitions WHERE active ORDER BY position`
+    )).rows;
+    assert.deepEqual(rows.map((r) => r.key), [
+      "paydown_revolving_account", "no_new_credit", "personal_loan",
+      "form_llc", "get_ein", "business_checking"
+    ]);
+    // "we dont do DUNS" — Chris, 2026-09-05. Nor net-30 vendors, nor Paydex:
+    // the platform holds no vendor list and no Paydex field, so a waypoint for
+    // any of them could never be closed by anything.
+    const all = (await db.query(`SELECT key, title, detail FROM waypoint_definitions`)).rows;
+    const blob = JSON.stringify(all).toLowerCase();
+    for (const banned of ["duns", "dun &", "bradstreet", "paydex", "uline", "quill", "grainger", "net-30", "net 30"]) {
+      assert.ok(!blob.includes(banned), `the catalog must not mention ${banned}`);
+    }
+    // Owner-set branding: no "credit repair" in client-facing copy.
+    assert.ok(!blob.includes("credit repair"));
+  });
+
+  test("every price in the catalog is NULL — no waypoint pretends to sell something", async () => {
+    const priced = (await db.query(
+      `SELECT key FROM waypoint_definitions WHERE paid_alternative_price_cents IS NOT NULL`
+    )).rows;
+    assert.deepEqual(priced, [], "nothing on the client list is priced today");
+    // And zero can never be stored in its place — the database refuses it.
+    await assert.rejects(
+      db.query(
+        `INSERT INTO waypoint_definitions (key, title, owner_kind, paid_alternative_price_cents)
+         VALUES ('zero_price_probe','Probe','client',0)`
+      ),
+      /waypoint_definitions_paid_price_ck/
+    );
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SEEDING
+  // ─────────────────────────────────────────────────────────────────────────
+
+  test("a real client gets a checklist, one row per card and not one per bureau row", async () => {
+    const before = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.deepEqual(before, [], "this client has no checklist before anything seeds one");
+
+    const out = await seedClientWaypoints(db, { orgId: org, clientId: client, now: ENROLLED_AT });
+    assert.equal(out.ok, true);
+    assert.equal(out.creditFile, "crs_result");
+
+    const rows = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.deepEqual(rows.map((r) => r.key), [
+      "paydown_capital_one_platinum",
+      "paydown_credit_one_bank",
+      "paydown_synchrony_bank_care_credit",
+      "no_new_credit",
+      "personal_loan",
+      "form_llc",
+      "get_ein",
+      "business_checking"
+    ]);
+    // The repair profile reports those three cards EIGHT times across three
+    // bureaus. Three waypoints, not eight.
+    assert.equal(rows.filter((r) => r.verify_kind === "paydown").length, 3);
+    for (const r of rows) assert.equal(r.owner_kind, "client");
+  });
+
+  test("the paydown says a real creditor and a real number, in integer cents", async () => {
+    const rows = await listWaypoints(db, { orgId: org, clientId: client });
+    const w = rows.find((r) => r.key === "paydown_capital_one_platinum");
+    assert.equal(w.title, "Pay Capital One Platinum down to $300");
+    assert.equal(w.params.target_cents, 30000);
+    assert.equal(w.params.balance_at_seed_cents, 287000);
+    assert.equal(w.params.limit_at_seed_cents, 300000);
+    assert.equal(Number.isInteger(w.params.target_cents), true);
+  });
+
+  test("the state the client lives in reaches the LLC task", async () => {
+    const rows = await listWaypoints(db, { orgId: org, clientId: client });
+    const llc = rows.find((r) => r.key === "form_llc");
+    assert.match(llc.detail, /Secretary of State in TX\./);
+  });
+
+  test("what CAN be checked is marked so, and what cannot is NULL — not guessed at", async () => {
+    const rows = await listWaypoints(db, { orgId: org, clientId: client });
+    const kinds = Object.fromEntries(rows.map((r) => [r.key, r.verify_kind]));
+    assert.equal(kinds.paydown_capital_one_platinum, "paydown");
+    assert.equal(kinds.no_new_credit, "no_new_credit");
+    // Nothing in this platform can see an IRS record, a bank account, a
+    // Secretary of State filing, or a loan the client took elsewhere.
+    assert.equal(kinds.get_ein, null);
+    assert.equal(kinds.business_checking, null);
+    assert.equal(kinds.form_llc, null);
+    assert.equal(kinds.personal_loan, null);
+  });
+
+  test("a task nobody set a date for is NOT overdue, ever", async () => {
+    const rows = await listWaypoints(db, {
+      orgId: org, clientId: client, now: new Date("2030-01-01T00:00:00.000Z")
+    });
+    const ein = rows.find((r) => r.key === "get_ein");
+    assert.equal(ein.due_at, null);
+    assert.equal(ein.overdue, false, "no deadline means never overdue, four years later included");
+    const paydown = rows.find((r) => r.key === "paydown_capital_one_platinum");
+    assert.equal(paydown.due_at.toISOString(), "2026-10-06T12:00:00.000Z");
+    assert.equal(paydown.overdue, true);
+  });
+
+  test("SEEDING TWICE MAKES ONE SET", async () => {
+    const first = await listWaypoints(db, { orgId: org, clientId: client });
+    await seedClientWaypoints(db, { orgId: org, clientId: client, now: ENROLLED_AT });
+    const second = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.equal(second.length, first.length);
+    assert.deepEqual(second.map((r) => r.key), first.map((r) => r.key));
+    assert.deepEqual(second.map((r) => r.id), first.map((r) => r.id), "the same rows, not new ones");
+  });
+
+  test("re-seeding after the balances moved updates the same row and keeps the deadline", async () => {
+    const before = await listWaypoints(db, { orgId: org, clientId: client });
+    const beforeRow = before.find((r) => r.key === "paydown_capital_one_platinum");
+
+    const cheaper = withBalance(creditFile("repair"), "Capital One Platinum", 1200);
+    await seedClientWaypoints(db, {
+      orgId: org, clientId: client, crsResult: cheaper,
+      now: new Date("2026-12-01T00:00:00.000Z")
+    });
+
+    const after = await listWaypoints(db, { orgId: org, clientId: client });
+    const afterRow = after.find((r) => r.key === "paydown_capital_one_platinum");
+    assert.equal(after.length, before.length, "still one set");
+    assert.equal(afterRow.id, beforeRow.id, "the same row");
+    assert.equal(afterRow.params.balance_at_seed_cents, 120000, "with the fresh balance");
+    assert.equal(
+      afterRow.due_at.toISOString(), beforeRow.due_at.toISOString(),
+      "and the deadline the client was originally given, not a new one"
+    );
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CLOSING FROM THE DATA
+  // ─────────────────────────────────────────────────────────────────────────
+
+  test("a paydown CLOSES when a re-pull shows the balance under the target", async () => {
+    const paid = withBalance(creditFile("repair"), "Credit One Bank", 100);
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: paid, now: new Date("2026-10-01T00:00:00.000Z")
+    });
+    assert.ok(out.completed.some((c) => c.key === "paydown_credit_one_bank"), JSON.stringify(out));
+
+    const rows = await listWaypoints(db, { orgId: org, clientId: client });
+    const w = rows.find((r) => r.key === "paydown_credit_one_bank");
+    assert.equal(w.state, "done");
+    assert.equal(w.completed_at.toISOString(), "2026-10-01T00:00:00.000Z");
+  });
+
+  test("a paydown STAYS OPEN when the balance did not move", async () => {
+    const rows = await listWaypoints(db, { orgId: org, clientId: client });
+    const w = rows.find((r) => r.key === "paydown_synchrony_bank_care_credit");
+    assert.equal(w.state, "not_started", "untouched by the run that closed the other card");
+
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: creditFile("repair"), now: new Date("2026-10-01T00:00:00.000Z")
+    });
+    assert.equal(
+      out.unchanged.find((u) => u.key === "paydown_synchrony_bank_care_credit").reason,
+      "above_target"
+    );
+    const after = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.equal(after.find((r) => r.key === "paydown_synchrony_bank_care_credit").state, "not_started");
+  });
+
+  test("a new card on a later pull BLOCKS the do-not-open-credit row, and never closes it", async () => {
+    const before = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.equal(before.find((r) => r.key === "no_new_credit").state, "not_started");
+
+    const clean = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: creditFile("repair"), now: new Date("2026-10-05T00:00:00.000Z")
+    });
+    assert.equal(
+      clean.unchanged.find((u) => u.key === "no_new_credit").reason,
+      "no_new_accounts_seen",
+      "keeping the rule is never proof, so the row is not completed"
+    );
+
+    const opened = withNewCard(creditFile("repair"), "Brand New Bank Card");
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: opened, now: new Date("2026-10-06T00:00:00.000Z")
+    });
+    assert.ok(out.blocked.some((b) => b.key === "no_new_credit"), JSON.stringify(out));
+
+    const rows = await listWaypoints(db, { orgId: org, clientId: client });
+    const w = rows.find((r) => r.key === "no_new_credit");
+    assert.equal(w.state, "blocked");
+    assert.match(w.state_reason, /Brand New Bank Card/);
+    assert.equal(w.completed_at, null);
+  });
+
+  /* ORDER MATTERS HERE, AND THIS IS THE REASON. The next test re-reads this
+     client against a DIFFERENT simulator profile, which carries cards the
+     enrolment file never had — so it legitimately trips the do-not-open-credit
+     check and leaves that row blocked. This test has to run while the row is
+     still untouched. */
+  test("A CARD MISSING FROM THE NEW FILE IS UNKNOWN, AND UNKNOWN IS NOT PAID OFF", async () => {
+    // The trial profile has no Capital One Platinum on it at all.
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: creditFile("trial"), now: new Date("2026-10-02T00:00:00.000Z")
+    });
+    assert.equal(
+      out.unchanged.find((u) => u.key === "paydown_capital_one_platinum").reason,
+      "account_not_on_file"
+    );
+    assert.ok(!out.completed.some((c) => c.key === "paydown_capital_one_platinum"));
+    const rows = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.equal(rows.find((r) => r.key === "paydown_capital_one_platinum").state, "not_started");
+  });
+
+  test("THE EIN STAYS OPEN, BECAUSE NOTHING IN THIS PLATFORM CAN SEE ONE", async () => {
+    await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: creditFile("repair"), now: new Date("2026-10-03T00:00:00.000Z")
+    });
+    const rows = await listWaypoints(db, { orgId: org, clientId: client });
+    for (const key of ["get_ein", "business_checking", "form_llc", "personal_loan"]) {
+      const w = rows.find((r) => r.key === key);
+      assert.equal(w.state, "not_started", `${key} must not be closed by a credit pull`);
+      assert.equal(w.completed_at, null);
+    }
+  });
+
+  test("no credit file means NO verdicts at all — nothing is closed and nothing is blocked", async () => {
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: null, now: new Date("2026-10-04T00:00:00.000Z")
+    });
+    assert.equal(out.creditFile, "none");
+    assert.deepEqual(out.completed, []);
+    assert.deepEqual(out.blocked, []);
+    assert.ok(out.unchanged.every((u) => u.reason === "no_credit_file"));
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // THE CLIENT WITH NO CREDIT FILE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  test("a client with no pull still gets the tasks that need no file, and no invented paydown", async () => {
+    const bare = await freshClient("waypoint.seed.pg.nofile@example.com", {});
+    const out = await seedClientWaypoints(db, { orgId: org, clientId: bare, now: ENROLLED_AT });
+    assert.equal(out.creditFile, "none");
+    const rows = await listWaypoints(db, { orgId: org, clientId: bare });
+    assert.deepEqual(rows.map((r) => r.key), [
+      "no_new_credit", "personal_loan", "form_llc", "get_ein", "business_checking"
+    ]);
+    // No state on file: the sentence still reads.
+    assert.match(rows.find((r) => r.key === "form_llc").detail, /Secretary of State\. Once/);
+    // And the baseline is NULL, not [], so a later pull cannot report every
+    // card this client has ever owned as newly opened.
+    assert.equal(rows.find((r) => r.key === "no_new_credit").params.accounts_at_seed, null);
+  });
+
+  test("with a NULL baseline the do-not-open-credit check refuses to conclude anything", async () => {
+    const bare = (await db.query(
+      `SELECT id FROM clients WHERE email = $1`, ["waypoint.seed.pg.nofile@example.com"]
+    )).rows[0].id;
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: bare, crsResult: creditFile("repair"), now: new Date("2026-10-07T00:00:00.000Z")
+    });
+    assert.equal(out.unchanged.find((u) => u.key === "no_new_credit").reason, "no_baseline");
+    assert.deepEqual(out.blocked, []);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// THE WIRE. Not "the seeder works if you call it" — "enrolling a client calls
+// it". This is the whole point of the lane and it is asserted against the real
+// enrolment function, not a stub.
+// ───────────────────────────────────────────────────────────────────────────
+describe("enrolling a client builds their checklist", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
+  let org, client;
+
+  /* enrollRepairProgram writes an events row, and events.client_id has no
+     ON DELETE CASCADE, so the client cannot be removed until its events are. */
+  async function purge() {
+    const ids = (await db.query(`SELECT id FROM clients WHERE email LIKE $1`, [ENROLL_EMAIL_LIKE]))
+      .rows.map((r) => r.id);
+    if (!ids.length) return;
+    await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [ids]);
+    await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
+  }
+
+  before(async () => {
+    org = await resolveDefaultOrg(db);
+    await purge();
+    client = (await db.query(
+      `INSERT INTO clients (org_id, first_name, last_name, email, custom_fields)
+       VALUES ($1,'Enrol','Subject',$2,$3::jsonb) RETURNING id`,
+      [org, "waypoint.enrol.pg.subject@example.com", JSON.stringify({ state: "TX" })]
+    )).rows[0].id;
+    await db.query(
+      `INSERT INTO crs_results (org_id, client_id, result, outcome_tier)
+       VALUES ($1,$2,$3::jsonb,'repair')`,
+      [org, client, JSON.stringify(creditFile("repair"))]
+    );
+  });
+
+  after(async () => {
+    await purge();
+    await close();
+  });
+
+  test("enrolling writes the checklist, and enrolling AGAIN leaves one set", async () => {
+    const before = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.deepEqual(before, [], "empty before enrolment — nothing else in the product writes this table");
+
+    const first = await enrollRepairProgram(db, {
+      orgId: org, clientId: client, program: "full", priceTotal: 1000, amountPaid: 0
+    });
+    assert.equal(first.ok, true);
+    assert.equal(first.checklist.ok, true, JSON.stringify(first.checklist));
+
+    const seeded = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.equal(seeded.length, 8);
+    assert.equal(seeded.filter((r) => r.verify_kind === "paydown").length, 3);
+
+    await enrollRepairProgram(db, {
+      orgId: org, clientId: client, program: "full", priceTotal: 1000, amountPaid: 0
+    });
+    const again = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.deepEqual(again.map((r) => r.id), seeded.map((r) => r.id), "the same rows, not a second set");
+  });
+});
