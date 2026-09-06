@@ -169,6 +169,7 @@ These are content and config. Nothing below is a task Cursor can complete alone.
 | 1 | Four job descriptions (closer, setter, sales coordinator, CSM) | `reviseBrief()` in `src/hiring/owner.mjs` — the ONLY write path for `role_brief` |
 | 2 | Application questions — none exist anywhere in this repo | would feed `candidate_applications.answers` |
 | 3 | A Zoho Recruit account, then `ZOHO_CLIENT_ID` / `ZOHO_CLIENT_SECRET` | Netlify env, `--secret` |
+| 3a | **Zoho support ticket — the phone number on file is decommissioned.** Signup and account recovery both verify by SMS, so this blocks #3 and is worth opening before anything else. Give Zoho a working number. | zoho.com/recruit → Support |
 | 4 | Scorecard targets and pay figures | `hiring_roles.scorecard` / `.comp` |
 | 5 | Named hiring managers | `hiring_roles.hiring_manager_staff_id` |
 | 6 | Take the careers page off `noindex` and link it | `public/careers.html` head |
