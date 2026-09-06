@@ -52,10 +52,26 @@ describe("CSM queue: who to call, what they owe, what they own",
     [org, clientId, `${NONCE} ${title}`, role, `${NONCE}-wf`]
   );
 
+  /* INVOICES REFUSE TO BE DELETED, on purpose: trg_invoices_no_delete raises
+     "invoices are not deleted — void or write off instead" (031). That guard is
+     right and this test is not an exception to it, so cleanup lifts it for the
+     one statement and puts it straight back, the same way
+     src/funding/success-fee.pg.test.mjs does. The .catch swallows the case
+     where the connecting role may not ALTER the table — the rows are
+     NONCE-marked in a scratch database, so leaving them is harmless and
+     failing the run over cleanup is not.
+
+     The invoices → clients foreign key deliberately does NOT cascade, so the
+     invoice has to go before its client or the client delete fails. */
   async function wipe() {
     await db.query(`DELETE FROM tasks WHERE org_id = $1 AND source_workflow = $2`, [org, `${NONCE}-wf`]);
-    await db.query(`DELETE FROM invoices WHERE org_id = $1 AND client_id IN
-                      (SELECT id FROM clients WHERE org_id = $1 AND email LIKE $2)`, [org, `${NONCE}%`]);
+    await db.query(`ALTER TABLE invoices DISABLE TRIGGER trg_invoices_no_delete`).catch(() => {});
+    try {
+      await db.query(`DELETE FROM invoices WHERE org_id = $1 AND client_id IN
+                        (SELECT id FROM clients WHERE org_id = $1 AND email LIKE $2)`, [org, `${NONCE}%`]);
+    } finally {
+      await db.query(`ALTER TABLE invoices ENABLE TRIGGER trg_invoices_no_delete`).catch(() => {});
+    }
     await db.query(`DELETE FROM clients WHERE org_id = $1 AND email LIKE $2`, [org, `${NONCE}%`]);
   }
 
