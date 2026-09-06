@@ -188,7 +188,21 @@ async function loadExistingRoundLetters(db, { orgId, clientId, round }) {
        JOIN dispute_cases dc ON dc.id = dl.case_id
       WHERE dl.org_id = $1::uuid AND dl.client_id = $2::uuid
         AND dc.round = $3
-        AND dl.status IN ('generated', 'ready', 'queued', 'sent')
+        -- 'sending' and 'delivered' belong here as much as 'sent' does. A row in
+        -- either state already holds the one send claim that
+        -- (org, case, bureau, round, target) gets — uq_dispute_letters_one_send_claim,
+        -- db/migrations/333 — so leaving them out did not re-stage the round, it
+        -- wrote a SECOND letter row that the index then refused at send time.
+        -- Seeing them means the re-stage reports already_generated and hands
+        -- back the existing letter, which is the row a human clears if its send
+        -- claim is stuck (clearStuckSendClaim, ./send.mjs).
+        --
+        -- RESTORED 2026-09-06. This is origin/main's fix, and the merge that
+        -- brought PR 339 across dropped it: 339 was branched before it landed
+        -- and the conflict in this file was resolved to 339's side wholesale.
+        -- src/repair/analyze-restage-claim.pg.test.mjs is the test that caught
+        -- it — two failures that were green on main.
+        AND dl.status IN ('generated', 'ready', 'queued', 'sending', 'sent', 'delivered')
       ORDER BY dl.bureau`,
     [orgId, clientId, round]
   );
@@ -286,7 +300,18 @@ async function loadIdentity(db, { orgId, clientId }) {
  * The candidate paths are tried in order and the first module that exports a
  * `verifiedIdentity` function wins.
  */
+/* MEASURED 2026-09-06, BY RUNNING IT: the identity lane landed at
+   `src/identity/verified.mjs`, and that file was on none of the three names
+   guessed here. All three `import()` calls threw ERR_MODULE_NOT_FOUND, the
+   resolver answered null, and every floor name and address claim was therefore
+   dropped on EVERY real client — the exact behaviour the comment above
+   describes as the not-yet-built case, arrived at while the module was in fact
+   built and exporting `verifiedIdentity` with the signature this file wants.
+   The real path leads the list now. The three guesses stay behind it: they cost
+   nothing, and removing them would be a second change to a list whose whole job
+   is to tolerate a file not being where it was expected. */
 const IDENTITY_MODULES = Object.freeze([
+  "../identity/verified.mjs",
   "../identity/index.mjs",
   "../identity/verified-identity.mjs",
   "../identity/identity.mjs"
@@ -357,6 +382,24 @@ export async function loadVerifiedIdentity(db, { orgId, clientId }, override = n
 /**
  * An address object flattened to the one line a letter prints, or null.
  * A plain string comes back unchanged.
+ *
+ * MEASURED 2026-09-06, BY RUNNING IT — the `formatted` fallback at the bottom
+ * is not decoration. ../identity/verified.mjs `normalizeVerifiedAddress` accepts
+ * the address the doc-check agent read off a utility bill as ONE STRING, which
+ * is the ordinary thing for a model to answer, and stores it as
+ * `{ line1: null, line2: null, city: null, state: null, zip: null, formatted:
+ * "412 Pecan St, Austin, TX 78701" }`. Every component this function reads is
+ * null in that row, so it returned null, so the floor made NO address claim —
+ * for a client whose address really had been verified off a document.
+ *
+ * The error ran in the safe direction: a known address treated as unknown makes
+ * no claim rather than a wrong one. It is still the client not getting the
+ * letter they paid for, and it is silent.
+ *
+ * The components are still preferred, because they give the comma-separated
+ * form the letters have always printed. `formatted` is read only when they are
+ * all absent — never merged with them, so a half-filled row cannot produce a
+ * line that is part one address and part another.
  */
 export function verifiedAddressLabel(address) {
   if (address == null) return null;
@@ -369,7 +412,10 @@ export function verifiedAddressLabel(address) {
     address.state ?? address.address_state,
     address.postal ?? address.zip ?? address.address_zip
   ].map((p) => (p == null ? "" : String(p).trim())).filter(Boolean).join(", ");
-  return [street, tail].filter(Boolean).join(", ") || null;
+  const composed = [street, tail].filter(Boolean).join(", ");
+  if (composed) return composed;
+  const formatted = address.formatted ?? address.full ?? address.text;
+  return formatted == null ? null : (String(formatted).trim() || null);
 }
 
 async function openCasesByBureau(db, { orgId, clientId, round }) {
@@ -604,7 +650,29 @@ export async function analyzeAndGenerate(db, {
     )
     : violationsByBureauFromMergedCrs(result, consumerContext);
   const bureaus = BUREAU_CODES.filter((code) => (byBureau[code] || []).length > 0);
-  if (bureaus.length === 0) return { ok: false, reason: "no_violations" };
+  if (bureaus.length === 0) {
+    /* WHY THIS IS NOT "no_violations". Two owner rules meet here and both hold.
+       The FLOOR says every repair-path client gets personal-information cleanup
+       on every round, clean file or not. The other rule says a letter may not
+       assert a name or an address that no document has proved — that is what
+       loadVerifiedIdentity above enforces, and it is the rule that stops a
+       mailed dispute from stating a fact about a real person that nobody
+       checked.
+
+       A repair-path client whose government ID has NOT been read yet satisfies
+       the second rule by making no claim, and so produces no letter at all. The
+       floor has not been abandoned: the input it needs is missing. Answering
+       "the credit file looks clean, nothing to dispute" would tell the Repair
+       desk the file is fine when what is actually missing is the identity read,
+       and a person acting on that answer would close the case.
+
+       So it says what is really wrong. The refusal clears the moment the
+       doc-check agent accepts an ID (../identity/verified.mjs). */
+    if (onRepairPath && !verifiedName && !verifiedAddress) {
+      return { ok: false, reason: "identity_not_verified", round };
+    }
+    return { ok: false, reason: "no_violations" };
+  }
 
   const stored = [];
   const skipped = [];

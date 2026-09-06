@@ -40,6 +40,7 @@ flowchart TD
     G -->|Yes| I[Metro 2 findings<br/>+ a claim per bad account<br/>+ THE FLOOR]
     H --> J{Anything at all to say?}
     I --> J
+    J -->|No, and the customer's ID<br/>has not been read yet| J2[Stop: identity_not_verified<br/>read the ID, then try again]
     J -->|No| J1[Stop: no_violations]
     J -->|Yes| K[One letter per bureau, stored<br/>as generated. Nothing is mailed.]
 ```
@@ -53,12 +54,14 @@ last stamped on their record.
 
 ```mermaid
 flowchart TD
-    S[The newest credit pull] --> N{How many different names<br/>does the file report?}
+    S[The newest credit pull] --> V0{Has a government ID been<br/>read and accepted for<br/>this customer?}
+    V0 -->|No| V1[NO name claim at all.<br/>A letter may not say<br/>'my name is X' on the strength<br/>of a typed CRM field.]
+    V0 -->|Yes| N{How many different names<br/>does the file report?}
     N -->|Two or more| N2[PI-NAME-CONSOLIDATE<br/>lists the names that really are<br/>on the file, keeps one, asks for<br/>the rest to be deleted]
     N -->|Exactly one| N1[PI-NAME-CONFIRM<br/>quotes that one name and asks<br/>the bureau to hold the file to it]
     N -->|None visible| N0[PI-NAME-CONFIRM<br/>says nothing about what the file<br/>holds, names the one name to use]
 
-    S --> A0{Is the customer's OWN home<br/>address on record?}
+    S --> A0{Has a proof of address been<br/>read and accepted?}
     A0 -->|No| A1[NO address claim at all.<br/>Unknown stays unknown — the<br/>company address is never<br/>used as the home address.]
     A0 -->|Yes| D{How many different addresses<br/>does the file report?}
     D -->|Two or more| D2[PI-ADDRESS-CONSOLIDATE]
@@ -83,8 +86,16 @@ customer's name. So:
   files routinely carry a middle initial that the customer record does not, and
   treating that difference as a duplicate would put a false statement in a mailed
   letter and demand deletion of the customer's own correctly reported name.
-* The name to keep comes from the customer's own record. That is the customer
-  speaking about themselves. It is never used to decide what the bureau reported.
+* **The name and the address the letter quotes come off the customer's uploaded
+  government ID and proof of address, and nowhere else.** An agent reads both
+  images; what it copies out is stored by `src/identity/verified.mjs` and that is
+  what the letters quote. `clients.first_name` is what somebody typed during a
+  sales call, and `pii_identity.addresses[0]` is whichever address happens to
+  sort first. Neither is evidence, and a letter mailed to a credit bureau in a
+  real person's name may not assert a name or an address on the strength of a
+  typed field. Either may be missing, and missing means UNKNOWN: no claim.
+* Once read, the verified name is the name to KEEP — the customer speaking about
+  themselves. It is never used to decide what the bureau reported.
 * The inquiry claim never says the customer failed to authorise the inquiry.
   Nothing in a credit report carries that fact, so the letter asks for the
   permissible purpose instead of asserting there was none.
@@ -100,6 +111,16 @@ customer's name. So:
   confirmation instead of telling the bureau the file is inaccurate. A letter
   with even one real dispute in it keeps the dispute wording, because then the
   dispute really is there.
+* **A letter carrying BOTH kinds says so, per sentence.** The ordinary real
+  customer has genuine problems on the file AND correct personal information, so
+  one envelope holds both. Every sentence that demands deletion, or calls the
+  contents inaccurate, or asks for a method of verification, is narrowed to *the
+  disputed items*, and the confirmations are asked for separately in the same
+  paragraph. Nothing in the letter asks a bureau to delete the customer's own
+  correct name.
+* **A repair customer whose ID has not been read yet is refused by name.** The
+  answer is `identity_not_verified`, not "the credit file looks clean". The file
+  is not the problem; the missing document is, and the desk is told which one.
 
 ### Rounds
 
@@ -114,6 +135,9 @@ bureau ladder, so both are exempt.
 | What | File |
 |---|---|
 | The floor's claims and the rule that they never invent a variant | `src/metro2/diy/personal-info-floor.mjs` |
+| The one name and the one address a document actually proved | `src/identity/verified.mjs` |
+| Which sentences a confirmation-only or mixed letter is allowed to use | `src/metro2/letters/generate.mjs` |
+| The sweep that fails if any letter says what its claims do not support | `src/metro2/letters/letter-honesty.test.mjs` |
 | Claims for bad accounts (collections, charge-offs, lates) | `src/metro2/diy/derogatory.mjs` |
 | The Metro 2 engine's own findings | `src/metro2/diy/from-crs.mjs` |
 | Where the three are merged, the repair-path gate, the re-pull gate | `src/repair/analyze.mjs` |

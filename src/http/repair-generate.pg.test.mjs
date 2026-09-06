@@ -154,17 +154,38 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
   /* A client with a real name and a real postal address. Both come from the
      fixture, never from the module under test — the whole point is that a name
      is never fabricated when one is absent. */
-  async function buildClient({ result = null, withAddress = true, name = ["Real", "Person"], authorized = true, agreement } = {}) {
+  /* `verified` is the state of the DOC-CHECK read, and it is a separate axis
+     from `withAddress`. src/identity/verified.mjs holds what a government ID and
+     a proof of address actually proved, and src/repair/analyze.mjs quotes ONLY
+     that — never clients.first_name, never pii_identity.addresses[0]. So a
+     client can have an address typed into the CRM and still have no address a
+     letter may state.
+       "both"  ID and proof of address both accepted — the ordinary repair client
+       "name"  ID accepted, no proof of address yet
+       "none"  nothing read yet, which is a refusal and not a clean file */
+  async function buildClient({
+    result = null, withAddress = true, name = ["Real", "Person"],
+    authorized = true, agreement, verified = "both"
+  } = {}) {
     clientId = (await db.query(
       `INSERT INTO clients (org_id, email, first_name, last_name)
        VALUES ($1,$2,$3,$4) RETURNING id`, [orgId, EMAIL, name[0], name[1]]
     )).rows[0].id;
-    if (withAddress) {
+    const verifiedName = verified === "none" ? null : `${name[0]} ${name[1]}`;
+    const verifiedAddress = verified === "both"
+      ? JSON.stringify({ line1: "412 Pecan St", city: "Austin", state: "TX", zip: "78701" })
+      : null;
+    if (withAddress || verifiedName || verifiedAddress) {
       await db.query(
-        `INSERT INTO pii_identity (org_id, client_id, addresses) VALUES ($1,$2,$3::jsonb)`,
-        [orgId, clientId, JSON.stringify([
+        `INSERT INTO pii_identity
+           (org_id, client_id, addresses, verified_legal_name, verified_address, verified_by, verified_at)
+         VALUES ($1,$2,$3::jsonb,$4::text,$5::jsonb,$6::text,
+                 CASE WHEN $4::text IS NULL AND $5::jsonb IS NULL THEN NULL ELSE now() END)`,
+        [orgId, clientId, JSON.stringify(withAddress ? [
           { address_line1: "412 Pecan St", address_city: "Austin", address_state: "TX", address_zip: "78701" }
-        ])]
+        ] : []),
+        verifiedName, verifiedAddress,
+        verifiedName || verifiedAddress ? "doc-check-v1" : null]
       );
     }
     if (authorized) {
@@ -361,7 +382,11 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     await wipeClient();
     await buildClient({
       result: { bureausPulled: ["EQ"], bureaus: { EQ: cleanReport() } },
-      withAddress: false
+      withAddress: false,
+      /* ID accepted, proof of address not. This is the condition that matters:
+         an address typed into the CRM is not an address a letter may state, so
+         "no address on record" means no VERIFIED address. */
+      verified: "name"
     });
 
     const r = await post({ client_id: clientId });
@@ -380,6 +405,31 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       "a letter may not state an address the client has never given us");
   });
 
+  /* THE STATE THE VERIFIED-IDENTITY RULE CREATED, AND WHAT IT MUST SAY.
+     A repair client whose government ID has not been read yet gets no letter,
+     because a mailed dispute may not name a person on the strength of a field
+     a closer typed. That is correct. What it may NOT do is answer
+     "the credit file looks clean" — the file is not the problem, and a
+     Specialist reading that would close the case. */
+  test("a repair client whose ID has not been read is refused by NAME, not called clean", async () => {
+    await wipeClient();
+    await buildClient({
+      result: { bureausPulled: ["EQ"], bureaus: { EQ: cleanReport() } },
+      verified: "none"
+    });
+
+    const r = await post({ client_id: clientId });
+
+    assert.equal(r.code, 200);
+    assert.equal(r.body.ok, false, JSON.stringify(r.body));
+    assert.equal(r.body.reason, "identity_not_verified", JSON.stringify(r.body));
+    assert.match(r.body.message, /ID has not been read/i,
+      "the desk is told what is missing, not that the file is clean");
+    assert.equal(await countRows("dispute_letters"), 0);
+    assert.equal(await countRows("dispute_items"), 0,
+      "nothing is written when there is nothing we may truthfully claim");
+  });
+
   test("the same clean file, a client NOT on the repair path: writes nothing", async () => {
     await wipeClient();
     /* Staff dispute authorization, but no signed repair agreement and no repair
@@ -387,7 +437,10 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     await buildClient({
       result: { bureausPulled: ["EQ"], bureaus: { EQ: cleanReport() } },
       authorized: true,
-      agreement: false
+      agreement: false,
+      /* Verified, so the refusal below can only be about the repair path and
+         never about a missing identity read. */
+      verified: "both"
     });
 
     const r = await post({ client_id: clientId });
@@ -455,22 +508,50 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       "the optimization card moved, which is what puts the client on the desk");
   });
 
-  test("running it twice does not duplicate the case, the items or the letter", async () => {
+  /* WHAT PRESSING GENERATE TWICE ACTUALLY DOES, MEASURED 2026-09-06.
+   *
+   * This test asserted that the second call answers `already_generated`. It does
+   * not, and it never could once two things that both belong here met:
+   *
+   *   1. The endpoint AUTO-ADVANCES. With no `round` in the body it reads the
+   *      highest round this client has reached and asks for the one after it
+   *      (nextRound, and that has been on main all along). So the second press
+   *      is not a second R1 — it is R2.
+   *   2. R2 NEEDS A FRESH PULL. `credit_file_stale_for_round` refuses any round
+   *      after R1 whose newest credit file is older than the previous round's
+   *      letters. Here the pull is seven milliseconds older than the R1 letter
+   *      it just produced, so R2 is refused. That is the gate working, not
+   *      failing: nobody can tell what the bureaus removed from a report taken
+   *      before the letter went out.
+   *
+   * Both halves are pinned below, and the thing the test is really for — that a
+   * second press writes NO second case, item or letter — is pinned either way.
+   * The `already_generated` answer is real and is asked for by name, which is
+   * the honest way to ask it: same client, same round, twice. */
+  test("pressing generate twice writes nothing twice — and says which round it tried", async () => {
     await wipeClient();
     await buildClient({ result: { bureausPulled: ["EQ"], bureaus: { EQ: equifaxReport() } } });
 
     const first = await post({ client_id: clientId });
-    assert.equal(first.body.ok, true);
+    assert.equal(first.body.ok, true, JSON.stringify(first.body));
     const cases1 = await countRows("dispute_cases");
     const items1 = await countRows("dispute_items");
     const letters1 = await countRows("dispute_letters");
     assert.equal(letters1, 1);
 
+    /* No round named: the endpoint moves the client on to R2 by itself. */
     const second = await post({ client_id: clientId });
     assert.equal(second.code, 200);
-    assert.equal(second.body.ok, true);
-    assert.equal(second.body.already_generated, true,
-      "the second call reports the round was already generated rather than redoing it");
+    assert.equal(second.body.ok, false, JSON.stringify(second.body));
+    assert.equal(second.body.reason, "credit_file_stale_for_round", JSON.stringify(second.body));
+    assert.equal(second.body.round, "R2", "the second press is the NEXT round, not a repeat of R1");
+
+    /* The same round asked for by name IS idempotent, and says so. */
+    const again = await post({ client_id: clientId, round: "R1" });
+    assert.equal(again.code, 200);
+    assert.equal(again.body.ok, true, JSON.stringify(again.body));
+    assert.equal(again.body.already_generated, true,
+      "asking for a round that already has letters reports it rather than redoing it");
 
     assert.equal(await countRows("dispute_cases"), cases1, "no duplicate case");
     assert.equal(await countRows("dispute_items"), items1, "no duplicate items");

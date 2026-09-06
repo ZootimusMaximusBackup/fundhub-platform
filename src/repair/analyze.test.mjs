@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   addressFromBusinessEntity,
   analyzeAndGenerate,
+  loadVerifiedIdentity,
+  resetVerifiedIdentityCache,
   verifiedAddressLabel
 } from "./analyze.mjs";
 
@@ -525,9 +527,12 @@ describe("no verified identity", () => {
     sourceType: "Experian"
   }];
 
-  function dbFor(file) {
+  /* `tier` decides the repair path: REPAIR_ONLY is on it, FUNDING_READY is not.
+     Everything else about the client is identical, so a test can hold the file
+     still and move only that. */
+  function dbFor(file, { tier = "REPAIR_ONLY" } = {}) {
     return fakeDb({
-      "outcome_tier FROM clients": [{ outcome_tier: "REPAIR_ONLY" }],
+      "outcome_tier FROM clients": [{ outcome_tier: tier }],
       "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
       "FROM pii_identity": [{
         addresses: [{ address_line1: "412 Pecan St", city: "Austin", state: "TX", zip: "78701" }]
@@ -550,6 +555,26 @@ describe("no verified identity", () => {
 
   test("a clean file and no verified identity produces NO letter, not a CRM-backed one", async () => {
     const r = await analyzeAndGenerate(dbFor(CLEAN_FILE), {
+      orgId: ORG, clientId: CLIENT, round: "R1"
+    });
+    assert.equal(r.ok, false);
+    /* The refusal reason CHANGED 2026-09-06 and the change is the point. It
+       used to be `no_violations`, which the Repair desk prints as "the credit
+       file looks clean — nothing to dispute". On this client that sentence is
+       false in the way that matters: the file may be spotless or a wreck, and
+       what is actually missing is the identity read. A Specialist told the file
+       is clean closes the case; a Specialist told the ID has not been read goes
+       and gets it. Both halves of the owner's rules survive — the floor still
+       runs for every repair client, and no letter names anybody on the strength
+       of a typed CRM field. */
+    assert.equal(r.reason, "identity_not_verified");
+  });
+
+  /* The same clean file on a client who is NOT on the repair path. There is no
+     floor to be missing an input for, so the honest answer is still that the
+     engine found nothing. The new refusal must not leak onto this path. */
+  test("off the repair path, a clean file is still plain no_violations", async () => {
+    const r = await analyzeAndGenerate(dbFor(CLEAN_FILE, { tier: "FUNDING_READY" }), {
       orgId: ORG, clientId: CLIENT, round: "R1"
     });
     assert.equal(r.ok, false);
@@ -624,5 +649,92 @@ describe("verifiedAddressLabel", () => {
     assert.equal(verifiedAddressLabel(null), null);
     assert.equal(verifiedAddressLabel("   "), null);
     assert.equal(verifiedAddressLabel({}), null);
+  });
+
+  /* THE SHAPE ../identity/verified.mjs ACTUALLY STORES WHEN THE AGENT ANSWERS
+     WITH ONE STRING. `normalizeVerifiedAddress` accepts that — a model reading a
+     utility bill answers "412 Pecan St, Austin, TX 78701", not five fields — and
+     writes every component null with the whole line in `formatted`. Measured
+     2026-09-06: this function read only the components, returned null, and the
+     floor made no address claim for a client whose address was verified. */
+  test("an address stored only as a formatted line is still an address", () => {
+    assert.equal(
+      verifiedAddressLabel({
+        line1: null, line2: null, city: null, state: null, zip: null,
+        formatted: "412 Pecan St, Austin, TX 78701"
+      }),
+      "412 Pecan St, Austin, TX 78701"
+    );
+  });
+
+  /* Components win, and `formatted` is never merged into them. A row carrying
+     both must not print half of one address and half of another. */
+  test("components beat the formatted line, and are never mixed with it", () => {
+    assert.equal(
+      verifiedAddressLabel({
+        line1: "412 Pecan St", city: "Austin", state: "TX", zip: "78701",
+        formatted: "99 Somewhere Else Rd, Dallas, TX 75201"
+      }),
+      "412 Pecan St, Austin, TX, 78701"
+    );
+  });
+
+  /* An empty formatted line is still nothing, and nothing stays null. */
+  test("a blank formatted line is unknown, not an empty address", () => {
+    assert.equal(verifiedAddressLabel({ formatted: "   " }), null);
+    assert.equal(verifiedAddressLabel({ formatted: null }), null);
+  });
+});
+
+/* THE SEAM WAS NEVER ONCE EXERCISED, AND THAT IS WHY IT WAS BROKEN.
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * Every other test in this file hands analyzeAndGenerate a `verifiedIdentity`
+ * function of its own, which is the right thing for testing what the letters
+ * say. The consequence is that nothing ever asked the question a real client
+ * asks: with no override, does this module FIND the identity module?
+ *
+ * MEASURED 2026-09-06, by running it. It did not. `IDENTITY_MODULES` guessed
+ * three paths — index.mjs, verified-identity.mjs, identity.mjs — and the
+ * identity lane had landed at `src/identity/verified.mjs`. All three imports
+ * threw ERR_MODULE_NOT_FOUND, the resolver answered null, and on every real
+ * client the floor's name claim and address claim were dropped and the engine's
+ * name, date-of-birth and employment rules stayed dark. The module was built,
+ * exporting exactly the function wanted, and nothing reached it.
+ *
+ * This test is the one that would have caught it: no override, a database stub
+ * that answers the way the real table does, and an assertion that the name came
+ * back. It fails if the module is renamed or moved again. */
+describe("the verified identity is read from the module that actually exists", () => {
+  const idDb = (row) => ({
+    query: async () => ({ rows: row ? [row] : [] })
+  });
+
+  test("with no override, loadVerifiedIdentity reaches src/identity and returns the row", async () => {
+    resetVerifiedIdentityCache();
+    const got = await loadVerifiedIdentity(
+      idDb({
+        verified_legal_name: "Sim Repair",
+        verified_address: { line1: "412 Pecan St", city: "Austin", state: "TX", zip: "78701" },
+        verified_dob: null,
+        verified_by: "doc-check-v1",
+        verified_at: "2026-09-01T00:00:00.000Z",
+        verified_field_sources: {}
+      }),
+      { orgId: ORG, clientId: CLIENT }
+    );
+    assert.ok(got, "null here means no identity module was found — check IDENTITY_MODULES");
+    assert.equal(got.legalName, "Sim Repair");
+    assert.equal(verifiedAddressLabel(got.address), "412 Pecan St, Austin, TX, 78701");
+  });
+
+  test("a client with no verified row is null, and null makes no claim", async () => {
+    resetVerifiedIdentityCache();
+    const got = await loadVerifiedIdentity(idDb(null), { orgId: ORG, clientId: CLIENT });
+    /* Every field null collapses to null in loadVerifiedIdentity, which is what
+       the floor reads as "no name and no address are known". Unknown, not
+       empty, and certainly not clients.first_name. */
+    assert.equal(got, null);
   });
 });

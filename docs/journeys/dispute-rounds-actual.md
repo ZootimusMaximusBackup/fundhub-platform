@@ -66,7 +66,22 @@ malformed answer all resolve to **null**, and null means unknown:
 | M2-032 name variants | Can fire | Cannot fire |
 | M2-033 date of birth | Can fire | Cannot fire |
 | M2-034 employment | Can fire when a source supplies employers | Cannot fire |
-| A clean file on the repair path | Produces a confirmation letter | Produces nothing — `no_violations` |
+| A clean file on the repair path | Produces a confirmation letter | Produces nothing — `identity_not_verified` |
+
+CHANGED 2026-09-06, last row. It used to answer `no_violations`, which the Repair desk
+prints as "the credit file looks clean — nothing to dispute". On a client whose ID has not
+been read that sentence is false in the way that matters: the file may be spotless or a
+wreck, and what is missing is the identity read. `identity_not_verified` says so, and the
+desk copy tells the Specialist to get the ID. Only clients ON the repair path get this
+answer — off it there is no floor to be missing an input for, and `no_violations` is still
+the honest word.
+
+ALSO 2026-09-06: `src/repair/analyze.mjs` was looking for the identity module at three
+paths that do not exist. `src/identity/verified.mjs` is where it landed, and every import
+threw, so on EVERY real client the whole right-hand column above was what actually
+happened — no name claim, no address claim, three engine rules dark — while the left-hand
+column was what the tests showed, because every test injected the module by hand. Proved by
+running it, fixed by naming the real path, and pinned by a test that uses no override.
 
 Before 2026-09-04 the three rules in the last block could not fire **at all**, for anybody:
 `src/metro2/normalize.mjs` marks every `context.consumer` field not-visible because nothing

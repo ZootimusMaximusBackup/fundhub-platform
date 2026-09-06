@@ -252,6 +252,15 @@ const CONFIRMATION_ONLY = Object.freeze({
     "I am putting your bureau on notice about the personal information below, which is what the file you hold on me should carry and nothing else.",
   "Tell me in writing what you removed and what you kept, and why you kept it.":
     "Tell me in writing what my personal information holds, and what if anything you changed about it.",
+  /* ADDED 2026-09-06. Its neighbour above was rewritten and this one was not,
+     so a confirmation-only Round 4 letter still asked the bureau to report
+     "what you removed" — nothing in that letter asks for a removal except of a
+     name or address that is not the consumer's, which may well be none. Kept
+     deliberately unlike the line above: both are Round 4 closings, and the
+     three bureau letters draw closings two pool positions apart, so these two
+     can land in the same batch and the variance gate compares them. */
+  "Write to me at the address above with what you did and what you removed.":
+    "Write to me at the address above and say what my file now holds as my name and my address.",
   "My consumer file still reports the items set out below.":
     "Who your bureau says I am is written out below.",
   "Tell me in writing what came off my file and what stayed on it.":
@@ -365,7 +374,136 @@ const MIXED_WITH_CONFIRMATIONS = Object.freeze({
   "Delete every item below that you cannot verify, within 15 days, as FCRA section 611(a)(5)(A) requires.":
     "Delete every disputed item below that you cannot verify, within 15 days, as FCRA section 611(a)(5)(A) requires. Tell me at the same time exactly what personal details your bureau holds against my name.",
   "Under FCRA section 611(a)(5)(A) an item you cannot verify comes off. Take the items below off within 15 days unless you can verify them.":
-    "Under FCRA section 611(a)(5)(A) an item you cannot verify comes off. Take the disputed items below off within 15 days unless you can verify them. One person, one name, one address — say in writing that is what my record shows."
+    "Under FCRA section 611(a)(5)(A) an item you cannot verify comes off. Take the disputed items below off within 15 days unless you can verify them. One person, one name, one address — say in writing that is what my record shows.",
+
+  /* ── ADDED 2026-09-06 — the rest of the mixed letter ────────────────────
+     MEASURED, by building every letter this writer can build. Three claim
+     mixes (confirmation-only, mixed with a Metro 2 claim, mixed without one)
+     x 6 rounds x 3 bureaus x 18 regeneration attempts = 972 letters, read line
+     by line. On the merge commit that brought PR 339 across: 855 sentences,
+     55 of them distinct, said something the confirmations in that same letter
+     did not support. Rounds 2, 3, 5 and 6 had no mixed wording at all, and
+     rounds 1 and 4 were half covered. After the additions below the same sweep
+     reports 216 hits, 12 distinct, every one of them from the two families
+     named at the bottom of this comment as deliberate.
+
+     What was wrong was always the same shape. "The items below are reported
+     inaccurately." "Delete each item you cannot verify." "The defects remain."
+     "Your bureau still reports the items below." In a letter whose last two
+     items say the consumer's own name and the consumer's own address are
+     CORRECT and should stay, every one of those sentences is a false statement
+     about those two items, mailed to a credit bureau in the consumer's name.
+
+     THE RULE APPLIED TO EVERY LINE BELOW: the word "items" is narrowed to
+     "disputed items" wherever the sentence makes a claim about them or asks for
+     their deletion, and the confirmations are named separately where the
+     sentence is a demand. A sentence that only states the letter's SCOPE —
+     "this is my last letter to your bureau on these items" — is left alone,
+     because it asserts nothing about whether those items are right or wrong.
+
+     "METRO 2" IS DROPPED FROM EVERY REPLACEMENT BELOW, including the two lines
+     that named it. accurate() consults this table BEFORE WITHOUT_METRO2, so a
+     replacement written here is the final text and would have to be true of a
+     mixed letter with no Metro 2 claim in it as well. The per-claim blocks still
+     print "Metro 2 field: …" for each M2 claim, and the subject line still says
+     Metro 2, so nothing that was provable is lost.
+
+     WHAT IS DELIBERATELY NOT REWRITTEN: "remove what you cannot verify" and its
+     three siblings in the Round 4, 5 and 6 closings. A confirmation claim asks
+     for exactly that — "if any name or spelling other than mine is attached to
+     this file, delete it" — so a demand scoped by verifiability is the one
+     deletion demand both kinds of claim really do make. Same reasoning as the
+     CONFIRMATION_ONLY table above.
+
+     DISTINCTNESS IS CHECKED, NOT HOPED FOR. Three bureau letters draw openings
+     at pool offsets 0 / 2 / 4 and closings at 0 / 4 / 2, so any two lines in one
+     pool can meet in one batch. Every replacement below is a different string
+     from every other line in its own pool, before and after substitution —
+     asserted by ./letter-honesty.test.mjs. */
+
+  // ── Round 1, the rest ────────────────────────────────────────────────────
+  "I am writing to dispute inaccurate information on my credit file.":
+    "I am writing about inaccurate information on my credit file, and about the personal information my file is kept under.",
+  "This letter asks you to reinvestigate the items listed below under the FCRA.":
+    "This letter asks you to reinvestigate the disputed items below under the FCRA, and to answer the personal-information requests set out with them.",
+  "I dispute the Metro 2 field defects identified below and ask you to delete or correct them.":
+    "I dispute the items identified below as inaccurate and ask you to delete or correct them. The personal-information requests below ask you to confirm my name and my address, not to delete them.",
+  "Please investigate and correct the reporting errors on my file as required by federal law.":
+    "Please investigate and correct the reporting errors set out below, as federal law requires, and confirm the personal information my file is kept under.",
+  "I am exercising my rights under 15 U.S.C. § 1681i regarding the items that follow.":
+    "I am exercising my rights under 15 U.S.C. § 1681i and § 1681e(b) regarding the disputed items and the personal-information requests that follow.",
+  "If you rubber-stamp these items, my next letter will be a Round 2 method-of-verification demand.":
+    "If you rubber-stamp the disputed items, my next letter will be a Round 2 method-of-verification demand.",
+  "The items below have Metro 2 reporting defects that make my file inaccurate or misleading.":
+    "The disputed items below make my file inaccurate or misleading. The requests below are about the name and the address my file is reported under.",
+  "If you rubber-stamp these items without a real investigation, my next letter will be a Round 2 method-of-verification demand. A CFPB or attorney-general complaint is reserved for later. This is not a final notice.":
+    "If you rubber-stamp the disputed items without a real investigation, my next letter will be a Round 2 method-of-verification demand. A CFPB or attorney-general complaint is reserved for later. This is not a final notice.",
+
+  // ── Round 2, the rest ────────────────────────────────────────────────────
+  "The items below remain on my file without a stated method of verification.":
+    "The disputed items below remain on my file without a stated method of verification.",
+  "Please treat this as a Round 2 request for method of verification and furnisher contact information.":
+    "Please treat this as a Round 2 request for method of verification and furnisher contact information, and as a request to confirm the personal information my file is kept under.",
+  "Give me each furnisher's name, address, and telephone number under section 611(a)(6)(B)(iii).":
+    "Give me the name, address and telephone number of each furnisher you contacted about a disputed item, under section 611(a)(6)(B)(iii).",
+
+  // ── Round 3, the rest ────────────────────────────────────────────────────
+  "I already asked you to reinvestigate and to describe your method of verification. The defects remain.":
+    "I already asked you to reinvestigate and to describe your method of verification. The disputed items remain on my file.",
+  "I demand deletion of the unverifiable items below within 15 days.":
+    "I demand deletion of the unverifiable disputed items below within 15 days, and an answer to the personal-information requests with them.",
+  "This Round 3 letter is the last bureau notice on these Metro 2 defects. It is not a lawsuit.":
+    "This Round 3 letter is the last bureau notice on the disputed items below. It is not a lawsuit.",
+  "Delete each unverifiable item within 15 days under FCRA section 611(a)(5)(A).":
+    "Delete each unverifiable disputed item within 15 days under FCRA section 611(a)(5)(A).",
+  "If these items remain after 15 days, I will file with the CFPB and my state attorney general.":
+    "If the disputed items remain after 15 days, I will file with the CFPB and my state attorney general.",
+
+  // ── Round 4, the rest ────────────────────────────────────────────────────
+  "The items listed below are still on my consumer file, and I am carrying them to the Consumer Financial Protection Bureau.":
+    "The disputed items listed below are still on my consumer file, and I am carrying them to the Consumer Financial Protection Bureau. My name and my address are set out with them, for your confirmation.",
+  "This letter concerns items my consumer file still reports, and what I intend to do if it keeps reporting them.":
+    "This letter concerns disputed items my consumer file still reports, the personal information it is kept under, and what I intend to do if this is not settled.",
+  "Your bureau still reports the items below about me. A federal regulator takes complaints about exactly this.":
+    "Your bureau still reports the disputed items below about me. A federal regulator takes complaints about exactly this.",
+  "I am putting your bureau on notice about the items below, which remain on the file you hold on me.":
+    "I am putting your bureau on notice about the disputed items below, which remain on the file you hold on me, and about the personal information that file is kept under.",
+  "My consumer file still reports the items set out below.":
+    "My consumer file still reports the disputed items set out below, and it is kept under the name and the address set out with them.",
+  "Tell me in writing what came off my file and what stayed on it.":
+    "Tell me in writing what came off my file, what stayed on it, and what my personal information holds.",
+
+  // ── Round 5, the rest ────────────────────────────────────────────────────
+  "The items below are still on my file, and my state attorney general accepts complaints about a credit bureau that keeps reporting them.":
+    "The disputed items below are still on my file, and my state attorney general accepts complaints about a credit bureau that keeps reporting them.",
+  "My consumer file continues to report the items set out below, and this letter is the notice I give before going to my state attorney general.":
+    "My consumer file continues to report the disputed items set out below, and this letter is the notice I give before going to my state attorney general.",
+  "Your bureau still reports the items below. I am preparing a complaint to the attorney general of my state.":
+    "Your bureau still reports the disputed items below. I am preparing a complaint to the attorney general of my state.",
+  "This letter is about items my file still carries and about the state office I will take them to.":
+    "This letter is about disputed items my file still carries, about the personal information it is kept under, and about the state office I will take this to.",
+  "I am giving your bureau written notice about the items below before I take them to my state's attorney general.":
+    "I am giving your bureau written notice about the disputed items below, and about the personal information my file is kept under, before I take this to my state's attorney general.",
+  "Write back and name what came off my file and what stayed on it.":
+    "Write back and name what came off my file, what stayed on it, and what my personal information holds.",
+  "The items set out below have not come off the file your bureau holds on me.":
+    "The disputed items set out below have not come off the file your bureau holds on me.",
+
+  // ── Round 6, the rest ────────────────────────────────────────────────────
+  "My file still reports the items set out below, and this letter closes my direct correspondence with your bureau about them.":
+    "My file still reports the disputed items set out below, and this letter closes my direct correspondence with your bureau about them and about the personal information my file is kept under.",
+  "Everything below is still on the file you hold on me. This is the last of these letters.":
+    "Everything below concerns the file you hold on me — the disputed items still on it, and the name and address it is kept under. This is the last of these letters.",
+  "This letter ends what I will send you directly about the items my file still reports below.":
+    "This letter ends what I will send you directly about the disputed items my file still reports below.",
+  "Your bureau still reports the items below. This is my closing written notice about them.":
+    "Your bureau still reports the disputed items below. This is my closing written notice about them and about my personal information.",
+  "Put in writing what came off the file and what did not.":
+    "Put in writing what came off the file, what did not, and what my personal information holds.",
+  "What is set out below is still on the file your bureau holds on me.":
+    "The disputed items set out below are still on the file your bureau holds on me, and that file is kept under the name and the address set out with them.",
+  "Write back and say what you removed and what you kept.":
+    "Write back and say what you removed, what you kept, and what my personal information holds."
 });
 
 /**

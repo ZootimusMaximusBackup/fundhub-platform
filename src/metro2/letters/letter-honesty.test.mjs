@@ -117,15 +117,68 @@ const BANNED_WHEN_ALL_CLAIMS_CONFIRM = Object.freeze([
 ]);
 
 /* A letter carrying BOTH kinds may demand all of that — but only of the items
-   it actually disputes. An unscoped "each item" sweeps in the confirmations. */
+   it actually disputes. An unscoped "each item" sweeps in the confirmations.
+ *
+ * WIDENED 2026-09-06, AFTER MEASURING. The seven patterns this list used to hold
+ * caught Round 1 and a little of Round 4. Sweeping all 972 letters this file
+ * builds — three claim mixes x six rounds x three bureaus x eighteen attempts —
+ * found 855 sentences, 55 of them distinct, that this list did not catch and
+ * that a confirmation in the same letter did not support. Rounds 2, 3, 5 and 6
+ * had no mixed wording written for them at all. Every pattern below is one of
+ * those sentences.
+ *
+ * TWO FAMILIES ARE DELIBERATELY NOT BANNED, and the exception is narrow enough
+ * to state:
+ *   - "remove / take off / delete what you cannot verify" — a confirmation claim
+ *     asks for exactly that ("if any name other than mine is attached to this
+ *     file, delete it"), so a demand scoped by verifiability is true of both
+ *     kinds of claim.
+ *   - "tell me what came off and what stayed" — a request for a report, not an
+ *     assertion about an item, and a mixed letter always carries at least one
+ *     real dispute that could come off.
+ * Everything else that speaks about "the items" is scoped to "the disputed
+ * items" or it fails here. */
 const BANNED_WHEN_MIXED = Object.freeze([
+  // Round 1
+  /dispute inaccurate information on my credit file/i,
+  /reinvestigate the items listed below/i,
+  /the following accounts are reported inaccurately/i,
+  /dispute the items identified below and ask you to delete or correct them/i,
+  /correct the reporting errors on my file/i,
+  /rights under 15 U\.S\.C\. § 1681i regarding the items that follow/i,
+  /rubber-stamp these items/i,
+  /the items below have Metro 2 reporting defects/i,
   /delete or correct each item\b/i,
   /reinvestigate each item\b/i,
-  /delete each item you cannot verify\b/i,
-  /method of verification for each item\b/i,
-  /delete the items\./i,
+  // Round 2
   /I already disputed these items/i,
-  /how you verified the items listed below/i
+  /how you verified the items listed below/i,
+  /the items below remain on my file/i,
+  /method of verification for each item\b/i,
+  /each furnisher's name, address, and telephone number/i,
+  /delete the items\./i,
+  // Round 3
+  /the defects remain/i,
+  /deletion of the unverifiable items below/i,
+  /these Metro 2 defects/i,
+  /delete each (unverifiable )?item\b/i,
+  /delete each item you cannot verify\b/i,
+  /if these items remain after 15 days/i,
+  // Rounds 4, 5 and 6
+  /the items? (listed |set out )?below (are|is) still on/i,
+  /my (consumer )?file still (shows|reports|carries|continues to report)(?![^.]*disputed)/i,
+  /your bureau still reports the items below/i,
+  /concerns items my consumer file still reports/i,
+  /notice about the items below/i,
+  /items my file still carries/i,
+  /the items my file still reports below/i,
+  /everything below is still on the file/i,
+  /what is set out below is still on the file/i,
+  /have not come off the file/i,
+  /delete the items below/i,
+  /delete every item below/i,
+  /take the items below off/i,
+  /for every item below you cannot stand behind/i
 ]);
 
 /* No letter with another bureau round after it may call itself the last one,
@@ -138,13 +191,29 @@ const BANNED_AFTER_ROUND_THREE = Object.freeze([
 
 const ROUNDS = ["R1", "R2", "R3", "R4", "R5", "R6"];
 const BUREAUS = ["TU", "EX", "EQ"];
-const ATTEMPTS = [0, 1, 2];
+/* WIDENED 2026-09-06. Three attempts exercise the three body layouts but only
+   a slice of each six-line pool: the opening is drawn at `seed + attempt +
+   bureauSpread`, so attempts 0-2 across three bureaus reach at most five of the
+   six openings and can miss a pool member entirely. Eighteen attempts walk every
+   position of both pools three times over. It is the difference between the old
+   sweep's 162 letters and 972. */
+const ATTEMPTS = Array.from({ length: 18 }, (_, i) => i);
 
-function offenders(text, patterns) {
+/* A sentence in a MIXED letter that has narrowed itself to "the disputed items"
+   is making no claim about the confirmations sitting beside them, so it is not
+   an offender however loudly it demands deletion. That narrowing is the whole
+   repair, and matching on it would fail the fix rather than the defect.
+   Deliberately NOT applied to the confirmation-only sweep: a letter whose every
+   claim confirms the file has no disputed item in it at all, so the phrase
+   appearing there would itself be the lie. */
+const SCOPED_TO_DISPUTES = /\bdisputed items?\b/i;
+
+function offenders(text, patterns, { allowScoped = false } = {}) {
   const found = [];
+  const lines = text.split("\n");
   for (const re of patterns) {
-    if (!re.test(text)) continue;
-    const line = text.split("\n").find((l) => re.test(l)) || "";
+    const line = lines.find((l) => re.test(l) && !(allowScoped && SCOPED_TO_DISPUTES.test(l)));
+    if (line === undefined) continue;
     found.push(`${re} → ${line.trim().slice(0, 140)}`);
   }
   return found;
@@ -166,15 +235,15 @@ test("no letter asserts something its own claims do not support", () => {
         const base = { identity: IDENTITY, bureau, round, attempt, undated: true, seed: `honesty:${bureau}:${round}` };
 
         const cases = [
-          ["confirmation-only", [CONFIRM_NAME, CONFIRM_ADDRESS], bannedFor(round, BANNED_WHEN_ALL_CLAIMS_CONFIRM)],
-          ["mixed", [REAL_DISPUTE, CONFIRM_NAME, CONFIRM_ADDRESS], bannedFor(round, BANNED_WHEN_MIXED)],
-          ["dispute-only", [REAL_DISPUTE], bannedFor(round, [])]
+          ["confirmation-only", [CONFIRM_NAME, CONFIRM_ADDRESS], bannedFor(round, BANNED_WHEN_ALL_CLAIMS_CONFIRM), false],
+          ["mixed", [REAL_DISPUTE, CONFIRM_NAME, CONFIRM_ADDRESS], bannedFor(round, BANNED_WHEN_MIXED), true],
+          ["dispute-only", [REAL_DISPUTE], bannedFor(round, []), false]
         ];
 
-        for (const [label, violations, banned] of cases) {
+        for (const [label, violations, banned, allowScoped] of cases) {
           letters++;
           const text = buildLetterText({ ...base, violations });
-          for (const hit of offenders(text, banned)) {
+          for (const hit of offenders(text, banned, { allowScoped })) {
             failures.push(`${label} ${round}/${bureau}/attempt ${attempt}: ${hit}`);
           }
         }
@@ -182,7 +251,7 @@ test("no letter asserts something its own claims do not support", () => {
     }
   }
 
-  assert.equal(letters, 162, "the sweep must cover 6 rounds x 3 bureaus x 3 attempts x 3 claim mixes");
+  assert.equal(letters, 972, "the sweep must cover 6 rounds x 3 bureaus x 18 attempts x 3 claim mixes");
   assert.deepEqual(failures, [], `\n${failures.join("\n")}\n`);
 });
 
@@ -382,4 +451,77 @@ test("the six-round ladder is written, and the part that still is not is counted
   /* The two shapes a real repair-path client gets must lose nothing. */
   assert.equal(lostByShape["confirmation-only"] || 0, 0, "a clean file must reach round 6");
   assert.equal(lostByShape.mixed || 0, 0, "a file with both kinds of claim must reach round 6");
+});
+
+/* THREE BUREAU LETTERS MUST STAY THREE DIFFERENT LETTERS.
+ *
+ * The variance gate strips every itemised claim block before it compares two
+ * letters, so what it actually weighs is the header, the opening, the lead and
+ * the closing. buildLetterText spreads the three bureaus across each six-line
+ * pool by hand — openings at offsets 0 / 2 / 4, closings at 0 / 4 / 2 — so the
+ * three letters draw three different lines.
+ *
+ * A substitution table breaks that silently. Rewrite two members of one pool
+ * onto the same sentence and two bureaus draw an identical opening; the letters
+ * are then near-identical, the gate refuses the batch, and the client gets one
+ * letter instead of three with no error anybody reads. Nothing else in this file
+ * would catch it, because each letter on its own is perfectly honest.
+ *
+ * So every pool is put through the substitution for every letter shape, and the
+ * six lines must stay six lines. Added 2026-09-06 alongside the mixed-letter
+ * table that BANNED_WHEN_MIXED above grew for. */
+test("a substitution never collapses two lines of one pool onto the same sentence", async () => {
+  const { OPENINGS, CLOSINGS } = await import("./prompts.mjs");
+  const SHAPES = [
+    ["dispute-only, Metro 2 present", [REAL_DISPUTE]],
+    ["dispute-only, no Metro 2", [INQUIRY_CLAIM]],
+    ["confirmation-only", [CONFIRM_NAME, CONFIRM_ADDRESS]],
+    ["mixed, no Metro 2", [INQUIRY_CLAIM, CONFIRM_NAME, CONFIRM_ADDRESS]],
+    ["mixed, Metro 2 present", [REAL_DISPUTE, CONFIRM_NAME, CONFIRM_ADDRESS]]
+  ];
+  const collisions = [];
+  let pools = 0;
+
+  /* The substituted sentence is read back out of a REAL letter rather than by
+     reaching into the module's private tables, so what this measures is what a
+     bureau would actually receive. `attempt` is pinned to 0 — that layout puts
+     the opening first, straight after the "Re:" line — and the SEED is walked
+     instead, because the seed is what chooses which of the six pool lines a
+     given bureau draws. Sixty seeds over a six-line pool, deterministic, and
+     every position is reached. */
+  const openingOf = (text) => {
+    const lines = text.split("\n");
+    const i = lines.findIndex((l) => l.startsWith("Re: "));
+    return lines.slice(i + 1).find((l) => l.trim() !== "") || null;
+  };
+  const closingOf = (text) => ((text.split("CLOSING:\n")[1] || "").split("\n")[0] || null);
+
+  for (const [shapeName, violations] of SHAPES) {
+    for (const round of ROUNDS) {
+      for (const [poolName, table, read] of [
+        ["OPENINGS", OPENINGS, openingOf],
+        ["CLOSINGS", CLOSINGS, closingOf]
+      ]) {
+        pools++;
+        const seen = new Set();
+        for (let i = 0; i < 60; i++) {
+          const text = buildLetterText({
+            identity: IDENTITY, bureau: "TU", round, violations,
+            attempt: 0, undated: true, seed: `pool-distinctness-${i}`
+          });
+          const line = read(text);
+          if (line) seen.add(line.trim());
+        }
+        /* Six distinct source lines must still read back as six distinct
+           sentences. Fewer means a table mapped two of them onto one. */
+        if (seen.size !== table[round].length) {
+          collisions.push(
+            `${shapeName} ${round} ${poolName}: ${table[round].length} lines -> ${seen.size} sentences`);
+        }
+      }
+    }
+  }
+
+  assert.equal(pools, 60, "5 letter shapes x 6 rounds x 2 pools");
+  assert.deepEqual(collisions, [], `\n${collisions.join("\n")}\n`);
 });
