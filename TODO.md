@@ -424,3 +424,39 @@ branch `feat/flywheel-runner` until #321 merges.
 - [ ] Tell W4 whether the dispute-letter consent belongs on every client's portal or only repair clients (F35).
 - [ ] Turn off the Gmail "FS Auto" filter before the re-walk (F17).
 - [ ] Accountability upsell — Chris's idea 2026-09-03, note only. Revisit after the fix batch and fulfillment. See manual-walkthrough-2026-09-03.md.
+
+
+## Walkthrough 4 — 2026-09-06 — 28 confirmed defects where the code contradicts a rule the repo states
+
+Detail, rules, and code lines for every item: `docs/workflows/walkthrough-4-2026-09-06.md`.
+
+- [ ] **high** — Credit-score bars on the client-facing deck are coloured by bureau, not by score — Experian's bar is always the red one (`public/app/present.js:350`)
+- [ ] **high** — The two contracts stamped "DO NOT SEND THIS" are one click away from a real client (`src/contracts/send.mjs:312-400`)
+- [ ] **high** — The affiliate terms page tells partners they earn nothing on the 10% success fee — the opposite of the owner's decision (`public/app/affiliate.html:421`)
+- [ ] **high** — Galaxy invents funded/deposit dollars and prints them over real staff names — the owner's "no invented money" ruling was applied to partner-galaxy.html only (`public/app/galaxy.html:626-651`)
+- [ ] **high** — A client's portal Payments tab always says "No payments yet" — it is never painted for a client, and the invoice the server now returns is read by nothing (`public/app/client-portal.html:843-852`)
+- [ ] **high** — Brand Studio tells a partner their SSL certificate is issued automatically, and stamps "Verified · SSL issued" — nothing issues any certificate (`public/app/brand-studio.html:673`)
+- [ ] **high** — Four wide-open public endpoints are documented as "NOT open" and signature-checked (`Detector:`)
+- [ ] **high** — Journey pages overstate who can reach three staff endpoints, because the generator only recognises a role list whose name ends in ROLES (`Cause:`)
+- [ ] **high** — The browser check that blocks every merge secretly drives the real fundhub.ai site (`playwright.config.mjs:110-111`)
+- [ ] **high** — A leftover debugging beacon is live in production, and the guard that promises this is impossible cannot see it (`api/social/oauth.mjs:110-132`)
+- [ ] **high** — Two screens print the word "Fundhub" where the standard says the brand logo goes (`public/app/pipeline.html:667`)
+- [ ] **medium** — On Social Studio a post that failed and an account whose sign-in has died both paint peach, and the same screen paints that same dead account coral one panel over (`public/app/social-studio.html:859`)
+- [ ] **medium** — Affiliate terms promise last-touch attribution with a 60-day window; the system is first-touch, forever (`public/app/affiliate.html:420`)
+- [ ] **medium** — Times on staff screens are drawn in the viewer's own clock while the topbar beside them claims Arizona (`public/app/closer-call.js:47`)
+- [ ] **medium** — The Journeys simulator reports "Messages sent 4 · Everything went to <your phone>" while sending nothing anywhere (`public/app/journeys.html:830-885`)
+- [ ] **medium** — The Documents screen states in capitals that age counts from the last state change; it counts from the day the document was generated (`public/app/documents.html:730`)
+- [ ] **medium** — The contract signing page tells the signer they can come back to the link "at any time"; the link stops working 30 days after it was sent (`src/contracts/signed-link.mjs:39`)
+- [ ] **medium** — A client's portal Messages tab always says "No messages yet", because the painter only runs for staff (`public/app/client-portal.html:881`)
+- [ ] **medium** — The Decline Autopsy journey draws three live routes; all three are commented out of the router and 404 (`netlify/functions/api.mjs:700-709`)
+- [ ] **medium** — Two signed, expiring links are printed on every journey page as "genuinely open" and lumped in with the login and health-check routes (`Cause:`)
+- [ ] **medium** — The screen-frame guard misses the short way of writing a text size, so the pipeline drawer buttons are the wrong size on its own reference screen (`src/ui/screen-standard.test.mjs:96`)
+- [ ] **medium** — The guard against a test permanently repointing live message routing excuses the offence using the offence itself (`src/messaging/routing-restore.guard.test.mjs:81`)
+- [ ] **medium** — CLAUDE.md still says outbound calls may only live in the messaging providers folder, but the enforced design puts them all in src/lib/ (`src/lib/outbound-fetch.mjs:1-3`)
+- [ ] **medium** — Pipeline shows a "— held" figure that can never be a number (`public/app/pipeline.html:728`)
+- [ ] **medium** — The sales presentation deck sets seven text sizes below the standard's floor, including the legal small print (`public/app/present.html:28`)
+- [ ] **medium** — Pipeline and Specialist top bars are missing all three rules that stop them overflowing (`public/app/pipeline.html:46`)
+- [ ] **low** — A caption tells the owner to read a colour, which the standards file forbids in copy (`public/app/campaign-manager.html:386`)
+- [ ] **low** — The client portal writes its own card shadow instead of using the shared one (`public/app/client-portal.html:86`)
+
+Also from the walk: Walk2 and Walk3 need enrolling by hand (Present deck, not the desk button); Walk1 has two duplicate tasks; 237 banks still have no bureau on file.
