@@ -197,6 +197,10 @@ const API_KEYS = [
   "read/company-brain",
   "read/contracts",
   "read/conversations",
+  /* The CSM's whole day. An outage here and the person who owns every
+     post-sale conversation has no list of who to call and no idea who is
+     behind on payments. */
+  "read/csm-queue",
   "read/customer-insights",
   "read/deal-math",
   "read/documents",

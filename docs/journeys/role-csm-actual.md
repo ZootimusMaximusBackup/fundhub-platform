@@ -1,7 +1,14 @@
 # CSM (Client Success Manager) — what the code actually does
 
-Generated from the code on 2026-09-05, not from the plan. Anything the code did
-not show is marked `UNVERIFIED` rather than drawn.
+Traced from the code by hand on 2026-09-05, not from the plan. Anything the code
+did not show is marked `UNVERIFIED` rather than drawn.
+
+> **`npm run journeys` does NOT write this file, and must not be pointed at it.**
+> The other `role-*-actual.md` pages are that script's output: route tables
+> showing which endpoints a role can reach. This page is a different thing — the
+> flow of the work through the role, hand-traced. Adding `role-csm` to the
+> generator's list would overwrite these diagrams with a route table and lose
+> everything the page is for.
 
 There is deliberately **no `role-csm-intended.md`** yet. Intended journeys are
 hand-authored by Chris and agents do not write them (CLAUDE.md §4).
