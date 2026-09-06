@@ -100,7 +100,8 @@
     .na-saved,.cp-note,.cp-count,.blocker-flag,.record-key,.record-pick label,
     .fact-row,.approve-what,.approve-exp,.approve-url,.approve-nolink,
     .dz-hint,.link-btn,.more>summary,.group-title .chev,.need-meta,.sb-source,
-    .headline-caveat,.round-note,.fact-note,.lender-sub,.lender-nourl){
+    .headline-caveat,.round-note,.fact-note,.lender-sub,.lender-nourl,
+    .na-inq-head,.na-inq-row,.na-inq-bureau,.na-inq-state){
     font-size:var(--fs-caption)!important;
   }
 
@@ -239,8 +240,12 @@
      Red is now kept for a hard stop only — see paintBlockerEdge() below, which
      counts high-severity cards (fraud alert, no written permission, permission
      unreadable) and nothing else. */
+  /* The panel edge follows the same three-colour rule as the cards inside it.
+     A file with open blockers is yellow, not green: green is the answer to
+     "is anything stopping this", and a blocker is exactly the thing that is. */
   .na-group{border-left:4px solid transparent;padding-left:16px;}
-  .na-group.is-open-work{border-left-color:var(--green-line);}
+  .na-group.is-clear{border-left-color:var(--green-line);}
+  .na-group.is-open-work{border-left-color:var(--amber-line);}
   .na-group.is-blocked{border-left-color:var(--red-line);}
   .na-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
   .na-lead{min-width:0;}
@@ -260,15 +265,40 @@
   /* The value saved on the record, kept OUT of the big line above and shown
      here instead — quiet, and labelled as a saved value, never an instruction. */
   .na-saved{font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint);margin:6px 0 0;}
+  /* The inquiry list that sits under the step telling you to remove them. Not a
+     table: four rows on a wide header, so it stays readable next to the big
+     line above it without competing with it. */
+  .na-inq{margin:10px 0 0;}
+  .na-inq-head{font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:5px;}
+  .na-inq-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;
+    border-top:1px solid var(--line);}
+  .na-inq-row:first-of-type{border-top:none;}
+  .na-inq-name{font-weight:700;color:var(--text);}
+  .na-inq-bureau{font-family:'JetBrains Mono',monospace;font-weight:700;
+    color:var(--text-dim);}
+  .na-inq-state{color:var(--text-faint);margin-left:auto;}
   .blockers-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
   .blockers-title{font-size:var(--fs-body);font-weight:800;color:var(--red);}
-  /* GREEN, not amber — owner-set 2026-09-06. An ordinary open task on a clean
-     file is work to do, not a warning. The five cards on Walk1 Funding were all
-     ordinary tasks and all five carried an orange edge, which reads as five
-     problems. A hard stop takes the red edge below (.is-high) and says so in
-     words on the card as well, because colour alone is never the signal
-     (UI-STANDARDS §12.6). */
-  .blocker-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--green-line);border-radius:6px;padding:9px 12px;margin-bottom:8px;}
+  /* YELLOW — owner-set 2026-09-06, restated by Chris on the live screen the
+     same day: "green means go, yellow means a blocker, red means a hard stop."
+
+     This rule was written down twice in this file, two different ways, on the
+     same date. The earlier note above says yellow is a blocker. A later note
+     said "GREEN, not amber — an ordinary open task is work to do, not a
+     warning", and that is what got built. So twelve cards sat under a heading
+     reading ACTIVE BLOCKERS while every one of them was painted "nothing is
+     wrong". Chris on seeing it: "I'm confused about why active blockers are
+     green... they're enigmas."
+
+     The heading is the tiebreak. A card filed under Active blockers IS a
+     blocker, so it takes the yellow edge. If some of these are really ordinary
+     open work and not blockers, the fix is to stop filing them under that
+     heading — not to paint a blocker green.
+
+     Red is still reserved for a hard stop (.is-high below), and colour is never
+     the only signal — every card says its reason in words (UI-STANDARDS §12.6). */
+  .blocker-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--amber-line);border-radius:6px;padding:9px 12px;margin-bottom:8px;}
   .blocker-top{display:flex;justify-content:space-between;align-items:flex-start;}
   .blocker-reason{font-weight:700;font-size:var(--fs-body);color:var(--text);}
   .blocker-age-wrap{text-align:right;flex:0 0 auto;}
@@ -772,6 +802,18 @@
           <div class="na-main big" id="ccp-next-action">Pick a client below.</div>
           <p class="cp-why" id="ccp-cp-why" hidden></p>
           <p class="cp-note" id="ccp-cp-note" hidden></p>
+          <!-- THE INQUIRIES THEMSELVES, UNDER THE STEP THAT SAYS TO REMOVE THEM.
+               "Remove Inquiries" was the biggest text on the screen with nothing
+               under it to remove. The banks were named, but as a grey footnote
+               in Record Facts, three sections down and past the funding round —
+               so the one screen telling you to act did not show you what to act
+               on. Chris on the live page: "where are the inquiries? They were
+               supposed to list off the inquiries so that way we can send them
+               off to get removed first."
+               Same rows, same source, painted where the eye already is
+               (UI-STANDARDS §5: the answer appears where the user is looking).
+               The Issue Inquiry Removal button already lives on this card. -->
+          <div class="na-inq" id="ccp-next-inquiries" hidden></div>
         </div>
       </div>
       <div class="record-pick">
@@ -1733,12 +1775,52 @@ document.addEventListener("DOMContentLoaded", function () {
   /* One line naming the banks that pulled this person's credit, so nobody has
      to open a second screen to find out which four they are. Full names — a
      bureau writes "AMERICAN EXPRESS", never "Amex" (owner rule). */
+  /* THE SAME ROWS, PAINTED UNDER THE NEXT STEP.
+     Record Facts keeps its one-line footnote; this puts the list itself where
+     the instruction to act on it is. Built as DOM nodes with textContent, never
+     an HTML string — a creditor name comes off a credit report and is not ours
+     to trust. */
+  function paintNextInquiries(rows) {
+    var box = $("ccp-next-inquiries");
+    if (!box) return;
+    box.textContent = "";
+    if (!rows || !rows.length) { box.hidden = true; return; }
+    var head = document.createElement("div");
+    head.className = "na-inq-head";
+    head.textContent = rows.length === 1
+      ? "The 1 inquiry on this file"
+      : "The " + rows.length + " inquiries on this file";
+    box.appendChild(head);
+    rows.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "na-inq-row";
+      var name = document.createElement("span");
+      name.className = "na-inq-name";
+      name.textContent = r.name;
+      row.appendChild(name);
+      if (r.bureau) {
+        var b = document.createElement("span");
+        b.className = "na-inq-bureau";
+        b.textContent = r.bureau;
+        row.appendChild(b);
+      }
+      /* No status word here. This list comes off the stored credit report,
+         which knows who pulled the file and nothing about whether a removal
+         has been sent — inquiry_log holds that and this endpoint does not
+         return it. Printing "Pending Removal" from this source would be a
+         claim the source cannot support. */
+      box.appendChild(row);
+    });
+    box.hidden = false;
+  }
+
   function paintInquiries(crsResults) {
     var found = fileInquiries(crsResults);
     var names = $("ccp-inquiry-names");
     if (!found.known) {
       setText("ccp-inquiries", "no report yet");
       if (names) { names.textContent = ""; names.hidden = true; }
+      paintNextInquiries([]);
       return;
     }
     if (!found.rows.length) {
@@ -1748,15 +1830,19 @@ document.addEventListener("DOMContentLoaded", function () {
           + "That is not the same as none — pull a bureau again if this file should have them.";
         names.hidden = false;
       }
+      paintNextInquiries([]);
       return;
     }
     setText("ccp-inquiries", String(found.rows.length));
-    if (names) {
-      names.textContent = "Who pulled this credit: " + found.rows.map(function (r) {
-        return r.bureau ? (r.name + " (" + r.bureau + ")") : r.name;
-      }).join(" · ");
-      names.hidden = false;
-    }
+    /* The run-on line under Client Facts is gone. It printed
+       "Who pulled this credit: CAPITAL ONE (EX) · SYNCB/PAYPAL CREDIT (EX) ·
+       NAVY FEDERAL CU (TU) · CITIBANK NA (EQ)" as one wrapping sentence —
+       Chris, on the live screen: "this is janky and not clear."
+       The same four rows are now a real list under the step that says to remove
+       them, so keeping this was duplication in the worse of the two formats.
+       The count tile beside it still answers "how many". */
+    if (names) { names.textContent = ""; names.hidden = true; }
+    paintNextInquiries(found.rows);
   }
 
   /* WHY A REMOVAL CASE SAYS BLOCKED, AND WHERE IT GETS UNBLOCKED.
@@ -2328,7 +2414,9 @@ document.addEventListener("DOMContentLoaded", function () {
        wrong with the file itself. On this screen that is exactly the
        high-severity set — fraud alert on the report, no written permission on
        record, permission record unreadable (src/fulfillment/next-action.mjs).
-       Ordinary open work is green. */
+       Anything else still open is yellow, and green is kept for a file with
+       nothing open at all — green means go, and a blocker is the thing that
+       stops you going. */
     var panel = $("ccp-blockers-panel");
     if (panel) {
       panel.classList.remove("is-empty");
@@ -2340,6 +2428,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } catch (e) { shown = 0; hard = 0; }
       panel.classList.toggle("is-blocked", hard > 0);
       panel.classList.toggle("is-open-work", hard === 0 && shown > 0);
+      panel.classList.toggle("is-clear", shown === 0);
     }
     var bizCredit = d.business_credit || {};
     paintBusinesses("full", bizCredit.businesses || []);
@@ -3830,26 +3919,22 @@ document.addEventListener("DOMContentLoaded", function () {
           var playRow = document.createElement("div");
           playRow.className = "lender-fields";
 
-          /* "PLAY NAME" MEANT NOTHING TO ANYONE — owner-set 2026-09-06.
-             The box records HOW the application was made: card stacking first
-             pull, in-branch visit, online only, docs first. So it is called
-             that. Same input, same id, same datalist, same saved value. */
-          var playWrap = document.createElement("div");
-          playWrap.className = "lender-field approach";
-          var playLab = document.createElement("label");
-          playLab.textContent = "How did you apply?";
-          var play = document.createElement("input");
-          play.type = "text";
-          play.setAttribute("list", "fh-play-names");
-          play.placeholder = "Pick one, or type it";
-          if (m.id) {
-            play.setAttribute("data-lender-id", m.id);
-            play.id = "fh-approach-" + m.id;
-            playLab.setAttribute("for", play.id);
-          }
-          playWrap.appendChild(playLab);
-          playWrap.appendChild(play);
-          playRow.appendChild(playWrap);
+          /* "HOW DID YOU APPLY?" IS GONE — owner-set 2026-09-06.
+             Chris: "the system already knows the way that it should be applied,
+             so that's a useless option."
+
+             He is right twice over. The lender row already carries the apply
+             method from the lender record, so asking a human to re-type it was
+             asking for something we hold. And nothing ever read the answer back:
+             the value landed in application_decisions.play_name, and the only
+             caller of listOutcomesForLaterPlays (src/plays/outcomes.mjs) is a
+             test file. No screen, no report, no workflow. A required-looking box
+             on the busiest row of the busiest screen, feeding nothing.
+
+             The column and its write path stay — play_name is nullable, "Empty
+             is allowed" per 261_application_decision_play.sql, and the read
+             function is there for whenever a screen wants it. This removes the
+             asking, not the ability. */
 
           /* HOW MUCH the bank approved — OPTIONAL, and filled in whenever the
              team learns it. It is the column the Funded move on the Pipeline
@@ -3978,13 +4063,19 @@ document.addEventListener("DOMContentLoaded", function () {
           if (m.id) suggest.setAttribute("data-amount-suggest-lender-id", m.id);
           answer.appendChild(suggest);
 
+          /* The three words, spelled once. The buttons, the saved line and the
+             already-saved line all read from here, so they cannot drift. Keys
+             are the stored values; applications_status_ck allows all three. */
+          var WORD_FOR = { Approved: "Approved", Denied: "Declined", Applied: "Pending" };
+
           function logBank(status) {
             var payload = {
               client_id: clientId,
               lender_id: m.id,
-              status: status,
-              play_name: play.value || ""
+              status: status
             };
+            /* play_name is no longer sent. The column stays nullable and the
+               write path still accepts it; nothing asks a human for it now. */
             /* AN EMPTY BOX IS ALLOWED ON A YES. "Approved, amount unknown" is a
                real state, so a blank box sends no approved_amount at all and the
                column keeps its NULL. Blank is never 0.
@@ -4016,9 +4107,8 @@ document.addEventListener("DOMContentLoaded", function () {
               if (res && res.ok) {
                 var waitingNow = (status === "Approved" && !payload.approved_amount);
                 needChip.hidden = !waitingNow;
-                statusEl.textContent = (status === "Approved" ? "Bank yes" : "Bank no")
+                statusEl.textContent = WORD_FOR[status]
                   + (payload.approved_amount ? (" · $" + payload.approved_amount) : "")
-                  + (play.value ? (" · " + play.value) : "")
                   + " saved."
                   + (waitingNow ? " Add the dollar amount here as soon as the bank tells you." : "");
                 // Re-count what is still waiting across every lender on the file.
@@ -4029,18 +4119,32 @@ document.addEventListener("DOMContentLoaded", function () {
               statusEl.textContent = "Could not save bank yes/no.";
             });
           }
-          var yes = document.createElement("button");
-          yes.type = "button";
-          yes.textContent = "Bank yes";
-          yes.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
-          yes.addEventListener("click", function () { logBank("Approved"); });
-          var no = document.createElement("button");
-          no.type = "button";
-          no.textContent = "Bank no";
-          no.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
-          no.addEventListener("click", function () { logBank("Denied"); });
-          answer.appendChild(yes);
-          answer.appendChild(no);
+          /* APPROVED / DECLINED / PENDING — owner-set 2026-09-06.
+             Chris: "the words btw are Approved / Declined / Pending right?
+             cause when we apply it goes either to approved / declined or
+             pending."
+
+             The buttons said "Bank yes" and "Bank no", and there was no third
+             one — so an application that had gone in and was waiting on the bank
+             had nowhere to be recorded. It sat looking untouched, which is why
+             the apply door says out loud that applications still out with a bank
+             "are not recorded anywhere".
+
+             The stored values do not change: Approved stays "Approved",
+             Declined writes "Denied" and Pending writes "Applied", all three
+             already allowed by applications_status_ck. The words on screen are
+             now Chris's words, and WORD_FOR is the one place they are spelled,
+             so the buttons and the saved-confirmation line cannot drift apart
+             the way "Bank yes" and "Approved" already had. */
+          [["Approved", "Approved"], ["Declined", "Denied"], ["Pending", "Applied"]]
+            .forEach(function (pair) {
+              var b = document.createElement("button");
+              b.type = "button";
+              b.textContent = pair[0];
+              b.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
+              b.addEventListener("click", function () { logBank(pair[1]); });
+              answer.appendChild(b);
+            });
           row.appendChild(playRow);
           listEl.appendChild(row);
         });
@@ -4048,16 +4152,8 @@ document.addEventListener("DOMContentLoaded", function () {
            land. Deliberately NOT awaited: a slow or failed inbox read must not
            hold up the lender list or the saved-amount repaint below. */
         loadBankAmounts();
-        if (!document.getElementById("fh-play-names")) {
-          var dl = document.createElement("datalist");
-          dl.id = "fh-play-names";
-          ["Card stacking first pull", "In-branch visit", "Online only", "Docs first"].forEach(function (name) {
-            var opt = document.createElement("option");
-            opt.value = name;
-            dl.appendChild(opt);
-          });
-          document.body.appendChild(dl);
-        }
+        /* The fh-play-names datalist that fed "How did you apply?" is gone with
+           the field it filled. Nothing else referenced it. */
         return refreshSaved().then(function () {
           return readyCopy || (n + " lenders ready.");
         });
