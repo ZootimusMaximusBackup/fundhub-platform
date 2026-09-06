@@ -27,6 +27,7 @@ flowchart TD
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_hiring[Hiring — 1 route]
     CAN --> A_public[public — 8 routes]
+    CAN --> A_push[push — 3 routes]
     CAN --> A_read[Reading data — 5 routes]
     CAN --> A_top_level[Everything else — 8 routes]
     CAN --> A_trials[trials — 1 route]
@@ -63,7 +64,7 @@ flowchart TD
 
 ## What they can reach
 
-**39 of 223 routes.**
+**42 of 226 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -98,6 +99,9 @@ flowchart TD
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
 | `/api/public/unsubscribe` | — | anyone |
+| `/api/push/key` | GET | client |
+| `/api/push/subscribe` | GET, POST | client |
+| `/api/push/unsubscribe` | DELETE, POST | client |
 | `/api/read/affiliate-portal` | GET | staff, affiliate, client |
 | `/api/read/client-progress` | GET | staff, client |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm<br>plus: client |
@@ -114,7 +118,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**184 of 223 routes.**
+**184 of 226 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

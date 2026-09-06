@@ -33,7 +33,7 @@ flowchart TD
     CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 159 routes]
+    WHO -->|Yes| CANT[Blocked — 162 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 6 blocked]
     CANT --> B_banking[banking — 3 blocked]
@@ -51,6 +51,7 @@ flowchart TD
     CANT --> B_partners[partners — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
+    CANT --> B_push[push — 3 blocked]
     CANT --> B_read[Reading data — 56 blocked]
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 1 blocked]
@@ -61,7 +62,7 @@ flowchart TD
 
 ## What they can reach
 
-**64 of 223 routes.**
+**64 of 226 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -137,7 +138,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**159 of 223 routes.**
+**162 of 226 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -229,6 +230,9 @@ flowchart TD
 | `/api/products` | POST | owner, admin, sales_manager |
 | `/api/proxy/end` | POST | owner, funding_advisor |
 | `/api/proxy/launch` | POST | owner, funding_advisor |
+| `/api/push/key` | GET | client |
+| `/api/push/subscribe` | GET, POST | client |
+| `/api/push/unsubscribe` | DELETE, POST | client |
 | `/api/read/ad-attribution` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/ad-books` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/affiliate-portal` | GET | staff, affiliate, client |
