@@ -3,6 +3,7 @@
 // funding snapshot, lender list) filled from UnderwriteIQ data. No Claude JSON dump.
 
 import letterGenMod from "./vendor/letter-generator.cjs";
+import { realConsumerName, NO_CONSUMER_NAME } from "../metro2/letters/consumer-name.mjs";
 import summaryMod from "./vendor/summary-doc-generator.cjs";
 import buildDocsMod from "./vendor/build-documents.cjs";
 import generateDeliverablesMod from "./vendor/generate-deliverables.cjs";
@@ -89,10 +90,26 @@ const NICE_NAME = {
   [LETTER_TYPES.STATE_AG_COMPLAINT]: "State-Attorney-General-Complaint.pdf"
 };
 
+/**
+ * The client record the letters are addressed from.
+ *
+ * COMPLIANCE REVIEW REQUIRED — credit-repair messaging.
+ *
+ * `name` is a real name or it is NULL. It used to be the literal word "Client",
+ * which travelled all the way to the vendor letter writer and was printed as the
+ * sender and signed at the foot of every mailed dispute PDF
+ * (vendor/underwriteiq-full/api/lite/letter-generator.js `senderLines`), and was
+ * also handed to the personal-information writer, which turned it into the
+ * sentence "Please keep only my legal name: Client. Remove every other name." —
+ * mailed to a credit bureau. NULL MEANS UNKNOWN: it flows to `submittedName`
+ * (../finance/crs-tier.mjs already answers `name: submittedName || null`) and it
+ * stops the letters in ./letter-pack.mjs `buildLetterPack`.
+ * ../metro2/letters/consumer-name.cjs is the one predicate.
+ */
 export function personalFromClient(row) {
-  if (!row) return { name: "Client", address: "" };
+  if (!row) return { name: null, address: "" };
   const cf = row.custom_fields && typeof row.custom_fields === "object" ? row.custom_fields : {};
-  const name = [row.first_name, row.last_name].filter(Boolean).join(" ").trim() || "Client";
+  const name = realConsumerName([row.first_name, row.last_name].filter(Boolean).join(" "));
   const street = String(cf.address || cf.mailing_address || cf.street_address || cf.address_line1 || "").trim();
   const city = String(cf.city || cf.mailing_city || "").trim();
   const state = String(cf.state || cf.mailing_state || "").trim();
@@ -309,9 +326,12 @@ export function complaintIdentityFromPersonal(personal) {
   // so a client with no street on file gets a blank street, never their own city
   // printed as an address.
   const street = lines.find((l) => l !== cityLine) || "";
-  const name = String(who.name || "").trim();
+  /* Was an inline `name !== "Client"` test. It is now the shared predicate, so
+     "Consumer", "N/A", "[FULL LEGAL NAME]" and an empty string are refused by
+     the same rule, in the same place, as everywhere else. */
+  const name = realConsumerName(who.name);
   return {
-    fullName: name && name !== "Client" ? name : "",
+    fullName: name || "",
     addressLine1: street,
     city: String(who.city || "").trim(),
     state: String(who.state || "").trim(),
@@ -343,6 +363,23 @@ export async function buildEscalationComplaints({
   onRepairPath = false
 } = {}) {
   if (pack !== "repair") return { files: [], skip: "not_repair" };
+  /* THE COMPLAINT PAIR IS A REPAIR-DESK DOCUMENT TOO.
+   *
+   * COMPLIANCE REVIEW REQUIRED — credit-repair messaging.
+   *
+   * A previous write-up said the CFPB and state attorney general complaints
+   * "only come out of the do-it-yourself packet, not the repair desk". The
+   * opposite is true of this function: the line above returns for every pack
+   * that is NOT "repair", so this is a repair-path-only builder, and it feeds
+   * ../metro2/diy/package.mjs `maybeComplaintFiles` from the same typed CRM
+   * record the bureau letters use. So it takes the same name gate they do —
+   * before any work, not inside the renderer.
+   *
+   * Both complaints are sworn under penalty of perjury. There is no version of
+   * one that may carry a name nobody has. */
+  if (!realConsumerName(personal?.name)) {
+    return { files: [], skip: NO_CONSUMER_NAME };
+  }
   if (!(disputeLetters || []).some(isDisputeLetter)) {
     return { files: [], skip: "no_dispute_letters" };
   }
@@ -414,22 +451,65 @@ export async function buildLetterPack({
   // behaviour, so a caller that does not know the tier changes nothing.
   onRepairPath = false
 } = {}) {
-  const who = personal || { name: "Client", address: "" };
+  const who = personal || { name: null, address: "" };
   const path = pack === "repair" ? "repair" : "fundable";
   const bureaus = bureausFromEngine(crsResult);
   // The one place a round advances. An account moves off Round 1 only because a
   // human confirmed the bureau's answer and the round machine recorded it.
   const rounds = stampPriorOutcomes(bureaus, priorOutcomes);
-  const letters = await generateLetters({
-    path,
-    bureaus,
-    personal: who,
-    underwrite: { fundable: pack !== "repair" }
-  });
-  // generateLetters only emits bureau Metro 2 letters when path === "repair".
-  // Gold funding packs still include those letters (LETTER_SPEC + owner roster).
-  if (pack !== "repair" && !letters.some(isDisputeLetter)) {
-    letters.push(...(await generateDisputeLetters({ bureaus, personal: who })));
+  /* NO NAME, NO LETTERS.
+   *
+   * COMPLIANCE REVIEW REQUIRED — credit-repair messaging.
+   *
+   * Every letter below is mailed to a credit bureau and signed at the foot in
+   * one person's name. The vendor writer refuses on its own now, but a throw
+   * from inside it would take the whole pack down — including the four funding
+   * analysis documents, which name nobody and are still owed to the client. So
+   * the refusal is here, it is narrow, and it is reported: `letterSkip`.
+   *
+   * WHERE `who` STILL GOES, ENUMERATED RATHER THAN ASSUMED. An earlier draft of
+   * this comment said the analysis printers "read `client.applicant`, never
+   * `who.name`". That was wrong, and it is exactly the kind of unchecked
+   * "every"/"never" that two review rounds have now caught. `who` is passed to
+   * three more printers below and two of them read `.name`:
+   *
+   *   1. `generateAllSummaryDocuments(specs, crsResult, who)` →
+   *      vendor/underwriteiq-full/api/lite/crs/summary-doc-generator.js:82, :134
+   *      and :241, each `Applicant: ${personal?.name || "[Applicant Name]"}`.
+   *      With `who.name` null those pages print the visible blank
+   *      "[Applicant Name]". That is a blank, not a claim about a person, and it
+   *      is on a funding/repair summary read by the client — not a letter mailed
+   *      to a bureau. It is the correct outcome of an absent name and is left as
+   *      it is. The file is not in this lane.
+   *   2. `uiqDeliverablePdfs(crsResult, who, ...)` → `buildBlackReportClient`
+   *      (./black-report-client.mjs:564), which does
+   *      `client.applicant = String(who.name || "").trim() || "Client"`. That
+   *      one DOES substitute the literal word. It is another lane's owned file
+   *      (`src/underwrite/black-report-*`), so it is handed off, not edited
+   *      here. This change does not make it worse: it used to receive the string
+   *      "Client" and now receives null, and both land on the same output.
+   *   3. `generateDeliverables(crsResult, who)` → the Claude document writer,
+   *      which reads `personal.name` into its prompt payload
+   *      (crs/generate-deliverables.js:63). Only reached for `pack === "funding"`
+   *      and only with an API key set.
+   *
+   * None of the three is a letter mailed to a credit bureau, which is what the
+   * refusal above protects. */
+  const letterName = realConsumerName(who.name);
+  const letterSkip = letterName ? null : NO_CONSUMER_NAME;
+  const letters = [];
+  if (letterName) {
+    letters.push(...(await generateLetters({
+      path,
+      bureaus,
+      personal: who,
+      underwrite: { fundable: pack !== "repair" }
+    })));
+    // generateLetters only emits bureau Metro 2 letters when path === "repair".
+    // Gold funding packs still include those letters (LETTER_SPEC + owner roster).
+    if (pack !== "repair" && !letters.some(isDisputeLetter)) {
+      letters.push(...(await generateDisputeLetters({ bureaus, personal: who })));
+    }
   }
   let summaries = [];
   // Reported, not just swallowed. This catch used to drop the error on the floor,
@@ -495,6 +575,9 @@ export async function buildLetterPack({
     deliverableEngine: uiq.engine || null,
     deliverableEngineReason: uiq.engineReason || null,
     summarySkip,
+    // Null normally. "missing_consumer_name" when this client has no real name
+    // on record, which withholds every mailed letter and both complaints.
+    letterSkip,
     complaintCount: escalation.files.length,
     complaintSkip: escalation.skip,
     // How many accounts were moved off Round 1 by a recorded bureau answer, and

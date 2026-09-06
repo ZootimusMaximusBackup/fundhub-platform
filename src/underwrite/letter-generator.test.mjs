@@ -7,7 +7,8 @@ const {
   generateLetters,
   generateDisputeLetters,
   generateInquiryLetters,
-  generatePersonalInfoLetters
+  generatePersonalInfoLetters,
+  collectPersonalInfoItems
 } = letterGenMod;
 
 const PERSONAL = {
@@ -311,7 +312,13 @@ test("smash: matching personal info emits zero personal_info PDFs", async () => 
   );
 });
 
-test("smash: missing personal null or empty object must not throw", async () => {
+/* WAS: "smash: missing personal null or empty object must not throw", and it
+   passed by rendering a PDF addressed and signed "Client" — the literal word.
+   That is the defect, not the guarantee, so the test now pins the rule instead
+   of the old behaviour: a letter that cannot be truthfully addressed REFUSES.
+   The empty-input half of the old test is kept exactly as it was, because a
+   bureau file with nothing in it must still yield zero letters and not a throw. */
+test("A LETTER WITH NO REAL NAME REFUSES — every writer, every placeholder", async () => {
   const payload = {
     experian: {
       tradelines: [SIGNET],
@@ -323,32 +330,73 @@ test("smash: missing personal null or empty object must not throw", async () => 
       dobs: []
     }
   };
-  for (const personal of [null, {}, undefined]) {
-    const letters = await generateLetters({
-      path: "repair",
-      bureaus: payload,
-      personal
-    });
-    assert.ok(Array.isArray(letters));
-    for (const letter of letters) {
-      await assertRealPdf(letter);
-    }
-    const inquiries = await generateInquiryLetters({ bureaus: payload, personal });
-    for (const letter of inquiries) {
-      await assertRealPdf(letter);
-    }
-    const info = await generatePersonalInfoLetters({ bureaus: payload, personal });
-    for (const letter of info) {
-      await assertRealPdf(letter);
-    }
+  const noName = [
+    null,
+    undefined,
+    {},
+    { name: "" },
+    { name: null },
+    { name: "Client" },
+    { name: "  client  " },
+    { name: "Consumer" },
+    { name: "N/A" },
+    { name: "[FULL LEGAL NAME]" }
+  ];
+  for (const personal of noName) {
+    const label = JSON.stringify(personal);
+    await assert.rejects(
+      () => generateLetters({ path: "repair", bureaus: payload, personal }),
+      /missing_consumer_name/,
+      `a repair pack was built for ${label}`
+    );
+    await assert.rejects(
+      () => generateInquiryLetters({ bureaus: payload, personal }),
+      /missing_consumer_name/,
+      `an inquiry letter was built for ${label}`
+    );
+    await assert.rejects(
+      () => generatePersonalInfoLetters({ bureaus: payload, personal }),
+      /missing_consumer_name/,
+      `a personal-info letter was built for ${label}`
+    );
   }
+  // A real name on the SAME payload still produces real PDFs. Without this the
+  // test above would pass just as well if the writers refused everything.
+  const good = await generateLetters({ path: "repair", bureaus: payload, personal: PERSONAL });
+  assert.ok(good.length > 0, "a named client got no letters");
+  for (const letter of good) await assertRealPdf(letter);
+
+  // Nothing to write about is still zero letters and still not a throw.
   for (const fn of [generateLetters, generateDisputeLetters, generateInquiryLetters, generatePersonalInfoLetters]) {
     const none = await fn(null);
     assert.ok(Array.isArray(none));
-    for (const letter of none) {
-      await assertRealPdf(letter);
-    }
+    assert.equal(none.length, 0);
   }
+});
+
+test("the name a bureau is asked to KEEP is never the word Client", async () => {
+  // The third name site in the vendor writer: not a letterhead, a claim.
+  // Before this fix a bureau was mailed "Please keep only my legal name:
+  // Client. Remove every other name."
+  const file = {
+    experian: {
+      tradelines: [], inquiryList: [], names: ["WILLIE L BOOZE"],
+      addresses: [], employers: [], ssns: [], dobs: []
+    }
+  };
+  for (const personal of [{ name: "Client" }, { name: null }, { name: "Consumer" }]) {
+    const items = collectPersonalInfoItems("experian", file, personal);
+    const nameItem = items.find((i) => i.heading === "NAME VARIATIONS");
+    assert.equal(
+      nameItem,
+      undefined,
+      `a name claim was made with no name on record: ${JSON.stringify(nameItem?.fix)}`
+    );
+  }
+  const named = collectPersonalInfoItems("experian", file, { name: "Jordan Sample" });
+  const claim = named.find((i) => i.heading === "NAME VARIATIONS");
+  assert.ok(claim, "a real name produced no name claim");
+  assert.match(claim.fix, /Jordan Sample/);
 });
 
 test("smash: unicode and apostrophe names still render a real PDF", async () => {

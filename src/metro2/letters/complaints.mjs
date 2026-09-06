@@ -6,6 +6,7 @@ import { hasMetro2Claim } from "./generate.mjs";
 import { agForState, CFPB_FILING, BUREAU_DISPUTE_ADDRESSES } from "./ag-statutes.mjs";
 import { perjuryDeclaration } from "./sign-block.mjs";
 import { renderLetterPdf } from "./render.mjs";
+import { requireConsumerName } from "./consumer-name.mjs";
 
 const DATE_NOT_MAILED = "[DATE — not mailed yet]";
 const DATE_BLANK = "Date: ____________________";
@@ -18,8 +19,14 @@ function complaintHeading(type) {
   return "CONSUMER FINANCIAL PROTECTION BUREAU COMPLAINT";
 }
 
+/* THE NAME ON A COMPLAINT SWORN UNDER PENALTY OF PERJURY IS A REAL NAME OR THE
+   COMPLAINT IS NOT BUILT. "[FULL LEGAL NAME]" used to stand here as a blank the
+   client would fill in by hand; it is gone because it also stood in for a name
+   the code had simply lost, and the two are indistinguishable on the page.
+   ./consumer-name.cjs holds the one predicate; a refusal throws, which is how
+   ./generate.mjs already refuses a letter with no rule-backed claim. */
 function consumerName(identity) {
-  return String(identity?.fullName || "").trim() || "[FULL LEGAL NAME]";
+  return requireConsumerName(identity?.fullName, "consumer complaint");
 }
 
 function complaintDateLine(undated, date) {

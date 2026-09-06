@@ -10,6 +10,7 @@ import {
   renderFurnisherValidationPdf
 } from "../letters/furnisher-validation.mjs";
 import { assertReadyToSend } from "../../repair/safety.mjs";
+import { realConsumerName, NO_CONSUMER_NAME } from "../letters/consumer-name.mjs";
 
 function coverSheet({ round, bureau, items, waitDays = 30 }) {
   const list = (items || [])
@@ -129,6 +130,27 @@ export async function buildDiyPackage({
   if (datedComplaints && !hasAuthorization) {
     return { ok: false, reason: "dispute_authorization_required", stalled: true };
   }
+
+  /* NO NAME, NO PACKET.
+   *
+   * COMPLIANCE REVIEW REQUIRED — credit-repair messaging.
+   *
+   * Every document below is addressed and signed in one person's name: three
+   * bureau letters per round through ../letters/generate.mjs, a validation
+   * demand per collector through ../letters/furnisher-validation.mjs, and the
+   * two sworn complaints through ../letters/complaints.mjs. All four renderers
+   * refuse on their own now, but the refusal belongs HERE too and first —
+   * throwing from inside the render loop would abandon a half-built packet, and
+   * the caller (./deliver.mjs) needs one reason it can put on the client record.
+   *
+   * This is the gap a reviewer proved by rendering on 2026-09-06: the previous
+   * round gated the repair desk and recorded these renderers as "reachable only
+   * from the gated caller". They are not. This builder is the other caller. */
+  const packetName = realConsumerName(identity?.fullName);
+  if (!packetName) {
+    return { ok: false, reason: NO_CONSUMER_NAME, stalled: true };
+  }
+  identity = { ...identity, fullName: packetName };
 
   const letters = [];
   const documents = [];

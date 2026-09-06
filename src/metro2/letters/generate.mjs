@@ -8,6 +8,7 @@ import { formatComplaintFilings } from "../rounds/complaint-filing.mjs";
 import { resolvedCitationBlock } from "./citations-assert.mjs";
 import { generateWithVarianceGate, structuralFingerprint } from "./variance.mjs";
 import { handwrittenSignOff } from "./sign-block.mjs";
+import { requireConsumerName } from "./consumer-name.mjs";
 
 function bureauName(code) {
   return ({ EX: "Experian", EQ: "Equifax", TU: "TransUnion" })[String(code || "").toUpperCase()] || String(code || "Credit Bureau");
@@ -730,10 +731,18 @@ export function buildLetterText(opts = {}) {
     throw new Error("no_rule_id_claims — refuse to generate a letter with zero rule-backed violations");
   }
   const identity = opts.identity || {};
+  /* THE NAME ON A LETTER TO A CREDIT BUREAU IS A REAL NAME OR THE LETTER IS NOT
+     BUILT. ./consumer-name.cjs holds the one predicate every renderer uses. This
+     sits beside the zero-claims refusal because it is the same kind of refusal:
+     a letter nobody can truthfully address is not a letter, it is a guess with a
+     stamp on it. See ../diy/package.mjs, ../diy/deliver.mjs, ./complaints.mjs,
+     ./furnisher-validation.mjs, ../../inquiry-ops/letter-draft.mjs,
+     ../../underwrite/letter-pack.mjs and the vendor writer — all the same rule. */
+  const consumerName = requireConsumerName(identity.fullName, "bureau dispute letter");
   const bureau = String(opts.bureau || "").toUpperCase();
   const round = opts.round || ROUND.R1;
   const instr = roundInstructions(round);
-  const seed = hashSeed(opts.seed ?? `${identity.fullName || ""}:${bureau}:${round}`);
+  const seed = hashSeed(opts.seed ?? `${consumerName}:${bureau}:${round}`);
   const ordered = rotateViolations(violations, seed + (opts.attempt || 0) * 7);
   const attempt = Number(opts.attempt) || 0;
   const metro2Backed = hasMetro2Claim(violations);
@@ -780,7 +789,7 @@ export function buildLetterText(opts = {}) {
   const ask = accurate(instr.ask, shape);
   const next = accurate(instr.next, shape);
   const dateLine = opts.undated ? "[DATE — write today's date when you mail this]" : (opts.date || "");
-  const name = identity.fullName || "[Consumer Name]";
+  const name = consumerName;
   const addr = [
     identity.addressLine1,
     identity.addressLine2,

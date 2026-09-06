@@ -3,6 +3,16 @@
 //
 // COMPLIANCE REVIEW REQUIRED: dispute messaging. Draft only — never sends.
 // Per-client variance is required so mass-identical letters are not produced.
+//
+// THE NAME ON IT. A draft is printed, signed and posted by a person; "draft"
+// describes who presses send, not whether the words are real. So this file obeys
+// the same one rule as every other renderer in the repository: the name at the
+// top and under "Sincerely" is a real name or THERE IS NO DRAFT. It used to fall
+// back to the literal word "Consumer" — a dispute demand under 15 U.S.C. §1681i,
+// addressed to Experian, signed "Consumer".
+// ../metro2/letters/consumer-name.cjs holds the predicate.
+
+import { realConsumerName } from "../metro2/letters/consumer-name.mjs";
 
 const OPENERS = [
   "I am writing to formally dispute certain information appearing on my credit file",
@@ -54,7 +64,10 @@ const BUREAU_NAMES = Object.freeze({
  *   pii?: object[],
  *   today?: string
  * }} opts
- * @returns {string} HTML draft
+ * @returns {string|null} HTML draft, or NULL when the client has no real name on
+ *   record. Null means unknown and callers must let it stay unknown — storing
+ *   null in `inquiry_removal_cases.letter_draft_html` (nullable) is the correct
+ *   outcome. Do not substitute a placeholder draft.
  */
 export function renderLetterDraft(opts = {}) {
   const bureau = String(opts.bureau || "EX").toUpperCase();
@@ -62,7 +75,9 @@ export function renderLetterDraft(opts = {}) {
   const client = opts.client || {};
   const first = client.first_name || client.firstName || "";
   const last = client.last_name || client.lastName || "";
-  const fullName = [first, last].filter(Boolean).join(" ") || "Consumer";
+  const fullName = realConsumerName([first, last].filter(Boolean).join(" "));
+  // No name, no draft. See the header.
+  if (!fullName) return null;
   const inquiries = Array.isArray(opts.inquiries) ? opts.inquiries : [];
   const pii = Array.isArray(opts.pii) ? opts.pii : [];
   const today = opts.today || new Date().toISOString().slice(0, 10);

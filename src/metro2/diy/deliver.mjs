@@ -7,6 +7,7 @@ import { persistDiyPackageFiles } from "./persist.mjs";
 import { violationsByBureauFromMergedCrs } from "./from-crs.mjs";
 import { storeFromEnv } from "../../documents/store.mjs";
 import { mergeCustomFields } from "../../workflows/custom-fields.mjs";
+import { realConsumerName, NO_CONSUMER_NAME } from "../letters/consumer-name.mjs";
 
 /**
  * Build DIY package from violations already on the client (or empty → stalled flag).
@@ -53,8 +54,13 @@ export async function deliverDiyPackageInRepo(db, {
 
   if (!pack.ok) {
     if (db && clientId) {
+      /* The stall label used to say "Variance" whatever the reason was. A packet
+         held back because nobody knows the client's name is not a variance
+         problem, and the desk cannot act on it if it is told it is one. */
       await mergeCustomFields(db, clientId, {
-        diy_status: "Stalled — Variance",
+        diy_status: pack.reason === NO_CONSUMER_NAME
+          ? "Stalled — No Verified Name"
+          : "Stalled — Variance",
         diy_package_reason: pack.reason || "variance"
       });
     }
@@ -127,22 +133,48 @@ async function resolveViolationsByBureau(db, { clientId, violationsByBureau } = 
   return violationsByBureauFromMergedCrs(result);
 }
 
+/* THE NAME ON THE DIY PACKET.
+ *
+ * COMPLIANCE REVIEW REQUIRED — credit-repair messaging.
+ *
+ * This function used to answer the literal word "Client" three times over, and
+ * ./package.mjs handed that answer straight to the bureau-letter writer, the
+ * furnisher-validation writer and both complaint writers. A reviewer rendered it
+ * on 2026-09-06 and got a Round 1 Experian letter headed `Client` and signed
+ * `Signature: ____  Client`. That packet is mailed to a credit bureau by the
+ * person whose file it is about.
+ *
+ * NULL MEANS UNKNOWN and it now survives: no name gives `fullName: null`, and
+ * ./package.mjs refuses the whole packet rather than printing a word in the
+ * place where a person's name goes. ../letters/consumer-name.cjs is the one
+ * predicate that decides what counts as a name, and it treats "Client" the same
+ * whether it arrived from this database read or from a caller's argument — a
+ * caller passing `{fullName: "Client"}` used to sail through the first line of
+ * this function untouched.
+ *
+ * WHAT THIS DOES NOT DO. It still reads `clients.first_name` / `last_name`, the
+ * typed sales-call field. The repair desk (../../repair/analyze.mjs) holds its
+ * letters to the name read off the uploaded government ID instead. Extending
+ * that to the DIY packet would stop every client without a read ID from getting
+ * one, which is a product decision nobody has made; it is recorded here rather
+ * than taken quietly.
+ */
 async function resolveLetterIdentity(db, { clientId, identity } = {}) {
-  if (identity?.fullName) return identity;
+  const given = realConsumerName(identity?.fullName);
+  if (given) return { ...identity, fullName: given };
   const fallback = identity && typeof identity === "object" ? { ...identity } : {};
-  if (!db || !clientId) {
-    return { fullName: "Client", ...fallback };
-  }
+  const unnamed = { ...fallback, fullName: null };
+  if (!db || !clientId) return unnamed;
   const client = await db.query(
     `SELECT first_name, last_name, custom_fields FROM clients WHERE id = $1`,
     [clientId]
   );
   const row = client.rows?.[0];
-  if (!row) return { fullName: "Client", ...fallback };
+  if (!row) return unnamed;
   const cf = row.custom_fields && typeof row.custom_fields === "object" ? row.custom_fields : {};
-  const name = [row.first_name, row.last_name].filter(Boolean).join(" ").trim();
+  const name = realConsumerName([row.first_name, row.last_name].filter(Boolean).join(" "));
   return {
-    fullName: name || fallback.fullName || "Client",
+    fullName: name,
     addressLine1: String(cf.address_line1 || cf.address || "").trim() || fallback.addressLine1 || "",
     city: String(cf.city || "").trim() || fallback.city || "",
     state: String(cf.state || "").trim() || fallback.state || "",

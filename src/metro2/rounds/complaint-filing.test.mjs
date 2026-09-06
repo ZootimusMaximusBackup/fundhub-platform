@@ -46,8 +46,13 @@ const VIOLATIONS = [{
   account_last4: "1234"
 }];
 
+/* WAS `fullName: "Test Client"`. The shared name predicate
+   (../letters/consumer-name.cjs) refuses that, and it is right to: it is a
+   seeded stand-in, and no letter may go to a credit bureau addressed to one.
+   A fixture that cannot be mailed cannot exercise a letter, so the fixture is
+   now a person's name. */
 const IDENTITY = {
-  fullName: "Test Client",
+  fullName: "Simone Repair-Vega",
   addressLine1: "1 Main St",
   city: "Denton",
   state: "TX",
@@ -61,11 +66,20 @@ const r6 = (priorFilings) => buildLetterText({
 /** Any sentence that would tell a bureau a complaint has already been filed. */
 const CLAIMS_FILED = /complaint .{0,40}(was|were|has been|have been) (mailed|filed|sent)|COMPLAINTS ALREADY FILED/i;
 
+/* `sink.sql` / `sink.params` are the LAST statement, which is what most of these
+   tests want. `sink.sqls` / `sink.paramSets` keep all of them: since the
+   provider receipt became required, recordComplaintFiling always follows its
+   INSERT with the UPDATE that writes the receipt, so a last-statement-only sink
+   could no longer see the insert at all. */
 function fakeDb(rows, sink = {}) {
+  sink.sqls = [];
+  sink.paramSets = [];
   return {
     async query(sql, params) {
       sink.sql = sql;
       sink.params = params;
+      sink.sqls.push(sql);
+      sink.paramSets.push(params);
       return { rows };
     }
   };
@@ -288,19 +302,27 @@ describe("what Round 6 is allowed to say", () => {
 });
 
 describe("writing the record — only after the provider took it", () => {
+  /* `providerId` is the mail provider's own identifier for the piece it took.
+     It is REQUIRED, so it belongs in the fixture: without it there is no
+     evidence a complaint was mailed, and Round 6 must stay silent rather than
+     tell a credit bureau one was. ../../repair/send.mjs is the one caller and
+     it passes the id it got back from the provider. */
   const good = {
     caseId: "case-1", orgId: "org-1", clientId: "cl-1", bureau: "EX",
-    round: "R4", target: COMPLAINT_TARGET.CFPB, bodyText: "CFPB COMPLAINT ..."
+    round: "R4", target: COMPLAINT_TARGET.CFPB, bodyText: "CFPB COMPLAINT ...",
+    providerId: "ltr_prov_0001"
   };
 
   test("a mailed CFPB complaint is written as sent, on the existing table", async () => {
     const sink = {};
     const out = await recordComplaintFiling(fakeDb([{ id: "letter-1" }], sink), good);
     assert.equal(out.ok, true);
-    assert.match(sink.sql, /INSERT INTO dispute_letters/i);
-    assert.ok(sink.params.includes("sent"), "the row must say sent, not generated");
-    assert.ok(sink.params.includes("cfpb"));
-    assert.ok(sink.params.includes("R4"));
+    const insertAt = sink.sqls.findIndex((q) => /INSERT INTO dispute_letters/i.test(q));
+    assert.ok(insertAt >= 0, "no row was inserted");
+    const inserted = sink.paramSets[insertAt];
+    assert.ok(inserted.includes("sent"), "the row must say sent, not generated");
+    assert.ok(inserted.includes("cfpb"));
+    assert.ok(inserted.includes("R4"));
   });
 
   test("A ROUND AND TARGET THAT DISAGREE ARE NEVER WRITTEN", async () => {
@@ -326,12 +348,38 @@ describe("writing the record — only after the provider took it", () => {
   test("missing facts refuse the write rather than inventing them", async () => {
     for (const [field, reason] of [
       ["caseId", "no_case"], ["orgId", "no_client"], ["clientId", "no_client"],
-      ["bodyText", "no_body_text"]
+      ["bodyText", "no_body_text"], ["providerId", "no_provider_receipt"]
     ]) {
       const out = await recordComplaintFiling(fakeDb([{ id: "x" }]), { ...good, [field]: null });
       assert.equal(out.ok, false, `a missing ${field} still wrote a filing row`);
       assert.equal(out.reason, reason);
     }
+  });
+
+  test("NO PROVIDER RECEIPT, NO FILING ROW — so Round 6 cannot say it was filed", async () => {
+    /* This is the guard that stops the sentence "On <date> a complaint about
+       this file was mailed to the Consumer Financial Protection Bureau" from
+       being opened on our say-so. A caller must hold the provider's own
+       identifier for the piece; intending to send is not sending. */
+    const sink = {};
+    for (const receipt of [null, undefined, "", "   "]) {
+      const out = await recordComplaintFiling(fakeDb([{ id: "x" }], sink), {
+        ...good, providerId: receipt
+      });
+      assert.equal(out.ok, false, `a filing row was written for ${JSON.stringify(receipt)}`);
+      assert.equal(out.reason, "no_provider_receipt");
+    }
+    // And nothing reached Round 6's reader: no row means no sentence.
+    assert.deepEqual(formatComplaintFilings([]), []);
+  });
+
+  test("the receipt is written onto the row, not just checked and dropped", async () => {
+    const sink = {};
+    const out = await recordComplaintFiling(fakeDb([{ id: "letter-1" }], sink), good);
+    assert.equal(out.ok, true);
+    const at = sink.sqls.findIndex((q) => /postgrid_letter_id/.test(q));
+    assert.ok(at >= 0, "the receipt was checked and then never written down");
+    assert.ok(sink.paramSets[at].includes("ltr_prov_0001"));
   });
 
   test("A WRITE FAILURE IS REPORTED, NOT SWALLOWED INTO A FALSE SUCCESS", async () => {
