@@ -69,8 +69,10 @@ The fifth was built and then dropped by the saver until 2026-09-04 (F46).
 ```mermaid
 flowchart TD
     LEND[Vendor lender matcher<br/>availableNow / afterOptimization] --> GATE{Does the lender state a<br/>gate nothing has checked?}
-    GATE -->|revenue floor,<br/>and no revenue is on file| AFTER["Shortlist, with the floor<br/>printed as what is still needed"]
-    GATE -->|entity, months in business,<br/>score — all three checked| NOW["Open to you today"]
+    GATE -->|"revenue floor (minRevenue)"| AFTER["Shortlist, with the requirement<br/>printed as what is still needed"]
+    GATE -->|"a requirement in its own whyFit text —<br/>business bank account, membership"| AFTER
+    GATE -->|"a requirement nobody has classified yet"| AFTER
+    GATE -->|"entity, months in business, score,<br/>fundable outcome — the four it checks"| NOW["Open to you today"]
 
     BIZ[Does this client have a company?] --> ROW{"A row in `businesses`?"}
     ROW -->|yes| HAS["Named, aged, no LLC advice.<br/>Business lenders are matched."]
@@ -78,10 +80,20 @@ flowchart TD
 ```
 
 * **"Open to you today" means every gate the lender states is met.** The vendor
-  matcher checks entity, months in business and score, and never reads
-  `minRevenue`, though four of its lenders state one. Nothing in this product
-  captures a client's business revenue, so those four are held in the shortlist
-  with the floor named. Unknown is not met, and unknown is never printed as zero.
+  matcher checks four things — entity, months in business, score, and a fundable
+  outcome. It never reads `minRevenue`, though four of its lenders state one, and
+  it never reads the requirements two more state in words: Fundbox wants a
+  business bank account, Navy Federal wants membership. This product records none
+  of the three, so those six are held in the shortlist with the requirement
+  named. Unknown is not met, and unknown is never printed as zero. A requirement
+  the classifier has not seen is treated as unverified too, so a vendor edit
+  holds a lender back rather than over-promising it.
+* **A card with no reported credit limit has no paydown target, anywhere.** There
+  is no 10% of a limit the file does not have, so the paydown table, the 6-month
+  checklist, the fastest-wins list and the application-order rule all say the
+  limit is unknown instead of naming a figure. The 6-month checklist said "down
+  to under 10% of its limit" until 2026-09-06 while the table two pages earlier
+  said "-".
 * **A company is a `businesses` row.** That is the owner's F15 rule, reused here
   rather than restated. A client whose only company fact is
   `clients.custom_fields.business_age_months` — the sim academy profile is one —

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   buildBlackReportClient,
+  classifyProseGate,
   emptyBlackReportClient,
   hasBlackReportSource,
   mergeStoredUnderwrite
@@ -456,6 +457,62 @@ test("a lender is only 'open to you today' when every gate it states is met", ()
   assert.ok(moved.length > 0, "the revenue-gated lenders must still be listed, with the floor named");
   // They are moved, not dropped: every matched lender still reaches the client.
   assert.equal(withBiz.lenders.length, withBiz.lenders_now.length + withBiz.lenders_after.length);
+
+  /* A GATE STATED IN PROSE IS STILL A GATE. Two lenders state one in their own
+     whyFit text and the vendor matcher reads neither: Fundbox wants a business
+     bank account, Navy Federal wants membership. This product records neither,
+     so neither can be called available today. Before this, a client with a
+     company 24 months old or older was told eleven lenders were open, two of
+     them on a requirement nobody had checked. */
+  const nowNames = withBiz.lenders_now.map((row) => row[0]);
+  for (const name of ["Fundbox", "Navy Federal*"]) {
+    assert.equal(nowNames.includes(name), false,
+      `${name} states a requirement this system never checks and cannot be called available today`);
+  }
+  const byName = new Map(withBiz.lenders_after.map((row) => [row[0], row]));
+  assert.match(String(byName.get("Fundbox")?.[10] || ""), /business bank account \(not on file\)/i);
+  assert.match(String(byName.get("Navy Federal*")?.[10] || ""), /membership eligibility \(not on file\)/i);
+  // And a lender whose prose says it wants LESS is not mistaken for a gate.
+  assert.ok(nowNames.includes("Lending Club"),
+    '"No business required" is not a requirement and must not hold a lender back');
+});
+
+test("PROSE_GATE_COMPLETENESS — every requirement the vendor states in words is classified", () => {
+  /* classifyProseGate() is a list of phrases. A list of phrases rots the moment
+     somebody edits the vendor file, and the way it rots is silent: a new
+     requirement nobody classified gets printed as an availability.
+
+     So this re-reads lender-matrix.js and fails if any lender's whyFit mentions
+     a requirement in a form the classifier has not seen. The classifier's own
+     fallback is conservative — an unrecognised requirement is treated as
+     unverified — so the failure mode is a lender wrongly HELD BACK, never one
+     wrongly promised. This test is what turns that into a visible decision. */
+  const matrix = readFileSync(
+    new URL("../../vendor/underwriteiq-full/api/lite/crs/lender-matrix.js", import.meta.url), "utf8"
+  );
+  const whyFits = [...matrix.matchAll(/whyFit:\s*"([^"]*)"/g)].map((m) => m[1]);
+  assert.ok(whyFits.length >= 15, `expected the vendor's fifteen lenders, read ${whyFits.length}`);
+  const stated = whyFits.filter((text) => /requir/i.test(text));
+  assert.deepEqual(stated.sort(), [
+    "Best rates if you are eligible. Requires membership.",
+    "Clean bureaus plus business bank account required.",
+    "Personal loan. No business required."
+  ], "the vendor's requirement wording moved — reclassify it in PROSE_GATES before shipping");
+  for (const text of stated) {
+    const gate = classifyProseGate(text);
+    assert.equal(gate.stated, true, `"${text}" states a requirement`);
+    if (/no business required/i.test(text)) {
+      assert.equal(gate.unverified, false, "a lender wanting less is not a gate");
+      assert.equal(gate.needed, null);
+    } else {
+      assert.equal(gate.unverified, true, `"${text}" names something this system does not record`);
+      assert.match(String(gate.needed), /not on file/i);
+    }
+  }
+  // The safe default, spelled out: an unclassified requirement holds a lender back.
+  const unseen = classifyProseGate("Requires a notarised llama.");
+  assert.equal(unseen.stated, true);
+  assert.equal(unseen.unverified, true);
 });
 
 test("a card with no credit limit has no paydown target, and no total pretends it does", () => {

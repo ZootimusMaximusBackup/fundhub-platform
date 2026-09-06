@@ -1,62 +1,157 @@
-REGENERATED 2026-09-04 after the ROUND 2 repair pass. Every file here came out of
-the code as it now stands. Sizes are bytes.
+REGENERATED 2026-09-06 (ROUND 3). Every file in this directory came out of the
+code as it stands, by one command:
 
-Printed by the NODE printer (src/underwrite/black-report-node.mjs), which is what
-Netlify runs: WeasyPrint is not installed there, so black-report-pdf.mjs falls
-through to Node on production. A laptop with WeasyPrint installed prints the same
-five documents through scripts/black-reports/fundhub_gen.py instead and the bytes
-differ; that path is proved separately in docs/workflows/w10-proof-2026-09-03.md.
+    node scripts/black-reports/regen-w10-pack.mjs
+
+Sizes are bytes. Run `--check` instead to see what would change without writing.
 
 
-TOP LEVEL — Sim Five-Academy (simulated), no `businesses` row.
-This is the client the 2026-09-03 walkthrough measured. Local Postgres 16,
-scratch database fundhub_w10r, all 238 migrations, one
-`scripts/sim/push-credit.mjs --profile academy` run with INNGEST_EVENT_KEY unset.
-All five documents reached the document store on that run.
+WHY THE WHOLE PACK WAS REPLACED
+-------------------------------
+The 2026-09-04 pack no longer matched the code, in three ways, and a committed
+artefact that contradicts its own write-up is worse than no artefact.
 
-   12363  bank_lender_match_list       Bank-and-Lender-Match-List.pdf     6 pages
-    1599  capital_readiness_summary    Capital-Readiness-Summary.pdf      1 page
-    8954  credit_analysis_report       Credit-Analysis-Report.pdf         5 pages
-    9534  credit_optimization_roadmap  Credit-Optimization-Roadmap.pdf    5 pages
-   11165  funding_snapshot             Funding-Snapshot.pdf               5 pages
+  1. Its LENDER COUNTS were over-promises. It said "6 lenders are open to you
+     today" for the sim client and "11 lenders are open to you today" for the
+     same client with a company on file. Both counts included lenders that state
+     a requirement this system has never checked: Fundbox wants a business bank
+     account, Navy Federal wants membership. Nothing in this product records
+     either. Unknown is not met. The counts are now 5 and 9, and both lenders
+     still appear in the shortlist with their real requirement printed.
 
-READ THIS BEFORE QUOTING THE PACK ON F44. This client still reads "No business
-entity on file… Forming an LLC is fast", and that is correct under the owner's
-F15 rule. His 72 months live in `clients.custom_fields.business_age_months`, not
-in a `businesses` row, and a number in a custom field is not a company. The LLC
-advice stops for a client who HAS a company row — see with-company/ below.
+  2. Its HARD-CASES roadmap printed "Month 1 - Pay AMEX PLATINUM (NPSL) from
+     $5,200 down to under 10% of its limit." — naming a limit the file does not
+     have, five pages after the paydown table on the same document printed "-"
+     for that same card.
 
-Against the committed 2026-09-04 pack it replaces, the only text that moved is
-the one-line introduction to "What Does Not Affect Your Funding", which grew to
-two lines and pushed one lender row onto the next page. Page counts, every
-number, and every other sentence are identical.
+  3. Its HARD-CASES files could not be reproduced from anything in this repo.
+     They were printed from a fixture named "Repro Client" that was never
+     committed, and the funding snapshot carried the sentence "You do not need to
+     lose sleep over these. They are cleanup and upkeep only." — a sentence that
+     exists in NO source file. The printer says, and has said,
+     "None of these is what your funding decision turns on. They are cleanup and
+     upkeep - the note under each one says what, if anything, to do about it."
+     (src/underwrite/black-report-node.mjs:584). The fixture now lives in
+     scripts/black-reports/regen-w10-pack.mjs, so the pack cannot drift from the
+     code again without the command saying so.
+
+`Bank-and-Lender-Match-List.pdf` is gone from this directory. That name came
+from the documents table's title slug; the pack builder's own filename is
+`Bank-Lender-Match-List.pdf` (src/underwrite/letter-pack-filter.mjs:9). Two
+lender lists with two names and two different counts is exactly the confusion
+this pack is supposed to prevent.
 
 
-with-company/ — the same file, same profile, with one `businesses` row
-(Sim Five Holdings LLC, 72 months) on the client. What F44 actually fixes.
+THE PRINTER
+-----------
+Printed by the NODE printer (src/underwrite/black-report-node.mjs), the same
+choice the 2026-09-04 pack made and for the same reason: WeasyPrint is not
+installed on Netlify, so black-report-pdf.mjs falls through to Node on
+production. A laptop with WeasyPrint prints the same five documents through
+scripts/black-reports/fundhub_gen.py and the bytes differ — pass
+`--engine=python` to produce that set instead. That path is proved separately in
+docs/workflows/w10-proof-2026-09-03.md.
+
+PDFs are not byte-reproducible; every one carries a creation timestamp, so the
+cover date moves and the bytes move with it. An unequal hash means the bytes are
+new, never that the words moved. Read the file. The sizes below move by a byte or
+two between runs for the same reason — they are here to tell one document from
+another, not to be diffed.
+
+
+TOP LEVEL — Sim Five-Academy, no `businesses` row
+-------------------------------------------------
+The sim academy profile, straight out of PROFILES.academy in
+scripts/sim/push-credit.mjs (762/770/758, clean, no inquiries), through the real
+tier engine and the real buildLetterPack(). Pull date fixed at 2026-07-25 so the
+cover date is a property of the input.
+
+   13273  7 pages  Bank-Lender-Match-List.pdf
+    1598  1 page   Capital-Readiness-Summary.pdf
+    8952  5 pages  Credit-Analysis-Report.pdf
+    9534  5 pages  Credit-Optimization-Roadmap.pdf
+   11315  5 pages  Funding-Snapshot.pdf
+
+READ THIS BEFORE QUOTING THE PACK ON F44. This client reads "No business entity
+on file… Forming an LLC is fast", and that is correct under the owner's F15
+rule. His 72 months live in `clients.custom_fields.business_age_months`, not in a
+`businesses` row, and a number in a custom field is not a company. The LLC advice
+stops for a client who HAS a company row — see with-company/ below.
+
+Five lenders are open today, not six. Navy Federal* moved to the shortlist
+printing "Membership eligibility (not on file)".
+
+WHAT THIS SET DOES **NOT** PROVE. The 2026-09-04 top-level files were read back
+out of the `documents` table after a real `push-credit --profile academy` run
+against a scratch Postgres. That run proved the STORING, and it is written up in
+docs/workflows/w10-proof-2026-09-03.md. These files prove the PRINTING, which is
+the half that keeps moving. They are the same profile and the same pack builder;
+they did not go through a database.
+
+
+with-company/ — the same file with one `businesses` row
+--------------------------------------------------------
+Sim Five Holdings LLC, 72 months. What F44 actually fixes.
+
+   11168  6 pages  Bank-Lender-Match-List.pdf
+    1598  1 page   Capital-Readiness-Summary.pdf
+    8952  5 pages  Credit-Analysis-Report.pdf
+    9573  5 pages  Credit-Optimization-Roadmap.pdf
+   10854  5 pages  Funding-Snapshot.pdf
 
   · Funding Snapshot: "Sim Five Holdings LLC is on file at 72 months old…"
     instead of "Forming an LLC is fast".
-  · Bank and Lender Match List: 11 lenders open today, not 6 — and not 15.
-    OnDeck, Bluevine, Kabbage and Credibly are held back in the shortlist,
-    each printing "$N/year in business revenue required (not on file)",
-    because the vendor matcher never checks a revenue floor and this product
-    has never captured a client's revenue. Unknown is not met.
-  · Roadmap: "grow the business side" instead of "form your business entity".
+  · Roadmap: "Step 3: grow the business side" instead of "form your business
+    entity".
+  · Bank and Lender Match List: NINE lenders open today, not eleven and not
+    fifteen. Six are held back in the shortlist, each printing what it still
+    wants:
+        OnDeck      $100,000/year in business revenue required (not on file)
+        Bluevine    $120,000/year in business revenue required (not on file)
+        Kabbage     $50,000/year in business revenue required (not on file)
+        Credibly    $180,000/year in business revenue required (not on file)
+        Fundbox     A business bank account (not on file)
+        Navy Fed*   Membership eligibility (not on file)
+    The vendor matcher checks four things — entity, months in business, score,
+    outcome — and none of the six requirements above is one of them. Nothing is
+    dropped and nothing is denied: 9 + 6 = 15, every lender the matcher knows.
+
+  Credit-Analysis-Report.pdf and Capital-Readiness-Summary.pdf are byte-identical
+  to the top-level pair. A company row changes neither, which is the point.
 
 
-hard-cases/ — a hand-built file, not from the database, that fires the three
-things the sim profile cannot. One card at $4,500 of $10,000 reported by all
-three bureaus (45% utilization), one AMEX PLATINUM with no preset spending
-limit, one authorized-user card at 80%.
+hard-cases/ — a hand-built file, not from any profile
+------------------------------------------------------
+Fires three things the sim profile cannot. The fixture is in
+scripts/black-reports/regen-w10-pack.mjs and every finding in it is the vendor
+engine's own wording (optimization-findings.js). No Capital Readiness Summary:
+the summary generator produces none for this file, same as the 2026-09-04 set.
 
-  · Funding Snapshot: "That is $4,500 in balances against $10,000 in limits"
-    and "down to about $1,000" — the engine's tri-merge $13,500 / $30,000 /
-    $3,000 corrected field by field, not all three flattened to the target.
-  · Roadmap paydown table: the no-limit card reads
-    "AMEX PLATINUM (NPSL)  $5,200  -  -  -". Unknown stays unknown; it is not
-    a $5,200 bill.
-  · Credit Analysis Report: the authorized-user account reads REVIEW with the
-    engine's own sentences under it, and the same finding is ranked under
-    "What Does Not Affect Your Funding" in the snapshot — not under "What Is
-    Costing You Money".
+   13256  7 pages  Bank-Lender-Match-List.pdf
+    9180  5 pages  Credit-Analysis-Report.pdf
+    9410  5 pages  Credit-Optimization-Roadmap.pdf
+    8684  4 pages  Funding-Snapshot.pdf
+
+  · TRI-MERGE. One card at $4,500 of $10,000 reported by all three bureaus. The
+    engine's own totals are $13,500 of $30,000. Funding Snapshot prints
+    "That is $4,500 in balances against $10,000 in limits" and "down to about
+    $1,000" — each tri-merge figure corrected against its own de-duplicated
+    counterpart, not all three flattened to the target. The strings "$13,500"
+    and "$30,000" appear nowhere in any of the four documents.
+
+  · NO CREDIT LIMIT. One AMEX PLATINUM with no preset spending limit.
+      Roadmap paydown table, page 2:
+        AMEX PLATINUM (NPSL)   $5,200   -   -   -
+      Roadmap 6-month checklist, page 5:
+        "Month 1 - AMEX PLATINUM (NPSL) - $5,200 owed. No credit limit is
+         reported for this card, so there is no 10% target to pay down to. Keep
+         the balance moving down and we will set a target when a limit reports."
+      Unknown reads as unknown in both places. It used to read as unknown in the
+      first and as "under 10% of its limit" in the second.
+      The card that DOES have a limit still gets its real target on the same
+      page: "Month 1 - Pay TEST CARD from $4,500 down to $1,000 or less."
+
+  · AUTHORIZED USER. MOM CARD at $8,000 of $10,000. It reads REVIEW in the
+    Credit Analysis Report with the engine's own sentences under it, and the same
+    finding is ranked under "What Does Not Affect Your Funding" in the snapshot —
+    never under "What Is Costing You Money".

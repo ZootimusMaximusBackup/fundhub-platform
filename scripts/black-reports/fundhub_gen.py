@@ -286,6 +286,37 @@ def paydown_amt(row):
     return max(0, bal - tgt)
 
 
+# UNKNOWN READS AS UNKNOWN IN EVERY PLACE THE TARGET IS PRINTED.
+#
+# target_bal() returns None for a card with no credit limit -- a charge card,
+# or an account with no preset spending limit. There is no 10% of a number the
+# file does not have. Every site that printed a target used to fall back to
+# row[5], which is the EMPTY STRING for exactly that card, so the sentence ran
+# off the end: "Pay AMEX PLATINUM (NPSL) from $5,200 down to ". The paydown
+# table on the same document printed "-" for the same card.
+#
+# These two helpers are the only way a target reaches the page now.
+
+TARGET_UNKNOWN = "-"
+
+
+def target_text(row):
+    """The paydown target as printed, or None when the file cannot know it."""
+    tgt = target_bal(row)
+    return usd(tgt) if tgt is not None else None
+
+
+def paydown_sentence(row):
+    """One card's paydown instruction. Never invents a target."""
+    account = row[0] if row else ""
+    bal = usd(row[2]) if row and len(row) > 2 else TARGET_UNKNOWN
+    tgt = target_text(row)
+    if tgt is not None:
+        return f"Pay {account} from {bal} down to {tgt}"
+    return (f"{account} - {bal} owed. No credit limit is reported for this card, "
+            f"so there is no 10% target to pay down to")
+
+
 def bureau_status(c, label):
     for name, status, count, note in c.get("bureaus") or []:
         if str(name).lower() == label.lower():
@@ -294,15 +325,27 @@ def bureau_status(c, label):
 
 
 def hero_card(c):
-    rows = ranked_revolving(c)
-    return rows[0] if rows else None
+    """The card every paydown narrative is built around.
+
+    Every sentence written about the hero states its utilization and its 10%
+    target, so a card that has neither cannot be one. ranked_revolving() sorts
+    unknown utilization last, so this only bites when the whole file is cards
+    with no reported limit -- and then there is no hero, the narrative is
+    skipped, and nothing false is printed in its place.
+    """
+    for row in ranked_revolving(c):
+        if parse_pct(row[4] if len(row) > 4 else None) is None:
+            continue
+        if target_bal(row) is None:
+            continue
+        return row
+    return None
 
 
 def fastest_wins(c):
     wins = []
     for row in ranked_revolving(c)[:2]:
-        tgt = target_bal(row)
-        wins.append(f"Pay {row[0]} from {usd(row[2])} down to {usd(tgt) if tgt is not None else row[5]}")
+        wins.append(paydown_sentence(row))
     negs = c.get("negatives") or []
     if negs:
         n = negs[0]
@@ -935,20 +978,23 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
             pct = parse_pct(row[4])
             if pct is None:
                 continue
-            tgt = target_bal(row)
+            tgt = target_text(row)
+            if tgt is None:
+                continue
             h.append(util_bar(row[0], f"{usd(row[2])} of {usd(row[3])} · pay down to "
-                              f"{usd(tgt) if tgt is not None else row[5]}", pct))
+                              f"{tgt}", pct))
     overall_pct = parse_pct(c.get("util_pct")) or 0
     h.append(util_bar("Overall revolving",
                       f"{usd(c['util_total_balance'])} of {usd(c['util_total_limit'])} · "
                       f"pay down to under {usd(c['util_target_balance'])}", overall_pct))
     h.append(f'<div class="note">{spaced("dashed line marks the 10% utilization threshold lenders look for")}</div>')
     if hero:
-        h_tgt = target_bal(hero)
+        # hero_card() only returns a card with a known target, so this is never
+        # the empty string that used to end the sentence at "Get that card to ."
         h.append(f"""<p>Right now you are using {c['util_pct']} of your available revolving credit -
           {usd(c['util_total_balance'])} in balances against {usd(c['util_total_limit'])} in limits.
           {esc(hero[0])} is the highest-utilization card at {hero[4]}. Get that card to
-          {usd(h_tgt) if h_tgt is not None else hero[5]}. This is the fastest win on your
+          {target_text(hero)}. This is the fastest win on your
           entire report.</p>""")
     h.append(f'<div class="callout bar">TARGET: Get total revolving balances from '
              f'{usd(c["util_total_balance"])} down to under {usd(c["util_target_balance"])}. '
@@ -1058,10 +1104,9 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
          f"{usd(c['preapproval_now'])} available today"),
     ]
     for row in ranked_revolving(c)[:2]:
-        tgt = target_bal(row)
         stages.append((
             "Step 1 - Fast Win",
-            f"Pay {row[0]} from {usd(row[2])} to {usd(tgt) if tgt is not None else row[5]}",
+            paydown_sentence(row),
             "Utilization drop",
             f"Pre-approval target {usd(c['preapproval_after'])}"
         ))
@@ -1146,11 +1191,15 @@ def build_funding_snapshot(c):
         pct = parse_pct(row[4])
         if pct is None or pct < 20:
             continue
-        tgt = target_bal(row)
+        tgt = target_text(row)
+        if tgt is None:
+            # No reported limit, so "on a $X limit" and a 10% target are both
+            # figures this file does not have. The row is dropped from a list
+            # whose whole point is a number to aim at.
+            continue
         costing.append((
             f"{row[0]} - {row[4]} Utilization",
-            f"You owe {usd(row[2])} on a {usd(row[3])} limit. Pay it down to "
-            f"{usd(tgt) if tgt is not None else row[5]}."
+            f"You owe {usd(row[2])} on a {usd(row[3])} limit. Pay it down to {tgt}."
         ))
     if c.get("util_pct"):
         costing.append((
@@ -1279,8 +1328,7 @@ def build_lender_list(c):
     hero = hero_card(c)
     util_line = "PAY DOWN THE HIGHEST CARD FIRST"
     if hero:
-        tgt = target_bal(hero)
-        util_line = f"PAY {str(hero[0]).upper()} DOWN TO {usd(tgt) if tgt is not None else hero[5]}"
+        util_line = f"PAY {str(hero[0]).upper()} DOWN TO {target_text(hero)}"
     order = [
         ("Fix utilization first", util_line),
         ("Lowest score floor first", "START WITH THE LOWEST SCORE FLOOR ON THIS LIST"),
@@ -1354,11 +1402,15 @@ def build_roadmap(c):
         ("Equifax Score", c["scores"]["equifax"], st.get("equifax") or ""),
     ]
     for row in ranked_revolving(c)[:2]:
-        tgt = target_bal(row)
+        tgt = target_text(row)
+        # A card with no reported limit has no utilization to state today and no
+        # 10% to reach by month 6. "Under 10%" of an unknown limit is not a goal
+        # anyone can act on, so the row says so instead.
         stand.append((
             f"{row[0]} Utilization",
-            f"{row[4]} ({usd(row[2])} / {usd(row[3])})",
-            f"Under 10% ({usd(tgt)})" if tgt is not None else "Under 10%"
+            f"{row[4]} ({usd(row[2])} / {usd(row[3])})" if tgt is not None
+            else f"{usd(row[2])} owed, no limit reported",
+            f"Under 10% ({tgt})" if tgt is not None else "No limit reported - no target"
         ))
     stand.extend([
         ("Overall Utilization", c["util_pct"], "Under 10%"),
@@ -1377,11 +1429,14 @@ def build_roadmap(c):
              f"utilization and they slow down.</p>")
     pay_rows = []
     for row in ranked_revolving(c):
-        tgt = target_bal(row)
+        tgt = target_text(row)
         pd = paydown_amt(row)
+        # A blank cell reads as "nothing to do here". A dash reads as "we do not
+        # know", which is the truth for a card with no reported limit, and is
+        # what the Node printer has always put in the same two cells.
         pay_rows.append((row[0], usd(row[2]), usd(row[3]),
-                         usd(tgt) if tgt is not None else (row[5] or ""),
-                         usd(pd) if pd is not None else ""))
+                         tgt if tgt is not None else TARGET_UNKNOWN,
+                         usd(pd) if pd is not None else TARGET_UNKNOWN))
     h.append(table(["account", "balance", "limit", "pay down to", "amount to pay"], pay_rows))
     total_pd = sum(paydown_amt(r) or 0 for r in ranked_revolving(c))
     hero = hero_card(c)
@@ -1498,6 +1553,13 @@ def build_roadmap(c):
     for n in c.get("negatives") or []:
         reveal.append((f"{n.get('creditor')} {n.get('type')}", n.get("balance") or "showing", "Deleted or settled"))
     for row in ranked_revolving(c)[:2]:
+        # A card with no reported limit has no utilization today and no 10% to
+        # reach by month 6. "Under 10%" beside a blank cell is a target the
+        # client cannot check themselves against.
+        if target_text(row) is None:
+            reveal.append((f"{row[0]} balance", usd(row[2]),
+                           "Lower - no limit reported, so no 10% target"))
+            continue
         reveal.append((f"{row[0]} utilization", row[4], "Under 10%"))
     reveal.append(("Overall utilization", c["util_pct"], "Under 10%"))
     ex_s, ex_c, _ = bureau_status(c, "Experian")

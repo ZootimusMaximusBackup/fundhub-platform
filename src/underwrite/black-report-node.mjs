@@ -40,6 +40,25 @@ function usd(v) {
   return `$${Math.round(n).toLocaleString("en-US")}`;
 }
 
+/* ONE PAYDOWN INSTRUCTION FOR ONE CARD, USED EVERYWHERE ONE IS PRINTED.
+   row[3] is the credit limit and row[5] is utilTarget(limit) — "$X or less",
+   and the EMPTY STRING when the card has no limit to take 10% of (a charge
+   card, or an account with no preset spending limit).
+
+   The Month 1 paydown table already printed "-" for that card. The 6-month
+   checklist five pages later did NOT: it fell back to the words "under 10% of
+   its limit", which names a limit the file does not have and reads as an
+   instruction the client cannot follow. Same card, same document, two
+   different answers. Unknown has to read as unknown in EVERY place the value
+   is rendered, so both places now go through here. */
+function paydownInstruction(row) {
+  const account = row?.[0] || "";
+  const balance = usd(row?.[2]);
+  const target = String(row?.[5] || "");
+  if (target) return `Pay ${account} from ${balance} down to ${target}.`;
+  return `${account} - ${balance} owed. No credit limit is reported for this card, so there is no 10% target to pay down to. Keep the balance moving down and we will set a target when a limit reports.`;
+}
+
 function moneyRange(lo, hi) {
   const k = (v) => (v % 1000 === 0 ? `$${v / 1000}K` : usd(v));
   if (lo == null || hi == null) return "-";
@@ -583,14 +602,21 @@ function afterOptimizationTable(c, r) {
  * come from this client's file.
  */
 function applicationOrder(c, r) {
-  const first = (c.revolving || []).find((row) => row[6] === "CRITICAL" || row[6] === "HIGH")
-    || (c.revolving || [])[0];
+  /* THE CARD NAMED HERE MUST HAVE A TARGET TO NAME. Every sentence below tells
+     the client a number to hit before they apply, so a card with no reported
+     credit limit cannot be the one it names — there is no 10% of a limit the
+     file does not have. Skipping it falls through to the generic rule, which
+     names no card and states no figure. Same defect, same rule, as the 6-month
+     checklist: see paydownInstruction(). */
+  const hasTarget = (row) => Boolean(row?.[5]);
+  const ranked = (c.revolving || []).filter(hasTarget);
+  const first = ranked.find((row) => row[6] === "CRITICAL" || row[6] === "HIGH") || ranked[0];
   const lowest = [...(c.lenders_after || [])].sort((a, b) => a[5] - b[5])[0];
   r.heading("Application Order Warning");
   r.para("Applying to the wrong lender first burns a hard inquiry AND can trigger automatic declines that follow you to the next application. Follow this order exactly.");
   const steps = [
     first
-      ? ["Fix utilization first", `Pay ${first[0]} down to ${first[5] || "under 10% of its limit"} before any application.`]
+      ? ["Fix utilization first", `Pay ${first[0]} down to ${first[5]} before any application.`]
       : ["Fix utilization first", "Get every card under 10% of its limit before any application."],
     lowest
       ? ["Lowest score floor first", `${lowest[0]} asks for ${lowest[5]}. That is your first target.`]
@@ -773,7 +799,10 @@ function snapshot(c, r) {
   r.para("Your fastest wins:");
   const wins = (c.revolving || []).filter((row) => row[5] && row[6] !== "CLOSED").slice(0, 3);
   if (wins.length) {
-    wins.forEach((row) => r.para(`Pay ${row[0]} from ${usd(row[2])} down to ${row[5]}.`));
+    /* The filter above already dropped every card with no target, so this is
+       always the "Pay X from Y down to Z" branch. It goes through the same
+       helper anyway so the two sentences can never drift apart. */
+    wins.forEach((row) => r.para(paydownInstruction(row)));
   } else {
     r.para("Keep every account paid on time and do not add new credit before your funding is locked in.");
   }
@@ -967,7 +996,7 @@ function roadmap(c, r) {
   r.eyebrow("07 / CHECKLIST");
   r.heading("Your 6-Month Checklist");
   cards.slice(0, 5).forEach((row) => {
-    r.para(`Month 1 - Pay ${row[0]} from ${usd(row[2])} down to ${row[5] || "under 10% of its limit"}.`);
+    r.para(`Month 1 - ${paydownInstruction(row)}`);
   });
   if ((c.negatives || []).length) r.para("Month 1 - Send Round 1 dispute letters to every bureau named above.");
   if (c.inquiry_total) r.para("Month 1 - Send inquiry removal letters.");

@@ -649,28 +649,94 @@ function lenderRow(lender, bucket) {
   ];
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   "N LENDERS ARE OPEN TO YOU TODAY" HAS TO BE TRUE OF EVERY LENDER UNDER IT.
+
+   The vendor matcher (vendor/underwriteiq-full/api/lite/crs/lender-matrix.js,
+   matchLenders at :157) tests FOUR things and no more: a business entity
+   (:176), months in business (:180), the median score (:191), and a fundable
+   outcome (:197). Everything else a lender states about itself is carried as
+   text and never checked.
+
+   Three kinds of stated gate go unchecked, and all three were being printed as
+   "available right now":
+
+   1. `minRevenue`, a real field on four lenders that matchLenders never reads —
+      OnDeck $100,000 (:45), Bluevine $120,000 (:55), Kabbage $50,000 (:73),
+      Credibly $180,000 (:95). Closed in the round-two pass.
+   2. A requirement stated in the lender's own `whyFit` prose. Two of them:
+      Fundbox, "Clean bureaus plus business bank account required." (:69), and
+      Navy Federal*, "Best rates if you are eligible. Requires membership."
+      (:144). Nothing in this product records a business bank account or a
+      credit-union membership.
+   3. Anything a future edit to that vendor file adds. PROSE_GATES below is
+      checked for completeness by a test, so a new phrase cannot slip through
+      as an availability.
+
+   Nothing in this product captures revenue, a business bank account, or
+   membership eligibility. So each of those floors cannot be met — only unmet
+   or unknown — and UNKNOWN IS NOT MET.
+
+   A lender with an unverified gate is never dropped and never denied. It moves
+   to the "after optimization" list with its real requirement printed as what is
+   still needed, so the client sees the lender AND sees the truth about it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 /**
- * A gate the lender states that this system has never checked.
+ * Requirements the vendor states in prose, keyed by the exact phrase.
  *
- * "N lenders are open to you today" has to be true of every lender under it.
- * The vendor matcher (vendor/underwriteiq-full/api/lite/crs/lender-matrix.js:161-207)
- * tests three things — entity, months in business, score — and NEVER reads
- * `minRevenue`, even though four of its lenders state one: OnDeck $100,000,
- * Bluevine $120,000, Kabbage $50,000, Credibly $180,000 a year. Nothing in this
- * product captures a client's business revenue, so that floor cannot be met, only
- * unmet or unknown. Unknown is not met.
+ * `unverified: true` means this system holds no field that could satisfy it.
+ * `unverified: false` means the phrase is not a gate at all — "No business
+ * required" is a lender telling you it wants LESS, not more.
  *
- * So a revenue floor moves the lender to the "after optimization" list with the
- * floor named as what is still needed. It is never a denial and never a zero —
- * the lender still appears, with its real requirement printed instead of an
- * availability we cannot stand behind.
+ * PROSE_GATE_COMPLETENESS in black-report-client.test.mjs re-reads
+ * lender-matrix.js and fails if any lender's whyFit says "requir" in a form no
+ * entry here matches, so this list cannot silently fall behind the vendor.
+ */
+const PROSE_GATES = Object.freeze([
+  {
+    match: /business bank account/i,
+    unverified: true,
+    needed: "A business bank account (not on file)"
+  },
+  {
+    match: /requires membership/i,
+    unverified: true,
+    needed: "Membership eligibility (not on file)"
+  },
+  { match: /no business required/i, unverified: false, needed: null }
+]);
+
+/** Every whyFit phrase that mentions a requirement, classified or not. */
+export function classifyProseGate(whyFit) {
+  const text = String(whyFit || "");
+  if (!/requir/i.test(text)) return { stated: false, unverified: false, needed: null };
+  for (const gate of PROSE_GATES) {
+    if (gate.match.test(text)) {
+      return { stated: true, unverified: gate.unverified, needed: gate.needed };
+    }
+  }
+  /* A requirement this file has never seen. Conservative on purpose: an
+     unclassified requirement is an unverified one, so a vendor edit downgrades
+     a lender to "after optimization" rather than over-promising it. */
+  return { stated: true, unverified: true, needed: "A requirement this file has not verified" };
+}
+
+/**
+ * Every gate this lender states that this system has never checked, in the
+ * order it should be read.
  *
  * @returns {string|null} what is still needed, or null when every stated gate is met
  */
 function unverifiedGate(lender) {
+  const unmet = [];
   const minRevenue = finiteNumber(lender?.minRevenue);
-  if (minRevenue == null || minRevenue <= 0) return null;
-  return `$${minRevenue.toLocaleString("en-US")}/year in business revenue required (not on file)`;
+  if (minRevenue != null && minRevenue > 0) {
+    unmet.push(`$${minRevenue.toLocaleString("en-US")}/year in business revenue required (not on file)`);
+  }
+  const prose = classifyProseGate(lender?.whyFit);
+  if (prose.unverified) unmet.push(prose.needed);
+  return unmet.length ? unmet.join("; ") : null;
 }
 
 /**

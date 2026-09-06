@@ -197,7 +197,23 @@ const BUREAUS_NONE = Object.freeze({});
    columns, not nine, and the Python read them positionally into exactly nine
    names, so this printer raised ValueError and black-report-pdf.mjs silently
    fell through to the Node printer. Nothing about the LAYOUT moved; the other
-   six pins are unchanged, which is the evidence. */
+   six pins are unchanged, which is the evidence.
+
+   MOVED AGAIN 2026-09-06, W10 ROUND 3 REPAIR — generatorScript ONLY, again, and
+   the other six pins are again unchanged. What moved in fundhub_gen.py is one
+   defect, in the seven places it was printed: a revolving card with NO REPORTED
+   CREDIT LIMIT had no 10% target, and every one of those seven sites fell back
+   to row[5], which is the empty string for exactly that card. Sentences ran off
+   the end ("Pay AMEX PLATINUM (NPSL) from $5,200 down to ") and two table cells
+   went blank where the Node printer has always printed "-". Two new helpers,
+   target_text() and paydown_sentence(), are now the only way a target reaches
+   the page, and hero_card() will not nominate a card it cannot state a target
+   for. No layout, no CSS, no section moved.
+
+   That the other six pins did NOT move is the evidence that the Node printer's
+   matching fix — the same defect at its one remaining site, the 6-month
+   checklist — changed no byte for a client whose cards all report a limit. It
+   only changes the document for the client who has one that does not. */
 const BASELINE = Object.freeze({
   engineMaxed:            "0581c1b9b5f713dc7958b5e3e1e961b0be245beac174814d9a04068e1a692d0a",
   engineMaxedSuggestions: "d06e816746ef7dddb015f77ebf605b9a7f30f15df1d233b8e47702f4577f2d19",
@@ -205,7 +221,7 @@ const BASELINE = Object.freeze({
   engineNoBureaus:        "79f0c7c1d8eb1853e314681051005eeafd3b07550da2855ab9eb6bbffe8a8260",
   blackReportClient:      "d4ead7287903034f5100f0b80ff5e85925e514a34611164beb727bef969599a8",
   emptyBlackReportClient: "21826d2ea2496e6674a8bb909de81d2aef49a277c3470c1f854094950fb2ca79",
-  generatorScript:        "b48fe4945278033174daf5e67efa321530fa5fd98a02c19f7f7617673aa4d982"
+  generatorScript:        "cf92209e335872ddfd3b9fed21dd306b6398a410d2974b09576e2cfc7ddd2cba"
 });
 
 /** The four PDFs the in-process printer produces, and the words inside each. */
