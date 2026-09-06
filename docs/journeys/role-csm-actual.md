@@ -20,16 +20,16 @@ Traced from: `src/handlers/customer-insights.mjs`, `src/register-all.mjs`,
 
 ---
 
-## The two calls the CSM owns
+## The two accountability calls the CSM owns
 
 ```mermaid
 flowchart TD
     A[deposit.paid or sale.closed] --> B[onPaidMidCheckin]
-    B --> C["Task: Mid-journey check-in<br/>assignee_role = csm<br/>due in 90 days"]
+    B --> C["Task: Accountability call (halfway)<br/>assignee_role = csm<br/>due in 90 days"]
     C --> D[CSM calls the client<br/>phone or AI reach-out, not a Meet]
 
     E[round.funded] --> F[onRoundFundedInsights]
-    F --> G["Task: Post-funding Google Meet interview<br/>assignee_role = csm<br/>carries the booking link"]
+    F --> G["Task: Accountability call (results)<br/>assignee_role = csm<br/>carries the booking link"]
     G --> H{booking.created<br/>for this client?}
     H -->|yes| I[onInterviewBooked stamps<br/>meeting_url and due_at on the task]
     H -->|no| G
@@ -160,6 +160,20 @@ because "owes nothing" and "we have not looked" are different answers.
 **The consent screen takes all four kinds.** `consent-capture.html?client_id=…
 &kind=call_recording` and `&kind=marketing_use`. Asked on separate visits so
 neither rides in on the other's tick.
+
+**The CSM is paid 10% of cash collected on what they sell, and NOTHING on
+collections.** Owner-set 2026-09-05. `db/migrations/346` inserts one rule scoped
+`role='csm'`; the `collections` basis opened by 293 is deliberately left with no
+rule at all. A rep paid to collect leans on a client in the middle of a
+conversation meant to be about how that client is doing. A rep paid on the next
+sale is motivated to make this one work first.
+
+**The offer on the call is a nudge, not a pitch,** and a client can be sold
+another product while still halfway through the current one.
+
+**These are ACCOUNTABILITY CALLS, not interviews.** Owner's word, 2026-09-05,
+and the honest one: the CSM holds the client accountable to what they came here
+for, records what they say, and mentions what they do not have yet.
 
 **A CSM may record the two conversation consents and NOT a soft-pull consent.**
 A consent is what unlocks a credit pull, so the role set on this endpoint is
