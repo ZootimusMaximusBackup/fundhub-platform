@@ -1,7 +1,7 @@
 // Lead temperature — cold/warm/hot classification for the N-01/02/03 nurture split.
 //
 // Darwin's call, not Chris's (flagged in workflow-migration-table.md for Chris to
-// confirm or override): the GHL version tagged leads `nurture:cold/warm/hot` via an
+// confirm or override): the CRM version tagged leads `nurture:cold/warm/hot` via an
 // undocumented side-automation, and no source describes how that tag was actually
 // assigned. outcome_tier can't stand in for it either — it's only set post
 // decision.rendered, and most nurture targets never pay the $32 diagnostic that

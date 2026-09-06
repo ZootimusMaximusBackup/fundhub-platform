@@ -1,6 +1,6 @@
 // BC-02 — Customer Friction Level Detector.
-// Source: GHL-System-Map.md BEHAVIORAL COMPLIANCE section.
-// Writes to behavior_scores.friction (numeric). GHL's High/Medium/Low mapped to
+// Source: the CRM system map BEHAVIORAL COMPLIANCE section.
+// Writes to behavior_scores.friction (numeric). The CRM's High/Medium/Low mapped to
 // 1.0/0.5/0.0 (same mapping convention as BC-01's responsiveness).
 //
 // Trigger: round.started (same trigger as BC-01 — recomputes friction from whichever

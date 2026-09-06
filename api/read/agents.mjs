@@ -22,7 +22,7 @@ export const run = readHandler({
              runtime_notes, owner_label, went_live_at, retired_at, sort_order,
              prompt, guardrails,
              -- 114_ghl_agent_seed.sql added trigger_events and nothing has ever
-             -- selected it, so the eight seeded GoHighLevel agents carried real
+             -- selected it, so the eight seeded CRM agents carried real
              -- trigger data while every screen reported them as "no trig". The
              -- editor writes guardrails.triggers; this is the other store, and
              -- the screen now falls back to it rather than printing a zero.

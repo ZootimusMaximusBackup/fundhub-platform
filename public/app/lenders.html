@@ -136,7 +136,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
     </header>
     <main class="fh-maxw">
       <div class="banner" id="emptyBanner">
-        The lender list starts empty on purpose. Export the seven Airtable product tables, then Import CSV here.
+        The lender list starts empty on purpose. Export the seven spreadsheet product tables, then Import CSV here.
       </div>
 
       <div class="tabs" role="tablist">
@@ -196,7 +196,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
               </thead>
               <tbody id="lenderBody"></tbody>
             </table>
-            <div class="empty hide" id="lenderEmpty">No lenders yet. Import a CSV from Airtable.</div>
+            <div class="empty hide" id="lenderEmpty">No lenders yet. Import a CSV from the spreadsheet.</div>
           </div>
         </div>
       </section>
@@ -339,7 +339,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
       ? (scopedClientId
           ? rows.length + " fit"
           : rows.length + " lender" + (rows.length === 1 ? "" : "s"))
-      : (scopedClientId ? "No lenders fit this file" : "Empty — import from Airtable");
+      : (scopedClientId ? "No lenders fit this file" : "Empty — import from the spreadsheet");
     rows.forEach(function (L) {
       var tr = document.createElement("tr");
       tr.dataset.id = L.id;

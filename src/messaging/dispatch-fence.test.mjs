@@ -15,7 +15,7 @@ import assert from "node:assert";
 import { dispatchOne, OUTCOME } from "./dispatch.mjs";
 import { clearRuleCache } from "../compliance/screen.mjs";
 import { submitApplication } from "../adapters/lendflow.mjs";
-import { findOrCreateGhlContact } from "./ghl-contacts.mjs";
+import { findOrCreateCrmContact } from "./crm-contacts.mjs";
 
 const ORG = "00000000-0000-4000-8000-000000000001";
 const CLIENT = "00000000-0000-4000-8000-000000000003";
@@ -34,7 +34,7 @@ const claimed = (over = {}) => ({
 
 function fakeDb({
   routing = { email: { provider: "mailgun", enabled: true }, sms: { provider: "ghl_relay", enabled: true } },
-  client = { email: "person@example.com", ghl_contact_id: "ghlContact123", phone: "+15551234567" }
+  client = { email: "person@example.com", ghl_contact_id: "crmContact123", phone: "+15551234567" }
 } = {}) {
   const updates = [];
   return {
@@ -76,8 +76,8 @@ const CREDS = {
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
-  GHL_RELAY_API_KEY: "ghl-token",
-  // Twilio is the live SMS path (GHL stubbed off, owner 2026-08-14). Fence
+  GHL_RELAY_API_KEY: "crm-token",
+  // Twilio is the live SMS path (the CRM stubbed off, owner 2026-08-14). Fence
   // tests that prove SMS bookkeeping need a transmitting provider.
   TWILIO_SEND_ACCOUNT_SID: "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   TWILIO_SEND_AUTH_TOKEN: "twilio-auth-token-value",
@@ -133,7 +133,7 @@ describe("MESSAGING_DRY_RUN: nothing reaches the sender", () => {
   });
 
   test("the SMS path is fenced too, not just email", async () => {
-    // GHL relay is stubbed (TRANSMITS=false) — the dry-run fence only gates
+    // CRM relay is stubbed (TRANSMITS=false) — the dry-run fence only gates
     // transmitting providers. Prove SMS bookkeeping via Twilio, the live path.
     const f = spy();
     const db = fakeDb({
@@ -212,21 +212,21 @@ describe("ADAPTERS_DRY_RUN: nothing reaches a vendor", () => {
     assert.strictEqual(f.calls.length, 1, "the fence was down but nothing was submitted");
   });
 
-  test("a GoHighLevel contact is not created with the fence up", async () => {
+  test("a CRM contact is not created with the fence up", async () => {
     const f = spy();
-    const res = await findOrCreateGhlContact(
+    const res = await findOrCreateCrmContact(
       { email: "person@example.com", firstName: "A", lastName: "B" },
-      { fetchImpl: f, env: { GHL_API_KEY: "ghl-token" } }
+      { fetchImpl: f, env: { GHL_API_KEY: "crm-token" } }
     );
 
-    assert.strictEqual(f.calls.length, 0, "A REAL PERSON WAS WRITTEN INTO GOHIGHLEVEL");
+    assert.strictEqual(f.calls.length, 0, "A REAL PERSON WAS WRITTEN INTO THE CRM");
     assert.strictEqual(res.ok, false);
     assert.strictEqual(res.reason, "dry_run_blocked");
   });
 
   test("the two fences are independent — messaging off does not open adapters", async () => {
     const f = spy();
-    const res = await findOrCreateGhlContact(
+    const res = await findOrCreateCrmContact(
       { email: "person@example.com" },
       { fetchImpl: f, env: { GHL_API_KEY: "t", MESSAGING_DRY_RUN: "0" } }
     );

@@ -48,7 +48,7 @@ describe("agent registry", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =>
   after(async () => { await close(); });
 
   // 037 seeded the fourteen agents from the shipped screen; 114 added the
-  // eight real GoHighLevel agents extracted from the source-of-truth doc
+  // eight real the CRM agents extracted from the source-of-truth doc
   // (GHL-A1..A7 minus the un-defined Agent 6, plus Document Check and Recon)
   // — twenty-two rows total, all still client_facing/ops per 037's mix plus
   // 114's eight, which are all client_facing.

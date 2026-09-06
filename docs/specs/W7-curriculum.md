@@ -199,7 +199,7 @@ several block the program from being sold at all.
 
 - NO PARTNER RAMP PACK, QUIZ SET OR GRADUATION GATE EXISTS. Four complete 5-day, 20-check staff ramp packs exist with per-day quizzes, trainer keys, a recorded mock and a named final sit, plus a client-side scorer. There is no partner equivalent of any of it.
 
-- THE LENDER DATABASE SHIPS EMPTY. Decision 4 of the lender build was no seed rows — real data comes from Airtable by owner or funding advisor. A partner cannot learn which lenders, in what order, or with what requirements, from this system.
+- THE LENDER DATABASE SHIPS EMPTY. Decision 4 of the lender build was no seed rows — real data comes from the spreadsheet by owner or funding advisor. A partner cannot learn which lenders, in what order, or with what requirements, from this system.
 
 - THE REPAIR CONTRACT CONTRADICTS THE PRICE. offers.mjs prices REPAIR_DFY at $1,000 once, but the seeded CREDIT-REPAIR-AGREEMENT body reads 'You pay {{field.monthly_fee}} per month while services are active' and offers.mjs fills monthly_fee with the $1,000 price and term_days with 180. A client signing it is agreeing to $1,000 a month for 180 days. REPAIR-AND-FUNDING-AGREEMENT has the same ambiguity. A human must decide this before any partner sends either.
 

@@ -464,7 +464,11 @@ describe("normalizers", () => {
 
 describe("the words come from the server", () => {
   test("the kind vocabulary matches what 099/167 and kinds.mjs name", () => {
-    assert.deepEqual([...CONSENT_KINDS], ["soft_pull_consent", "dispute_authorization"]);
+    // call_recording and marketing_use added 2026-09-05 with the CSM role;
+    // db/migrations/291 widens the matching CHECK. This list and that
+    // constraint must stay in step or a valid kind is refused by Postgres.
+    assert.deepEqual([...CONSENT_KINDS],
+      ["soft_pull_consent", "dispute_authorization", "call_recording", "marketing_use"]);
   });
 
   test("a known version returns its exact stored text", () => {

@@ -1,5 +1,5 @@
 // DS-01 — Repair Referral.
-// Source: GHL DOWNSELL WORKFLOWS section (draft status).
+// Source: the CRM DOWNSELL WORKFLOWS section (draft status).
 // Audit fix: real, compliance-scrubbed SMS copy exists (Workflow-SMS-Fixes-Ready-to-
 // Paste.md), but needs the real partner referral link filled in before activation
 // (spec §6: "DS-01: partner referral link filled before activation") — still a
@@ -8,7 +8,7 @@
 //
 // Trigger: call.completed with a "declined funding" outcome — the same underlying
 // signal S-08 (Post-Call: Funding Didn't Buy) reacts to, since neither the map nor
-// the CRM doc gives DS-01 its own distinct trigger definition. Gated additionally on
+// CRM doc gives DS-01 its own distinct trigger definition. Gated additionally on
 // NOT being on the funding path (same product-path check DS-02 uses), so this and
 // DS-02 can never both fire for the same outcome.
 

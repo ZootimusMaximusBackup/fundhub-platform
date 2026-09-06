@@ -1,5 +1,5 @@
 // DPC-02 — Call Outcome Enforcement + Call Held.
-// Source: GHL-System-Map.md DECISION & PROGRESS CONTROL section.
+// Source: the CRM system map DECISION & PROGRESS CONTROL section.
 // Trigger: booking.created. Waits until 5 minutes after the appointment's end time,
 // then checks whether the call actually happened (call.completed fired for this
 // client) — Showed moves the sales card to "showed" and tags call_held; No-Show
@@ -12,7 +12,7 @@
 // concurrent bookings.
 //
 // Stage mapping (also logged): db/seed/002_pipelines.sql's sales pipeline has no
-// distinct "no_show" stage (GHL's "S4 No Show") — mapped to the closest existing
+// distinct "no_show" stage (the CRM's "S4 No Show") — mapped to the closest existing
 // stage, "lost", rather than inventing a new seed row. Also folds in S-05 (No Show)
 // and merges DPC-04's decision-related actions where they overlap.
 

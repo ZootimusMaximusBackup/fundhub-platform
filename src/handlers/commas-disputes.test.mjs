@@ -8,7 +8,7 @@ import {
 } from "./commas-disputes.mjs";
 
 /* Fake db. The client already exists, so resolveClient takes its lookup branch
-   and never touches GHL — these tests are about the task, not about client
+   and never touches the CRM — these tests are about the task, not about client
    creation, which client-lifecycle.test.mjs already covers. */
 function fakeDb({ existingTasks = [] } = {}) {
   const tasks = [...existingTasks];
@@ -17,7 +17,7 @@ function fakeDb({ existingTasks = [] } = {}) {
     tasks,
     async query(sql, params) {
       if (/FROM clients WHERE org_id/.test(sql)) {
-        return { rows: [{ id: "client-1", ghl_contact_id: "ghl-1" }] };
+        return { rows: [{ id: "client-1", ghl_contact_id: "crm-1" }] };
       }
       if (/SELECT id FROM tasks/.test(sql)) {
         const [clientId, workflow, body] = params;

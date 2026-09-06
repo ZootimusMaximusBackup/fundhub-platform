@@ -1,5 +1,5 @@
 // SYS-01 — Client Value Calculator.
-// Source: GHL-System-Map.md DECISION & PROGRESS CONTROL section (counted as part of
+// Source: the CRM system map DECISION & PROGRESS CONTROL section (counted as part of
 // the DPC-Series' 7).
 // An internal projection metric (not a real invoice/payment — Rule about touching
 // money is about real dollar amounts reaching a client or a payout; this is

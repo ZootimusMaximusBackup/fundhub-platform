@@ -3,7 +3,7 @@
 // The renderer has to support exactly the tags the copy actually uses, so the
 // seeder reports the distinct set it found rather than anyone maintaining a list
 // by hand. Tags are reported RAW (`contact.first_name`, `cta-link`, …) — the
-// docs mix GHL namespaced tags with bare ones and this is not the place to
+// docs mix the CRM namespaced tags with bare ones and this is not the place to
 // normalize them.
 
 const TAG = /\{\{\s*([^{}]*?)\s*\}\}/g;
