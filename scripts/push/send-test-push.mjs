@@ -128,7 +128,7 @@ async function sendOne(clientId, { live }) {
     clientId,
     // The generic test body from src/push/payload.mjs. Same gate as everything
     // else, detail flag off.
-    notification: { kind: "test", url: "/app/client-portal.html", tag: "fundhub-test" },
+    notification: { kind: "test", url: "/app/client-portal.html", tag: "test" },
     env
   });
 
