@@ -46,6 +46,28 @@
 // frees the client to ask for the same round again — which is right, because
 // the link they were given no longer works.
 //
+// ═══════════════════════════════════════════════════════════════════════════
+// THE OPEN HALF, STATED RATHER THAN GLOSSED
+//
+// Nothing registers src/handlers/paid-service-payment.mjs. It exists, it is
+// tested, and the one line that would put it on the bus belongs in
+// src/register-all.mjs — checked again on 2026-09-06 and still absent. So a
+// real payment does NOT move a request to 'paid' today.
+//
+// WHICH MEANS THIS SWEEP CAN CLOSE A REQUEST SOMEBODY ACTUALLY PAID FOR, seven
+// days later, marked 'checkout_expired'. That is not a new failure — with the
+// handler off the bus that round is not delivered either way — but it is a real
+// cost of closing the row, and it is written here rather than discovered later.
+// Two things limit it and neither is a fix:
+//
+//   * any row carrying a payment amount or a payment time is left alone (the
+//     predicate below);
+//   * `state_reason = 'checkout_expired'` says exactly what happened — the
+//     invitation lapsed — and claims nothing about whether money arrived.
+//
+// THE ACTUAL FIX IS TO LAND THE HANDLER. That line is not this lane's file, and
+// docs/journeys/paid-round-actual.md carries the same note.
+//
 // THE UPDATE IS ITS OWN GUARD. `WHERE status = 'awaiting_payment'` is inside
 // the statement, not checked beforehand, so a payment that lands in the same
 // instant as this sweep cannot be cancelled out from under itself: whichever

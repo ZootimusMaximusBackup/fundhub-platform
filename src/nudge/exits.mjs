@@ -141,7 +141,7 @@ export const PENDING_PAYMENT_STATUSES = Object.freeze(new Set(["awaiting_payment
  * today and a year later.
  *
  * db/migrations/370 adds checkout_expires_at and refuses an awaiting_payment
- * row without one; src/paid-services/checkout.mjs states the number (seven
+ * row without one; src/paid-services/link-ttl.mjs states the number (seven
  * days) and stamps it at mint; src/paid-services/expire.mjs closes the row when
  * it passes. This function is the fourth place, and it is here so the fix holds
  * on a pass where the sweep has not run yet.

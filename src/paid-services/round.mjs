@@ -379,7 +379,7 @@ export async function requestRound(db, {
      row, and a different feature was relying on the opposite: src/nudge/ held a
      client's overdue checklist item out of the chase queue "because a checkout
      link is out — it expires; then we chase again". It did not expire. See the
-     header of ./checkout.mjs for the measurement and the seven-day number.
+     header of ./link-ttl.mjs for the measurement and the seven-day number.
      db/migrations/370 refuses an awaiting_payment row with no stamp, so this is
      not something a later edit can quietly drop. */
   const expiresAt = checkoutExpiresAt(now);

@@ -38,8 +38,9 @@
 -- So: A HOLD MUST HAVE AN END, AND THE END MUST BE A FACT IN THE DATA.
 --
 -- THE NUMBER IS SEVEN DAYS. It is stated once in JavaScript
--- (CHECKOUT_LINK_TTL_DAYS in src/paid-services/checkout.mjs) and stamped into
--- the column below every time a link is minted. Seven, and not thirty, because
+-- (CHECKOUT_LINK_TTL_DAYS in src/paid-services/link-ttl.mjs, re-exported by
+-- src/paid-services/checkout.mjs) and stamped into the column below every time
+-- a link is minted. Seven, and not thirty, because
 -- the chase ladder it holds up is only nine days long end to end
 -- (src/nudge/ladder.mjs: rungs at 0, 2, 5 and 9 days overdue) — a hold longer
 -- than the ladder would silence the whole ladder, and the client would come
@@ -102,13 +103,28 @@
 --     row pointing at a client that no longer exists cannot be read back by
 --     anything, so the evidence survives only in the sense that the bytes do.
 --
--- WHAT THIS COSTS. Nothing in production: the only production code that deletes
--- a client row is the demo cleanup (src/demo/simulate-client.mjs and
--- src/demo/platform-seed.mjs, both restricted to is_demo), and privacy erasure
--- redacts rather than deletes (src/privacy/erasure.test.mjs asserts there is no
--- DELETE FROM clients in it). Test teardown that deletes a client which has an
--- escalation must delete the escalation first, as the OWNER — which is the
--- point: a human with the keys can, the application cannot.
+-- WHAT THIS COSTS. Every DELETE FROM clients in the tree was enumerated on
+-- 2026-09-06 rather than asserted, because an earlier draft of this comment
+-- said "the only production code that deletes a client is the demo cleanup"
+-- and that was NOT TRUE. The full list, and why none of them is broken by this:
+--
+--   * src/demo/simulate-client.mjs and src/demo/platform-seed.mjs — demo
+--     cleanup, both restricted to is_demo.
+--   * src/verification/fixtures.mjs (wipeClientTree) — the scratch-only e2e
+--     harness tearing down its own fixtures. It never runs the nudge sweep and
+--     never writes client_escalations (grepped: src/verification/ contains
+--     neither string), so the clients it deletes cannot have one on file.
+--   * scripts/demo-journey.mjs, scripts/launch-proof-fixtures.mjs,
+--     scripts/comprehensive-sandbox-gauntlet.mjs, scripts/purge-sim-data.mjs,
+--     scripts/prove-card-stacking-rounds.mjs — hand-run scratch and simulation
+--     scripts, not code any request path reaches.
+--
+-- Privacy erasure redacts rather than deletes (src/privacy/erasure.test.mjs
+-- asserts there is no DELETE FROM clients in it).
+--
+-- THE STANDING RULE, which is the point of the change: anything that deletes a
+-- client who HAS an escalation must delete the escalation first, as the OWNER.
+-- A human with the keys can. The application cannot.
 --
 --
 -- SAFETY. Additive plus one foreign-key swap. Adds one column, one CHECK, one
@@ -123,7 +139,7 @@ ALTER TABLE public.paid_service_requests
   ADD COLUMN IF NOT EXISTS checkout_expires_at timestamptz;
 
 COMMENT ON COLUMN public.paid_service_requests.checkout_expires_at IS
-  'When the hosted checkout link stops being a live invitation. Stamped at mint time from CHECKOUT_LINK_TTL_DAYS (src/paid-services/checkout.mjs, 7 days). NULL = no link has been minted for this row. A row at status=''awaiting_payment'' must have one — see paid_service_requests_awaiting_needs_expiry_ck. Past this moment the request is no longer a reason to stop chasing the client about the underlying checklist item, and src/paid-services/expire.mjs moves the row to ''cancelled''.';
+  'When the hosted checkout link stops being a live invitation. Stamped at mint time from CHECKOUT_LINK_TTL_DAYS (src/paid-services/link-ttl.mjs, 7 days). NULL = no link has been minted for this row. A row at status=''awaiting_payment'' must have one — see paid_service_requests_awaiting_needs_expiry_ck. Past this moment the request is no longer a reason to stop chasing the client about the underlying checklist item, and src/paid-services/expire.mjs moves the row to ''cancelled''.';
 
 -- The backfill runs BEFORE the CHECK, or the CHECK cannot be added.
 -- requested_at + 7 days is the earliest the link could have died. NULL

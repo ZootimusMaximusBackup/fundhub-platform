@@ -38,7 +38,7 @@ The days are the owner's to change. The four rungs and the human at the end are 
 
 ```mermaid
 flowchart TD
-    CRON([Hourly clock]) --> PLAN[Find checklist rows past their date<br/>that the CLIENT owns<br/>MINUS every client we may never contact again<br/>— that part is done in the search itself,<br/>so they cannot fill the 200 places]
+    CRON([Hourly clock]) --> PLAN[Find checklist rows past their date<br/>that the CLIENT owns<br/>MINUS every client we may never contact again<br/>MINUS anyone holding a checkout link that is still live<br/>then AT MOST ONE ROW PER CLIENT, their oldest<br/>— all of it done in the search itself,<br/>so none of them can fill the 200 places]
     PLAN --> RUNG{Which rung has<br/>this row reached?}
     RUNG -->|none yet| STOP1[Nothing]
     RUNG -->|1, 2, 3 or 4| EXITS{Any reason to stop?<br/>EVERY reason, checked again here,<br/>against the row as it stands now}
