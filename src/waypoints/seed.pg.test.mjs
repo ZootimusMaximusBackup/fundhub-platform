@@ -24,11 +24,55 @@ import { seedClientWaypoints } from "./seed.mjs";
 import { evaluateWaypoints } from "./verify.mjs";
 import { listWaypoints } from "./store.mjs";
 import { enrollRepairProgram } from "../repair/enroll.mjs";
+import { onAnalysisCompleted } from "../handlers/client-lifecycle.mjs";
+import { rlsDb, rlsIsReal, closeRlsPool } from "../testing/rls-pool.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const EMAIL_LIKE = "waypoint.seed.pg.%@example.com";
 const ENROLLED_AT = new Date("2026-09-06T12:00:00.000Z");
 const ENROLL_EMAIL_LIKE = "waypoint.enrol.pg.%@example.com";
+const IDENT_EMAIL_LIKE = "waypoint.ident.pg.%@example.com";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CLEANING UP AFTER A CLIENT, AND WHY IT IS NOT A HAND-WRITTEN LIST.
+
+   MEASURED 2026-09-06 on a clean scratch database. enrollRepairProgram writes an
+   `events` row AND queues the welcome email, which is a row in `messages`.
+   Neither table carries ON DELETE CASCADE on client_id. The purge in this file
+   deleted events and not messages, so the client delete raised a foreign-key
+   error INSIDE after() — and node:test tallies results before it runs that hook,
+   so the file printed "tests 18 / pass 18 / fail 0" and EXITED 1. Worse, the
+   client survived, and on a SECOND run against the same database the one test
+   that proves the whole lane — "enrolling a client builds their checklist" —
+   was silently CANCELLED and never executed.
+
+   So the children are read out of the catalog rather than typed here. A table
+   that starts pointing at clients next month is covered without anybody
+   remembering to come back to this line.
+   ═══════════════════════════════════════════════════════════════════════════ */
+async function deleteClients(ids) {
+  if (!ids.length) return;
+  const kids = (await db.query(
+    `SELECT c.conrelid::regclass::text AS tbl, a.attname AS col
+       FROM pg_constraint c
+       JOIN pg_attribute a
+         ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+      WHERE c.confrelid = 'public.clients'::regclass
+        AND c.contype = 'f'
+        AND c.confdeltype <> 'c'
+        AND array_length(c.conkey, 1) = 1`
+  )).rows;
+  for (const k of kids) {
+    await db.query(`DELETE FROM ${k.tbl} WHERE ${k.col} = ANY($1::uuid[])`, [ids]);
+  }
+  await db.query(`DELETE FROM clients WHERE id = ANY($1::uuid[])`, [ids]);
+}
+
+async function purgeByEmail(like) {
+  const ids = (await db.query(`SELECT id FROM clients WHERE email LIKE $1`, [like]))
+    .rows.map((r) => r.id);
+  await deleteClients(ids);
+}
 
 /** A credit file the way a real pull produces one. */
 function creditFile(profile, overrides = {}) {
@@ -61,8 +105,13 @@ function withBalance(file, creditorFragment, newBalance) {
   return clone;
 }
 
-/** Re-pull the same file with a card that was never on it before. */
-function withNewCard(file, creditor) {
+/** Re-pull the same file with a card that was never on it before.
+ *
+ *  IT GETS ITS OWN ACCOUNT NUMBER AND ITS OWN OPENED DATE, because a real new
+ *  card has both. Cloning the model's identity would make this a copy of an
+ *  existing card wearing a different name, which is the RENAME case and not the
+ *  new-card case — the two are exactly what this lane now has to tell apart. */
+function withNewCard(file, creditor, { ref = "SIM-NEWCARD-7412", opened = "2026-08-01" } = {}) {
   const clone = JSON.parse(JSON.stringify(file));
   for (const key of ["tradelines"]) {
     const list = clone?.normalized?.[key];
@@ -72,6 +121,10 @@ function withNewCard(file, creditor) {
       ...JSON.parse(JSON.stringify(model)),
       creditorName: creditor,
       creditor,
+      accountIdentifier: ref,
+      account_ref: ref,
+      openedDate: opened,
+      accountOpenedDate: opened,
       currentBalance: 900,
       balance: 900,
       creditLimit: 2000,
@@ -81,14 +134,27 @@ function withNewCard(file, creditor) {
   return clone;
 }
 
+/** Re-pull THE SAME FILE with one creditor spelled differently, and nothing
+ *  else touched — the account number and the opened date are left exactly as
+ *  they were, because that is what a bureau tidying up a creditor string does. */
+function withCreditorRenamed(file, fragment, renamed) {
+  const clone = JSON.parse(JSON.stringify(file));
+  for (const list of [clone?.normalized?.tradelines, clone?.tradelines]) {
+    if (!Array.isArray(list)) continue;
+    for (const t of list) {
+      const name = String(t.creditorName || t.creditor || "");
+      if (!name.toLowerCase().includes(fragment.toLowerCase())) continue;
+      if ("creditorName" in t) t.creditorName = renamed;
+      if ("creditor" in t) t.creditor = renamed;
+    }
+  }
+  return clone;
+}
+
 describe("nothing seeds a waypoint — until enrolment does", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   let org, client;
 
-  async function purge() {
-    const ids = (await db.query(`SELECT id FROM clients WHERE email LIKE $1`, [EMAIL_LIKE]))
-      .rows.map((r) => r.id);
-    if (ids.length) await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
-  }
+  const purge = () => purgeByEmail(EMAIL_LIKE);
 
   async function freshClient(email, customFields = {}) {
     return (await db.query(
@@ -370,7 +436,7 @@ describe("nothing seeds a waypoint — until enrolment does", { skip: !HAVE_DB ?
       "no_new_credit", "personal_loan", "form_llc", "get_ein", "business_checking"
     ]);
     // No state on file: the sentence still reads.
-    assert.match(rows.find((r) => r.key === "form_llc").detail, /Secretary of State\. Once/);
+    assert.match(rows.find((r) => r.key === "form_llc").detail, /Secretary of State\. Send us/);
     // And the baseline is NULL, not [], so a later pull cannot report every
     // card this client has ever owned as newly opened.
     assert.equal(rows.find((r) => r.key === "no_new_credit").params.accounts_at_seed, null);
@@ -396,15 +462,11 @@ describe("nothing seeds a waypoint — until enrolment does", { skip: !HAVE_DB ?
 describe("enrolling a client builds their checklist", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   let org, client;
 
-  /* enrollRepairProgram writes an events row, and events.client_id has no
-     ON DELETE CASCADE, so the client cannot be removed until its events are. */
-  async function purge() {
-    const ids = (await db.query(`SELECT id FROM clients WHERE email LIKE $1`, [ENROLL_EMAIL_LIKE]))
-      .rows.map((r) => r.id);
-    if (!ids.length) return;
-    await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [ids]);
-    await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
-  }
+  /* enrollRepairProgram writes an events row AND a messages row, and neither
+     table cascades from clients. deleteClients() finds both from the catalog —
+     see the note at the top of this file for the run where forgetting one of
+     them made this file exit 1 while printing zero failures. */
+  const purge = () => purgeByEmail(ENROLL_EMAIL_LIKE);
 
   before(async () => {
     org = await resolveDefaultOrg(db);
@@ -421,9 +483,11 @@ describe("enrolling a client builds their checklist", { skip: !HAVE_DB ? "no DAT
     );
   });
 
+  /* close() is NOT called here either. The identity suite below runs after this
+     one against the same module-level pool. The last describe in the file closes
+     it. */
   after(async () => {
     await purge();
-    await close();
   });
 
   test("enrolling writes the checklist, and enrolling AGAIN leaves one set", async () => {
@@ -445,5 +509,368 @@ describe("enrolling a client builds their checklist", { skip: !HAVE_DB ? "no DAT
     });
     const again = await listWaypoints(db, { orgId: org, clientId: client });
     assert.deepEqual(again.map((r) => r.id), seeded.map((r) => r.id), "the same rows, not a second set");
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// A CARD IS NOT ITS NAME.
+//
+// Everything in this suite exists because of one measured run: a reviewer
+// re-pulled a byte-identical credit file with a single creditor string rewritten
+// from "Credit One Bank" to "CREDIT ONE BANK N.A." — a tidy-up a bureau does to
+// itself — and the client was told on their own portal that they had opened new
+// credit, while the paydown on that same card was written off as missing from
+// the file. Unknown had become a denial.
+// ───────────────────────────────────────────────────────────────────────────
+describe("a renamed card, a genuinely new card, and the way back", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
+  let org, client;
+  const REPAIR = () => creditFile("repair");
+
+  const purge = () => purgeByEmail(IDENT_EMAIL_LIKE);
+
+  before(async () => {
+    org = await resolveDefaultOrg(db);
+    await purge();
+    client = (await db.query(
+      `INSERT INTO clients (org_id, first_name, last_name, email, custom_fields)
+       VALUES ($1,'Ident','Subject',$2,$3::jsonb) RETURNING id`,
+      [org, "waypoint.ident.pg.subject@example.com", JSON.stringify({ state: "TX" })]
+    )).rows[0].id;
+    await db.query(
+      `INSERT INTO crs_results (org_id, client_id, result, outcome_tier)
+       VALUES ($1,$2,$3::jsonb,'repair')`,
+      [org, client, JSON.stringify(REPAIR())]
+    );
+    await seedClientWaypoints(db, { orgId: org, clientId: client, now: ENROLLED_AT });
+  });
+
+  after(async () => {
+    await purge();
+  });
+
+  const rowFor = async (key) =>
+    (await listWaypoints(db, { orgId: org, clientId: client })).find((r) => r.key === key);
+
+  test("the baseline records HOW each card is identified, not just what it is called", async () => {
+    const nnc = await rowFor("no_new_credit");
+    assert.equal(nnc.params.accounts_at_seed.length, 3);
+    assert.equal(
+      nnc.params.account_prints_at_seed.length, 3,
+      "one print per card — a tri-merge reports each card three times and they collapse to one"
+    );
+    assert.equal(
+      nnc.params.accounts_without_print_at_seed, 0,
+      "every card on this file could be identified, which is what lets a later pull conclude anything"
+    );
+    assert.equal(nnc.params.baseline_locked, true);
+
+    const paydown = await rowFor("paydown_credit_one_bank");
+    assert.deepEqual(paydown.params.account_prints, ["o:2022-09-14|n:3018"]);
+  });
+
+  test("THE REVIEWER'S CASE: a creditor renamed is NOT new credit, and the paydown is not lost", async () => {
+    const renamed = withCreditorRenamed(REPAIR(), "Credit One Bank", "CREDIT ONE BANK N.A.");
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: renamed, now: new Date("2026-10-01T00:00:00.000Z")
+    });
+
+    assert.deepEqual(out.blocked, [], JSON.stringify(out));
+    assert.equal(
+      out.unchanged.find((u) => u.key === "no_new_credit").reason,
+      "no_new_accounts_seen",
+      "the same card under a new name is the same card"
+    );
+    assert.equal(
+      out.unchanged.find((u) => u.key === "paydown_credit_one_bank").reason,
+      "above_target",
+      "and the paydown is still being read against that card, not written off as missing"
+    );
+    assert.equal((await rowFor("no_new_credit")).state, "not_started");
+    assert.equal((await rowFor("no_new_credit")).state_reason, null);
+  });
+
+  test("a renamed card that HAS been paid down still closes", async () => {
+    const renamedAndPaid = withBalance(
+      withCreditorRenamed(REPAIR(), "Synchrony Bank", "SYNCHRONY BANK/CARECREDIT"),
+      "SYNCHRONY", 10
+    );
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: renamedAndPaid, now: new Date("2026-10-02T00:00:00.000Z")
+    });
+    assert.ok(
+      out.completed.some((c) => c.key === "paydown_synchrony_bank_care_credit"),
+      JSON.stringify(out)
+    );
+    assert.equal((await rowFor("paydown_synchrony_bank_care_credit")).state, "done");
+  });
+
+  test("A GENUINELY NEW CARD IS STILL CAUGHT, and the sentence reads like a person wrote it", async () => {
+    const opened = withNewCard(REPAIR(), "Brand New Bank Card");
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: opened, now: new Date("2026-10-03T00:00:00.000Z")
+    });
+    assert.ok(out.blocked.some((b) => b.key === "no_new_credit"), JSON.stringify(out));
+
+    const w = await rowFor("no_new_credit");
+    assert.equal(w.state, "blocked");
+    assert.equal(w.completed_at, null);
+    assert.equal(
+      w.state_reason,
+      "Your credit file now shows an account that was not on it when you enrolled: Brand New Bank Card. Let your advisor know if this is not yours."
+    );
+    // Not an accusation, no dollar figure, no claim about what happens next.
+    const text = w.state_reason.toLowerCase();
+    for (const banned of ["you opened", "credit repair", "qualify", "approved", "$"]) {
+      assert.ok(!text.includes(banned), `the blocked reason must not say "${banned}"`);
+    }
+  });
+
+  test("A RE-SEED WHILE BLOCKED DOES NOT ERASE THE EVIDENCE", async () => {
+    const before = await rowFor("no_new_credit");
+    assert.equal(before.state, "blocked", "set up by the test above");
+
+    // Re-seed against the very file that caused the block. The old code rewrote
+    // the baseline from this file, which folded "Brand New Bank Card" into the
+    // list of accounts that were always there — leaving a row blocked forever
+    // with a baseline saying nothing had happened.
+    await seedClientWaypoints(db, {
+      orgId: org, clientId: client,
+      crsResult: withNewCard(REPAIR(), "Brand New Bank Card"),
+      now: new Date("2026-10-04T00:00:00.000Z")
+    });
+
+    const after = await rowFor("no_new_credit");
+    assert.deepEqual(
+      after.params.accounts_at_seed, before.params.accounts_at_seed,
+      "the enrolment baseline is written once and never rewritten"
+    );
+    assert.deepEqual(after.params.account_prints_at_seed, before.params.account_prints_at_seed);
+    assert.ok(!after.params.accounts_at_seed.includes("brand_new_bank_card"));
+    assert.equal(after.state, "blocked", "and the block is still standing on evidence that still exists");
+  });
+
+  test("THE BLOCK LIFTS WHEN THE ACCOUNT IS NO LONGER ON THE FILE", async () => {
+    assert.equal((await rowFor("no_new_credit")).state, "blocked");
+
+    const out = await evaluateWaypoints(db, {
+      orgId: org, clientId: client, crsResult: REPAIR(), now: new Date("2026-10-05T00:00:00.000Z")
+    });
+    assert.ok(out.unblocked.some((u) => u.key === "no_new_credit"), JSON.stringify(out));
+
+    const w = await rowFor("no_new_credit");
+    assert.equal(w.state, "not_started", "the accusation follows the evidence in both directions");
+    assert.equal(w.state_reason, null);
+    assert.equal(w.completed_at, null, "and it is never completed — keeping the rule is not proof");
+  });
+
+  test("A RE-SEED CLOSES A CARD THAT HAS REACHED ITS TARGET, instead of leaving it stale", async () => {
+    const before = await rowFor("paydown_credit_one_bank");
+    assert.equal(before.state, "not_started");
+    assert.equal(before.params.balance_at_seed_cents, 149000);
+
+    const paid = withBalance(REPAIR(), "Credit One Bank", 100);
+    const out = await seedClientWaypoints(db, {
+      orgId: org, clientId: client, crsResult: paid, now: new Date("2026-10-06T00:00:00.000Z")
+    });
+    assert.deepEqual(out.completed, ["paydown_credit_one_bank"], JSON.stringify(out));
+
+    const after = await rowFor("paydown_credit_one_bank");
+    assert.equal(after.id, before.id, "the same row, not a second one");
+    assert.equal(after.state, "done");
+    assert.equal(after.params.balance_at_seed_cents, 10000, "and the numbers on it are the fresh ones");
+    assert.equal(after.completed_at.toISOString(), "2026-10-06T00:00:00.000Z");
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // THE WIRE. evaluateWaypoints() had NO production caller on this branch — a
+  // grep found it in test files and nowhere else — so a client who paid a card
+  // down was told to pay it down forever. This asserts the real handler, not a
+  // stub: onAnalysisCompleted is what src/handlers/client-lifecycle.mjs
+  // registers on analysis.completed, which is the event a finished credit pull
+  // raises.
+  // ─────────────────────────────────────────────────────────────────────────
+  test("A RE-PULL CLOSES THE CHECKLIST, because the credit-pull handler now reads it", async () => {
+    const beforeCap = await rowFor("paydown_capital_one_platinum");
+    assert.equal(beforeCap.state, "not_started");
+
+    // The client pays Capital One Platinum down under its $300 target, and the
+    // pull that reports it lands as a real crs_results row.
+    const paid = withBalance(REPAIR(), "Capital One Platinum", 120);
+    const crsRow = (await db.query(
+      `INSERT INTO crs_results (org_id, client_id, result, outcome_tier)
+       VALUES ($1,$2,$3::jsonb,'repair') RETURNING id`,
+      [org, client, JSON.stringify(paid)]
+    )).rows[0];
+
+    await onAnalysisCompleted({
+      id: "evt-waypoint-wire-1",
+      name: "analysis.completed",
+      orgId: org,
+      clientId: client,
+      payload: { crsResultId: crsRow.id, source: "crs" }
+    }, db);
+
+    const after = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.equal(
+      after.find((r) => r.key === "paydown_capital_one_platinum").state, "done",
+      "the card that was paid down closed itself"
+    );
+    // AND NOTHING ELSE MOVED.
+    assert.equal(after.find((r) => r.key === "get_ein").state, "not_started");
+    assert.equal(after.find((r) => r.key === "business_checking").state, "not_started");
+    assert.equal(after.find((r) => r.key === "form_llc").state, "not_started");
+    assert.equal(after.find((r) => r.key === "personal_loan").state, "not_started");
+    assert.equal(
+      after.find((r) => r.key === "no_new_credit").state, "not_started",
+      "keeping the rule is never proof, so this one never closes"
+    );
+  });
+
+  test("firing the same pull again changes nothing", async () => {
+    const before = await listWaypoints(db, { orgId: org, clientId: client });
+    const crsRow = (await db.query(
+      `SELECT id FROM crs_results WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [client]
+    )).rows[0];
+
+    await onAnalysisCompleted({
+      id: "evt-waypoint-wire-1",
+      name: "analysis.completed",
+      orgId: org,
+      clientId: client,
+      payload: { crsResultId: crsRow.id, source: "crs" }
+    }, db);
+
+    const after = await listWaypoints(db, { orgId: org, clientId: client });
+    assert.deepEqual(
+      after.map((r) => [r.key, r.state, r.completed_at?.toISOString() ?? null]),
+      before.map((r) => [r.key, r.state, r.completed_at?.toISOString() ?? null])
+    );
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// WHAT THE CHECKLIST IS ALLOWED TO SAY, AND WHO IS ALLOWED TO CHANGE IT.
+// This describe is LAST in the file and it closes the pools.
+// ───────────────────────────────────────────────────────────────────────────
+describe("the catalog: its words, and its locks", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
+  after(async () => {
+    await closeRlsPool();
+    await close();
+  });
+
+  test("NO STEP PROMISES AN OUTCOME, AN APPROVAL, A TIMELINE OR AN AMOUNT", async () => {
+    /* The defect this pins: the personal-loan step used to read "You qualify
+       today, before any of the optimization work lands", and a reviewer got that
+       sentence onto the portal of a client with ZERO rows in crs_results —
+       nobody had pulled their credit at all. CLAUDE.md §7: never draft
+       customer-facing claims about credit outcomes. */
+    const rows = (await db.query(
+      `SELECT key, title, coalesce(detail,'') AS detail FROM waypoint_definitions`
+    )).rows;
+    assert.equal(rows.length, 6);
+
+    const banned = [
+      "qualify", "qualifies", "qualified", "approv", "guarantee", "will increase",
+      "boost", "points", "score", "credit repair", "pre-approval"
+    ];
+    for (const r of rows) {
+      const text = `${r.title} ${r.detail}`.toLowerCase();
+      for (const word of banned) {
+        assert.ok(!text.includes(word), `${r.key} must not say "${word}": ${text}`);
+      }
+      /* NO DOLLAR FIGURE IN THE STORED COPY. The paydown title carries the token
+         {target}, which renders per client from 10% of the limit THEIR OWN FILE
+         reports — a restatement of the task, not a promise. The token is what is
+         stored; a literal amount here would be a number we invented. */
+      assert.ok(!/\$\s?\d/.test(`${r.title} ${r.detail}`), `${r.key} must carry no dollar amount`);
+    }
+  });
+
+  test("THE APPLICATION HOLDS SELECT ON THE CATALOG AND NOTHING ELSE", async () => {
+    /* This claim was made once before and it was FALSE. 104_app_role.sql runs
+       ALTER DEFAULT PRIVILEGES granting fundhub_app SELECT, INSERT, UPDATE and
+       DELETE on every table created afterwards, so the app held all four the
+       moment 361 created this one; the writes were stopped by row-level
+       security, not by the grant — which meant an UPDATE reported success and
+       changed nothing. Read from the catalog rather than believed. */
+    const held = (await db.query(
+      `SELECT DISTINCT privilege_type
+         FROM information_schema.role_table_grants
+        WHERE grantee = 'fundhub_app'
+          AND table_schema = 'public'
+          AND table_name = 'waypoint_definitions'
+        ORDER BY 1`
+    )).rows.map((r) => r.privilege_type);
+    assert.deepEqual(held, ["SELECT"]);
+  });
+
+  test("A WRITE BY THE APPLICATION IS REFUSED OUT LOUD, not silently ignored", { skip: !rlsIsReal() ? "no APP_DATABASE_URL" : false }, async () => {
+    await assert.rejects(
+      rlsDb.query(`UPDATE waypoint_definitions SET title = 'nope' WHERE key = 'get_ein'`),
+      /permission denied/i,
+      "an UPDATE the app is not allowed to make must RAISE — the old shape returned UPDATE 0 with no error"
+    );
+    await assert.rejects(
+      rlsDb.query(`INSERT INTO waypoint_definitions (key,title,owner_kind) VALUES ('nope','Nope','client')`),
+      /permission denied/i
+    );
+    await assert.rejects(
+      rlsDb.query(`DELETE FROM waypoint_definitions WHERE key = 'get_ein'`),
+      /permission denied/i
+    );
+    // And the row is exactly as it was.
+    const row = (await db.query(`SELECT title FROM waypoint_definitions WHERE key = 'get_ein'`)).rows[0];
+    assert.equal(row.title, "Get your EIN from the IRS");
+  });
+
+  test("ROW-LEVEL SECURITY NO LONGER BLOCKS A NON-SUPERUSER WRITE — which is what breaks a deploy", { skip: !rlsIsReal() ? "no APP_DATABASE_URL" : false }, async () => {
+    /* THE DEPLOY RISK, REPRODUCED IN BOTH DIRECTIONS.
+       361 puts FORCE ROW LEVEL SECURITY on this table. FORCE subjects the table
+       OWNER to its own policies, so under the SELECT-only policy 361 originally
+       carried, every write failed for any role without superuser or BYPASSRLS —
+       the owner included. Migration 362 INSERTs six rows as the migration role,
+       so on a production database whose migration role is not a superuser THE
+       WHOLE MIGRATION RUN WOULD FAIL.
+
+       fundhub_app is NOSUPERUSER and NOBYPASSRLS (104_app_role.sql), so it is
+       exactly the kind of role that would have hit this. Grant it the writes for
+       the length of this test and the policy must let them through; take them
+       away again and the grant must stop them. */
+    const role = (await db.query(
+      `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = 'fundhub_app'`
+    )).rows[0];
+    assert.equal(role.rolsuper, false);
+    assert.equal(role.rolbypassrls, false);
+
+    try {
+      await db.query(`GRANT INSERT, UPDATE, DELETE ON waypoint_definitions TO fundhub_app`);
+
+      const ins = await rlsDb.query(
+        `INSERT INTO waypoint_definitions (key,title,owner_kind) VALUES ('rls_probe','Probe','client')`
+      );
+      assert.equal(ins.rowCount, 1, "the policy must permit an INSERT — 362 is one");
+
+      const upd = await rlsDb.query(
+        `UPDATE waypoint_definitions SET position = 999 WHERE key = 'rls_probe'`
+      );
+      assert.equal(upd.rowCount, 1, "and an UPDATE — changing the checklist is supposed to be an UPDATE");
+
+      const del = await rlsDb.query(`DELETE FROM waypoint_definitions WHERE key = 'rls_probe'`);
+      assert.equal(del.rowCount, 1);
+    } finally {
+      await db.query(`REVOKE INSERT, UPDATE, DELETE ON waypoint_definitions FROM fundhub_app`);
+      await db.query(`DELETE FROM waypoint_definitions WHERE key = 'rls_probe'`);
+    }
+
+    // Back to read-only, and the six rows are untouched.
+    const held = (await db.query(
+      `SELECT DISTINCT privilege_type FROM information_schema.role_table_grants
+        WHERE grantee = 'fundhub_app' AND table_name = 'waypoint_definitions'`
+    )).rows.map((r) => r.privilege_type);
+    assert.deepEqual(held, ["SELECT"]);
+    assert.equal(
+      Number((await db.query(`SELECT count(*)::int AS n FROM waypoint_definitions`)).rows[0].n), 6
+    );
   });
 });

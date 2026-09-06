@@ -38,9 +38,10 @@ import {
   loadWaypointDefinitions,
   expandDefinitions,
   revolvingAccounts,
-  mergeByCreditor
+  mergeByCreditor,
+  withAccountPrints
 } from "./definitions.mjs";
-import { upsertWaypoint, WaypointError } from "./store.mjs";
+import { upsertWaypoint, completeWaypoint, WaypointError } from "./store.mjs";
 
 /** The freshest real credit file for this client, or null.
  *  is_demo rows are excluded — the same filter src/progress/read.mjs:129 uses,
@@ -70,24 +71,40 @@ async function loadPersonal(db, { orgId, clientId }) {
   return r.rows[0] ? personalFromClient(r.rows[0]) : null;
 }
 
-/** What this client already has, so a second run lands on the same rows. */
+/** What this client already has, so a second run lands on the same rows.
+ *
+ *  FOUR INDEXES, and the second one is the one that stops a client being
+ *  accused of something. `paydownPrints` maps a card's PRINT — the day it was
+ *  opened plus the last four digits of its number — to the waypoint key that
+ *  card already has. A bureau that rewrites "Credit One Bank" as "CREDIT ONE
+ *  BANK N.A." changes the name and nothing else, so the name index misses and
+ *  the print index hits. Without it a re-seed would open a second waypoint for
+ *  a card that already has one. */
 async function existingWaypoints(db, { orgId, clientId }) {
   const r = await db.query(
-    `SELECT key, due_at, verify_kind, params
+    `SELECT key, due_at, verify_kind, params, state
        FROM client_waypoints
       WHERE org_id = $1::uuid AND client_id = $2::uuid`,
     [orgId, clientId]
   );
   const paydownKeys = new Map();
+  const paydownPrints = new Map();
   const dueAt = new Map();
+  const params = new Map();
+  const state = new Map();
   for (const row of r.rows || []) {
     dueAt.set(row.key, row.due_at);
+    params.set(row.key, row.params || null);
+    state.set(row.key, row.state);
     if (row.verify_kind === "paydown" && row.params) {
       const ck = row.params.creditor_key;
       if (ck) paydownKeys.set(ck, row.key);
+      for (const print of Array.isArray(row.params.account_prints) ? row.params.account_prints : []) {
+        if (print) paydownPrints.set(print, row.key);
+      }
     }
   }
-  return { paydownKeys, dueAt };
+  return { paydownKeys, paydownPrints, dueAt, params, state };
 }
 
 /**
@@ -103,7 +120,7 @@ async function existingWaypoints(db, { orgId, clientId }) {
  *                                   read
  * @param {object}  [args.personal]  name/address, when the caller already has it
  * @returns {Promise<{
- *   ok: true, seeded: string[], skipped: object[],
+ *   ok: true, seeded: string[], skipped: object[], completed: string[],
  *   creditFile: 'crs_result'|'none', accounts: number, definitions: number
  * }>}
  */
@@ -124,7 +141,10 @@ export async function seedClientWaypoints(db, {
      seeds nothing and says so, rather than falling back to a hardcoded list —
      a hidden fallback list is exactly what the table exists to stop. */
   if (!definitions.length) {
-    return { ok: true, seeded: [], skipped: [], creditFile: "none", accounts: 0, definitions: 0 };
+    return {
+      ok: true, seeded: [], skipped: [], completed: [],
+      creditFile: "none", accounts: 0, definitions: 0
+    };
   }
 
   let file = crsResult;
@@ -144,17 +164,24 @@ export async function seedClientWaypoints(db, {
   const built = buildBlackReportClient({ crsResult: usable, personal: who || null });
   /* Merged to ONE ENTRY PER CARD before anything else looks at it. A tri-merge
      lists the same card once per bureau and a checklist must not. */
-  const accounts = mergeByCreditor(revolvingAccounts(built.revolving));
-  const { paydownKeys, dueAt } = await existingWaypoints(db, { orgId, clientId });
+  /* withAccountPrints() reads the opened date and the last four digits straight
+     off the raw file, because buildBlackReportClient()'s seven display columns
+     do not carry either one. That is what lets a card be recognised later when
+     the bureau has rewritten the creditor's name. */
+  const accounts = withAccountPrints(mergeByCreditor(revolvingAccounts(built.revolving)), usable);
+  const existing = await existingWaypoints(db, { orgId, clientId });
 
-  const { waypoints, skipped } = expandDefinitions({
+  const { waypoints, skipped, complete } = expandDefinitions({
     definitions,
     accounts,
     state: built.state,
     enrolledAt: now,
     hasCreditFile: !!usable,
-    existingPaydownKeys: paydownKeys,
-    existingDueAt: dueAt
+    existingPaydownKeys: existing.paydownKeys,
+    existingDueAt: existing.dueAt,
+    existingPaydownPrints: existing.paydownPrints,
+    existingParams: existing.params,
+    existingState: existing.state
   });
 
   const seeded = [];
@@ -177,10 +204,23 @@ export async function seedClientWaypoints(db, {
     seeded.push(w.key);
   }
 
+  /* CLOSE WHAT THE FILE SAYS IS FINISHED, after the upsert and not instead of
+     it. The upsert above refreshed the row's target and balance from the fresh
+     pull; this closes it. Doing it in that order is why a client never sees a
+     finished card still asking for a number that stopped being true months ago.
+     completeWaypoint() writes state and completed_at together because a CHECK in
+     the database refuses them apart. */
+  const completed = [];
+  for (const c of complete) {
+    await completeWaypoint(db, { orgId, clientId, key: c.key, at: now });
+    completed.push(c.key);
+  }
+
   return {
     ok: true,
     seeded,
     skipped,
+    completed,
     creditFile: usable ? "crs_result" : "none",
     accounts: accounts.length,
     definitions: definitions.length

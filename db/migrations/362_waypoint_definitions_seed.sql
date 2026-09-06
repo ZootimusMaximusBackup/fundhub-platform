@@ -36,9 +36,40 @@
 -- button can keep. The column and the whole path through the seeder are built
 -- and tested; the day one of these is priced it is an UPDATE.
 --
+-- ═══════════════════════════════════════════════════════════════════════════
+-- WHAT THIS COPY MAY AND MAY NOT SAY (CLAUDE.md §7, and a reviewer's find)
+--
+-- Every string in this file is CLIENT-FACING. It is stored on the client's own
+-- waypoint rows and returned to the client portal by src/progress/read.mjs.
+--
+-- An earlier draft of the personal-loan step read: "You qualify today, before
+-- any of the optimization work lands." A reviewer ran the real enrolment for a
+-- client with ZERO rows in crs_results — nobody had pulled their credit at all —
+-- and that sentence was stored on their checklist and served to their portal.
+-- We did not know that client qualified for anything. Nobody had looked.
+--
+-- SO, THE RULE FOR EVERY TITLE AND EVERY DETAIL IN THIS FILE:
+--
+--   Describe the ACTION the client takes. Never the RESULT they will get.
+--
+-- No step may assert an outcome, an approval, a qualification, a dollar amount
+-- or a date by which something happens. No step may claim a movement in a credit
+-- score, and the words qualify, approved, guaranteed, boost, points and score
+-- are not in this file for that reason. src/waypoints/seed.pg.test.mjs fails if
+-- any of them reaches a seeded title or detail.
+--
+-- ONE THING THAT LOOKS LIKE AN EXCEPTION AND IS NOT. The paydown title carries
+-- {target}, which renders per client as a dollar figure — "Pay Capital One
+-- Platinum down to $300". That number is 10% of the limit THEIR OWN CREDIT FILE
+-- REPORTS (src/waypoints/definitions.mjs, PAYDOWN_TARGET_FRACTION). It is a
+-- restatement of the task, not a promise about what paying it will achieve. The
+-- text stored in this table holds the token, not a number.
+--
 -- SAFETY. Additive. Six rows into a table 361 just created. ON CONFLICT DO
 -- NOTHING, so re-running changes nothing and so does applying this to a
--- database where somebody has already edited the copy.
+-- database where somebody has already edited the copy. 363 carries the same
+-- corrected copy as a conditional UPDATE, for any database that already applied
+-- an earlier version of this file.
 
 INSERT INTO public.waypoint_definitions
   (key, expands, title, detail, position, owner_kind,
@@ -50,7 +81,7 @@ VALUES
   -- and {target} is formatted from integer cents held in the waypoint's params.
   ('paydown_revolving_account', 'per_revolving_account',
    'Pay {creditor} down to {target}',
-   'This is the single biggest lever on your score. You do not have to do it all at once — every payment that lands moves the number.',
+   'You do not have to do it in one payment. Anything you put against this card moves the balance toward the target.',
    10, 'client', 30, 'paydown',
    'Roadmap Month 1 Step 1. Verifiable: a re-pull reports the balance, so the row closes itself when the balance reaches the target and stays open when it does not.'),
 
@@ -58,8 +89,8 @@ VALUES
   -- deadline and it is never auto-completed — the check can only ever find
   -- evidence that it was BROKEN, never evidence that it was kept.
   ('no_new_credit', 'once',
-   'Do not open new credit until your funding is secured',
-   'A new card lowers your average account age and adds a hard inquiry, and both of those work against the pre-approval you are building toward. Get the funding first.',
+   'Do not open new credit while we work on your file',
+   'A new card adds a hard inquiry and lowers the average age of your accounts. Talk to your advisor before you apply for anything.',
    20, 'client', NULL, 'no_new_credit',
    'Roadmap Month 1 Step 6. Verifiable in one direction only: a re-pull showing a revolving account that was not on the file at enrolment is positive evidence the rule was broken. Nothing is evidence that it was kept, so this row never closes on its own.'),
 
@@ -67,8 +98,8 @@ VALUES
   -- argument is that this one is time-critical: it is worth less after the
   -- optimisation work starts moving accounts around.
   ('personal_loan', 'once',
-   'Secure your personal loan now',
-   'You qualify today, before any of the optimization work lands. Take it first — anything you open after this point costs you more than it gives you.',
+   'Talk to your advisor about a personal loan',
+   'Raise it early, before any of the optimization work changes your accounts. Your advisor will walk you through whether it fits your plan.',
    30, 'client', 14, NULL,
    'Roadmap Month 1 Step 6. NOT verifiable. A new loan on a re-pull is indistinguishable from any other new account, and reading one as "they took our advice" would be a guess.'),
 
@@ -76,7 +107,7 @@ VALUES
   -- nothing at all when we do not, so the sentence reads either way.
   ('form_llc', 'once',
    'File your LLC',
-   'File online with the Secretary of State{state_clause}. Once it is filed the clock starts, and lenders count how old the entity is.',
+   'File online with the Secretary of State{state_clause}. Send us the filing confirmation once you have it.',
    40, 'client', 30, NULL,
    'Roadmap Month 1 Step 5. NOT verifiable — no Secretary of State feed exists in this platform, and the businesses table records what somebody typed, not what was filed.'),
 
@@ -84,7 +115,7 @@ VALUES
   -- six-month sequence is not settled.
   ('get_ein', 'once',
    'Get your EIN from the IRS',
-   'It is free at IRS.gov and it takes about ten minutes. Your business bank account will ask for it.',
+   'You can apply for one on IRS.gov at no cost. Your business bank account will ask for it.',
    50, 'client', NULL, NULL,
    'Roadmap Month 5. NOT verifiable — nothing in the platform can see an IRS record, so this stays open until a person says otherwise.'),
 
@@ -92,7 +123,7 @@ VALUES
   -- settled.
   ('business_checking', 'once',
    'Open a business checking account',
-   'Under the LLC name, using the EIN. Even a hundred dollars in it is enough to start.',
+   'Open it in the LLC name, using the EIN. Take your filing paperwork and your EIN letter with you.',
    60, 'client', NULL, NULL,
    'Roadmap Month 1 Step 5 and Month 5 — the document says both, which is one of the reasons the six-month sequence is recorded as unfinalised. NOT verifiable: no bank feed.')
 

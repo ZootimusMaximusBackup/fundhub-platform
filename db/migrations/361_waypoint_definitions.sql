@@ -27,9 +27,12 @@
 -- abstraction); adding org_id later is an additive column and a changed unique
 -- index, not a rewrite.
 --
--- GRANTS: the application reads this table and never writes it. Editing the
--- checklist is a deliberate act against the database, not something a request
--- handler can do by accident.
+-- GRANTS: the application reads this table and never writes it, and that is
+-- enforced by a REVOKE of INSERT/UPDATE/DELETE from fundhub_app rather than by
+-- row-level security — see the RLS section at the foot of this file for why the
+-- policy itself has to permit writes even though the application may not make
+-- them. Editing the checklist is a deliberate act against the database, not
+-- something a request handler can do by accident.
 --
 -- SAFETY. Additive. Creates one table and seeds nothing — 362 does the seeding,
 -- so the list can be superseded by a later file without touching this DDL
@@ -131,15 +134,39 @@ BEGIN
 END $$;
 
 -- ---------------------------------------------------------------------------
--- Row-level security — the same ENABLE + FORCE + one permissive policy shape
--- 330 carries. A table with RLS on and no policy denies everything to
--- fundhub_app silently: a SELECT returns zero rows and nothing raises, which
--- here would mean every client silently gets an empty checklist.
+-- Row-level security — the ENABLE + FORCE + ONE PERMISSIVE POLICY FOR ALL shape
+-- that 330 carries, copied rather than varied. A table with RLS on and no
+-- policy denies everything to fundhub_app silently: a SELECT returns zero rows
+-- and nothing raises, which here would mean every client silently gets an empty
+-- checklist.
 --
 -- There is no tenant to partition on. This is a global catalog.
+--
+-- MEASURED 2026-09-06, AND THIS IS WHY THE POLICY IS FOR ALL AND NOT FOR SELECT.
+-- An earlier draft of this file installed FORCE plus a SELECT-only policy. FORCE
+-- subjects THE TABLE OWNER to its own policies, so with only a SELECT policy in
+-- place every write to this table fails for every role that is not a superuser
+-- and does not hold BYPASSRLS — the owner included. Run as a plain role on a
+-- scratch Postgres, that shape gave:
+--
+--   INSERT -> ERROR: new row violates row-level security policy
+--   UPDATE -> UPDATE 0, no error at all
+--   DELETE -> DELETE 0, no error at all
+--
+-- Two things break. First, 362 seeds six rows into this table as the migration
+-- role; if the production migration role is not a superuser the seed raises and
+-- THE WHOLE MIGRATION RUN FAILS. Second, this file's own promise — that Chris
+-- changes the checklist with an UPDATE instead of a deploy — is false, and false
+-- in the worst way, because UPDATE reports success while changing nothing.
+--
+-- So the policy permits, and THE READ-ONLY-NESS OF THE APPLICATION IS A GRANT,
+-- not a policy. A grant refused is an error the caller sees; a policy refused on
+-- an UPDATE is silence.
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.waypoint_definitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.waypoint_definitions FORCE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS waypoint_definitions_app_read ON public.waypoint_definitions;
 
 DO $$
 BEGIN
@@ -147,18 +174,26 @@ BEGIN
     SELECT 1 FROM pg_policies
      WHERE schemaname = 'public'
        AND tablename  = 'waypoint_definitions'
-       AND policyname = 'waypoint_definitions_app_read'
+       AND policyname = 'waypoint_definitions_all'
   ) THEN
-    CREATE POLICY waypoint_definitions_app_read ON public.waypoint_definitions
-      FOR SELECT USING (true);
+    CREATE POLICY waypoint_definitions_all ON public.waypoint_definitions
+      USING (true) WITH CHECK (true);
   END IF;
 END $$;
 
--- SELECT only. The application reads the checklist; it does not get to rewrite
--- what clients are asked to do as a side effect of serving a request.
+-- SELECT ONLY, AND THE REVOKE IS THE LOAD-BEARING HALF. 104_app_role.sql runs
+--   ALTER DEFAULT PRIVILEGES IN SCHEMA public
+--     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO fundhub_app;
+-- so a table created afterwards by that same role hands fundhub_app all four
+-- rights the moment it exists. A bare GRANT SELECT here adds nothing it did not
+-- already have. The REVOKE is what makes "the application reads the checklist
+-- and does not rewrite it" true, and it makes an attempted write raise
+-- permission denied for table waypoint_definitions rather than quietly
+-- affecting no rows.
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'fundhub_app') THEN
+    REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.waypoint_definitions FROM fundhub_app;
     GRANT SELECT ON public.waypoint_definitions TO fundhub_app;
   END IF;
 END $$;

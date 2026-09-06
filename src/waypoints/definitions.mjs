@@ -24,6 +24,10 @@
 // with an invented number.
 
 import { toCents } from "../commissions/money.mjs";
+/* Reused rather than rewritten: lastFour() is the repository's one answer to
+   "which four digits identify this account", and the dispute letters already
+   match a bureau's written reply back to an account with it. */
+import { lastFour } from "../metro2/normalize.mjs";
 
 /** Tokens the catalog copy may use. Anything else is left alone. */
 export const COPY_TOKENS = Object.freeze(["creditor", "target", "state_clause"]);
@@ -95,6 +99,107 @@ export function dollarsToCents(value) {
 export function formatCents(cents) {
   if (!Number.isInteger(cents)) return null;
   return `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACCOUNT IDENTITY, AND WHY IT IS NOT THE CREDITOR'S NAME.
+
+   MEASURED 2026-09-06. A reviewer re-pulled a byte-identical credit file with
+   exactly one string changed — the creditor on one card rewritten from
+   "Credit One Bank" to "CREDIT ONE BANK N.A.", which is the sort of thing a
+   bureau does to itself constantly. Because every match in this lane keyed on
+   slugify(creditor name) alone, that one spelling change produced, in text the
+   client reads on their own portal, an accusation that they had opened a new
+   credit card. It also lost the paydown on that same card as
+   "account_not_on_file".
+
+   NULL MEANS UNKNOWN AND MUST SURVIVE (CLAUDE.md §12). A name we do not
+   recognise is UNKNOWN. It is not a new account, and the difference between the
+   two is the difference between saying nothing and accusing a client.
+
+   So an account carries a PRINT as well as a name: the day it was opened plus
+   the last four digits of its number, both of which the credit file already
+   holds and neither of which a bureau rewrites when it tidies up a creditor
+   string. Two rows with the same print are the same card whatever it is called.
+
+   WHY THIS READS THE RAW CREDIT FILE. buildBlackReportClient() flattens each
+   revolving tradeline to seven display columns — creditor, bureau, balance,
+   limit, utilisation, target, status — and the opened date and the account
+   number are not among them. They are read here from the tradelines instead of
+   being added to that array.
+
+   BOTH HALVES OR NOTHING. An opened date on its own is not identity: two cards
+   can be opened the same day. Four digits on their own are not either. A
+   tradeline missing either one gets NO print, and every decision downstream
+   treats "no print" as unknown rather than as evidence.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** A date the credit file reports, as YYYY-MM-DD, or null when it is unusable. */
+export function openedDay(value) {
+  const s = String(value ?? "").trim();
+  if (!s) return null;
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+/** One account's print, or NULL when the file does not carry enough to make one. */
+export function accountPrint(opened, identifier) {
+  const day = openedDay(opened);
+  const four = lastFour(identifier);
+  if (!day || !four) return null;
+  return `o:${day}|n:${four}`;
+}
+
+/** The tradeline list a credit file exposes, preferring the normalized one —
+ *  the same choice src/underwrite/black-report-client.mjs tradelinesOf() makes,
+ *  so the two never read different accounts off the same file. */
+function tradelinesOf(crsResult) {
+  const norm = crsResult?.normalized?.tradelines;
+  const top = crsResult?.tradelines;
+  if (Array.isArray(norm) && norm.length) return norm;
+  return Array.isArray(top) ? top : [];
+}
+
+/**
+ * creditorKey → the set of prints the file reports for that creditor.
+ *
+ * A tri-merge lists one card once per bureau and every bureau reports the same
+ * opened date and the same account number, so three rows collapse to one print.
+ */
+export function revolvingPrints(crsResult) {
+  const byCreditor = new Map();
+  for (const t of tradelinesOf(crsResult)) {
+    if (!t || typeof t !== "object") continue;
+    if (t.isAU || t.is_au) continue;
+    if (String(t.accountType || t.account_type || "").toLowerCase() !== "revolving") continue;
+    const creditorKey = slugify(t.creditorName || t.creditor || "");
+    if (!creditorKey) continue;
+    if (!byCreditor.has(creditorKey)) byCreditor.set(creditorKey, new Set());
+    const print = accountPrint(
+      t.openedDate ?? t.accountOpenedDate ?? t.dateOpened,
+      t.accountIdentifier ?? t.account_ref ?? t.accountNumber ?? t.account_number
+    );
+    if (print) byCreditor.get(creditorKey).add(print);
+  }
+  return byCreditor;
+}
+
+/**
+ * Hang the prints off the merged accounts, in place, and hand them back.
+ *
+ * `prints` is always an array — an EMPTY one when the file carried nothing to
+ * identify the account with, which is a different fact from "this account is
+ * new" and is treated as such everywhere downstream.
+ */
+export function withAccountPrints(accounts = [], crsResult = null) {
+  const byCreditor = crsResult ? revolvingPrints(crsResult) : new Map();
+  for (const a of accounts) {
+    a.prints = Array.from(byCreditor.get(a.creditorKey) || []).sort();
+  }
+  return accounts;
 }
 
 /**
@@ -193,6 +298,10 @@ export function mergeByCreditor(rows = []) {
         creditorKey: r.creditorKey,
         accountKey: r.creditorKey,
         bureaus: [],
+        /* Filled by withAccountPrints() from the raw file. An empty array means
+           the file carried no opened date and no account number for this card,
+           which is unknown identity, never "this card is new". */
+        prints: [],
         balanceCents: null,
         limitCents: null,
         targetCents: null,
@@ -295,6 +404,25 @@ function paidFrom(def) {
  *        waypoint key -> the due date already stored. A re-seed keeps the
  *        deadline a client was originally given rather than quietly pushing it
  *        forward.
+ * @param {Map<string,string>} [args.existingPaydownPrints]
+ *        account print -> the waypoint key already on this client for that
+ *        account. Consulted when the creditor NAME no longer matches, which is
+ *        what happens when a bureau rewrites "Credit One Bank" as "CREDIT ONE
+ *        BANK N.A.". Without it a re-seed opens a second waypoint for a card
+ *        that already has one.
+ * @param {Map<string,object|null>} [args.existingParams]
+ *        waypoint key -> the params already stored. THE NO-NEW-CREDIT BASELINE
+ *        IS WRITE-ONCE and is read back from here: a re-seed that rewrote it
+ *        would fold the very account that set the row to blocked into the list
+ *        of accounts that were there all along, and the evidence would vanish.
+ * @param {Map<string,string>} [args.existingState]
+ *        waypoint key -> the state already stored. Read only so a row that is
+ *        already done or skipped is never handed back for completion again.
+ * @returns {{waypoints: object[], skipped: object[], complete: object[]}}
+ *        `complete` names the rows the fresh file says are FINISHED — a card
+ *        whose balance is already at or under its target and which this client
+ *        already has a row for. The caller closes them; this function writes
+ *        nothing.
  */
 export function expandDefinitions({
   definitions = [],
@@ -303,11 +431,27 @@ export function expandDefinitions({
   enrolledAt = new Date(),
   hasCreditFile = false,
   existingPaydownKeys = new Map(),
-  existingDueAt = new Map()
+  existingDueAt = new Map(),
+  existingPaydownPrints = new Map(),
+  existingParams = new Map(),
+  existingState = new Map()
 } = {}) {
   const waypoints = [];
   const skipped = [];
+  const complete = [];
   const clause = stateClause(state);
+
+  /* The waypoint key this client already has for one card, found by PRINT first
+     and by creditor name second. Print first because the print is the thing a
+     bureau does not rewrite; the name is the thing it does. Returns null when
+     neither matches, and the caller then generates a fresh key. */
+  const existingKeyFor = (a) => {
+    for (const print of a.prints || []) {
+      const hit = existingPaydownPrints.get(print);
+      if (hit) return hit;
+    }
+    return existingPaydownKeys.get(a.accountKey) || null;
+  };
 
   for (const def of definitions) {
     const paid = paidFrom(def);
@@ -318,6 +462,48 @@ export function expandDefinitions({
       // `accounts` is already merged and already sorted by creditorKey, so two
       // runs over the same file produce the same keys in the same order.
       const seenSlug = new Map();
+      /* One paydown row, built the same way whether it is about to be left open
+         or closed on the spot. `existingKey` is the row this client already has
+         for this card, or null for a card they have not been asked about yet. */
+      const buildPaydown = (definition, a, existingKey) => {
+        /* The counter exists only for the case where two DIFFERENT creditor
+           names slug down to the same 32 characters. Same-creditor rows have
+           already been merged into one, so in the ordinary case n is 1 and the
+           key is just paydown_<creditor>. */
+        const n = (seenSlug.get(a.creditorKey) || 0) + 1;
+        seenSlug.set(a.creditorKey, n);
+        const generated = (n === 1 ? `paydown_${a.creditorKey}` : `paydown_${a.creditorKey}_${n}`).slice(0, 64);
+        const key = existingKey || generated;
+        const tokens = { creditor: a.creditor, target: formatCents(a.targetCents), state_clause: clause };
+        return {
+          key,
+          title: renderCopy(definition.title, tokens),
+          detail: renderCopy(definition.detail, tokens),
+          position: definition.position,
+          ownerKind: definition.owner_kind,
+          dueAt: existingDueAt.has(key)
+            ? existingDueAt.get(key)
+            : dueAtFrom(enrolledAt, definition.due_offset_days),
+          verifyKind,
+          params: {
+            definition_key: definition.key,
+            creditor: a.creditor,
+            creditor_key: a.creditorKey,
+            // Which bureaus reported this card when the list was built. Kept so
+            // a human reading the row can see where the numbers came from.
+            bureaus: a.bureaus,
+            /* HOW THIS CARD IS RECOGNISED NEXT TIME, when the creditor string
+               has drifted. Empty when the file carried no opened date and no
+               account number — unknown identity, not a new card. */
+            account_prints: a.prints || [],
+            target_cents: a.targetCents,
+            limit_at_seed_cents: a.limitCents,
+            balance_at_seed_cents: a.balanceCents
+          },
+          ...paid
+        };
+      };
+
       for (const a of accounts) {
         if (!a.payable) {
           skipped.push({
@@ -329,49 +515,40 @@ export function expandDefinitions({
           });
           continue;
         }
-        // ALREADY THERE. A balance at or under the target is not a task; asking
-        // a client to pay down a card they have already paid down is the kind
-        // of thing that makes a checklist stop being believed.
+        /* ALREADY THERE. A balance at or under the target is not a task; asking
+           a client to pay down a card they have already paid down is the kind
+           of thing that makes a checklist stop being believed.
+
+           A CLIENT WHO ALREADY HAS THE ROW GETS IT CLOSED, not left alone.
+           Before this, a re-seed for a card that had reached its target simply
+           skipped it, which left the open waypoint sitting there with the
+           target and the balance it was seeded with months earlier — a client
+           told to pay down a card they had already paid down, against a number
+           that was no longer true. The row is refreshed with the fresh figures
+           below and named in `complete` so the caller can close it. A card with
+           NO existing row still gets nothing: there is no reason to create a
+           waypoint only to finish it in the same breath. */
         if (a.balanceCents <= a.targetCents) {
-          skipped.push({
-            definitionKey: def.key,
+          const existingKey = existingKeyFor(a);
+          const alreadyFinished = existingKey
+            && ["done", "skipped"].includes(existingState.get(existingKey));
+          if (!existingKey || alreadyFinished) {
+            skipped.push({
+              definitionKey: def.key,
+              accountKey: a.accountKey,
+              reason: "already_at_target"
+            });
+            continue;
+          }
+          waypoints.push(buildPaydown(def, a, existingKey));
+          complete.push({
+            key: existingKey,
             accountKey: a.accountKey,
-            reason: "already_at_target"
+            reason: "at_or_under_target"
           });
           continue;
         }
-        /* The counter exists only for the case where two DIFFERENT creditor
-           names slug down to the same 32 characters. Same-creditor rows have
-           already been merged into one, so in the ordinary case n is 1 and the
-           key is just paydown_<creditor>. */
-        const n = (seenSlug.get(a.creditorKey) || 0) + 1;
-        seenSlug.set(a.creditorKey, n);
-        const generated = (n === 1 ? `paydown_${a.creditorKey}` : `paydown_${a.creditorKey}_${n}`).slice(0, 64);
-        const key = existingPaydownKeys.get(a.accountKey) || generated;
-        const tokens = { creditor: a.creditor, target: formatCents(a.targetCents), state_clause: clause };
-        waypoints.push({
-          key,
-          title: renderCopy(def.title, tokens),
-          detail: renderCopy(def.detail, tokens),
-          position: def.position,
-          ownerKind: def.owner_kind,
-          dueAt: existingDueAt.has(key)
-            ? existingDueAt.get(key)
-            : dueAtFrom(enrolledAt, def.due_offset_days),
-          verifyKind,
-          params: {
-            definition_key: def.key,
-            creditor: a.creditor,
-            creditor_key: a.creditorKey,
-            // Which bureaus reported this card when the list was built. Kept so
-            // a human reading the row can see where the numbers came from.
-            bureaus: a.bureaus,
-            target_cents: a.targetCents,
-            limit_at_seed_cents: a.limitCents,
-            balance_at_seed_cents: a.balanceCents
-          },
-          ...paid
-        });
+        waypoints.push(buildPaydown(def, a, existingKeyFor(a)));
       }
       continue;
     }
@@ -386,8 +563,49 @@ export function expandDefinitions({
        never closes itself.
        NULL, not [], when no credit file was read — see hasCreditFile above. */
     if (verifyKind === "no_new_credit") {
-      params.accounts_at_seed = hasCreditFile ? accounts.map((a) => a.accountKey).sort() : null;
-      params.snapshot_source = hasCreditFile ? "crs_result" : "none";
+      /* WRITE-ONCE. The baseline is the record of what this client's file looked
+         like on the day they enrolled, and it is the ONLY evidence behind a row
+         that has gone to blocked. A re-seed used to rewrite it from the newest
+         pull, which folded the very account that caused the block into the list
+         of accounts that were always there — the row stayed blocked and its
+         reason no longer existed anywhere. So an existing baseline is copied
+         forward verbatim and never recomputed.
+
+         An existing row whose baseline is NULL (seeded before anyone had pulled
+         this client's credit) is allowed to gain one the first time a file
+         exists. Going from "we never looked" to "here is what we saw" adds
+         knowledge; it does not erase any. */
+      const prior = existingParams.get(def.key) || null;
+      const priorBaseline = Array.isArray(prior?.accounts_at_seed) ? prior : null;
+      if (priorBaseline) {
+        params.accounts_at_seed = priorBaseline.accounts_at_seed;
+        params.account_prints_at_seed = Array.isArray(priorBaseline.account_prints_at_seed)
+          ? priorBaseline.account_prints_at_seed
+          : null;
+        params.accounts_without_print_at_seed =
+          Number.isInteger(priorBaseline.accounts_without_print_at_seed)
+            ? priorBaseline.accounts_without_print_at_seed
+            : null;
+        params.snapshot_source = priorBaseline.snapshot_source ?? "crs_result";
+        params.baseline_locked = true;
+      } else if (hasCreditFile) {
+        params.accounts_at_seed = accounts.map((a) => a.accountKey).sort();
+        /* Every print on the file at enrolment, and a COUNT OF THE ACCOUNTS THAT
+           HAD NONE. That count is what stops a later pull concluding anything:
+           if even one account at enrolment could not be identified, an account
+           on a later file that matches nothing might be that same one under a
+           new name, and src/waypoints/verify.mjs refuses to call it new. */
+        params.account_prints_at_seed = accounts.flatMap((a) => a.prints || []).sort();
+        params.accounts_without_print_at_seed = accounts.filter((a) => !(a.prints || []).length).length;
+        params.snapshot_source = "crs_result";
+        params.baseline_locked = true;
+      } else {
+        params.accounts_at_seed = null;
+        params.account_prints_at_seed = null;
+        params.accounts_without_print_at_seed = null;
+        params.snapshot_source = "none";
+        params.baseline_locked = false;
+      }
     }
 
     waypoints.push({
@@ -405,5 +623,5 @@ export function expandDefinitions({
     });
   }
 
-  return { waypoints, skipped };
+  return { waypoints, skipped, complete };
 }

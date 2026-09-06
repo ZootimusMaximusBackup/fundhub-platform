@@ -15,15 +15,20 @@ import {
   dueAtFrom,
   stateClause,
   expandDefinitions,
-  PAYDOWN_TARGET_FRACTION
+  PAYDOWN_TARGET_FRACTION,
+  openedDay,
+  accountPrint,
+  revolvingPrints,
+  withAccountPrints
 } from "./definitions.mjs";
+import { classifyAgainstBaseline, newAccountReason } from "./verify.mjs";
 
 const CATALOG = Object.freeze([
   {
     key: "paydown_revolving_account",
     expands: "per_revolving_account",
     title: "Pay {creditor} down to {target}",
-    detail: "This is the biggest lever on your score.",
+    detail: "You do not have to do it in one payment.",
     position: 10,
     owner_kind: "client",
     due_offset_days: 30,
@@ -36,8 +41,8 @@ const CATALOG = Object.freeze([
   {
     key: "no_new_credit",
     expands: "once",
-    title: "Do not open new credit until your funding is secured",
-    detail: "A new card lowers your average account age.",
+    title: "Do not open new credit while we work on your file",
+    detail: "A new card adds a hard inquiry and lowers the average age of your accounts.",
     position: 20,
     owner_kind: "client",
     due_offset_days: null,
@@ -51,7 +56,7 @@ const CATALOG = Object.freeze([
     key: "form_llc",
     expands: "once",
     title: "File your LLC",
-    detail: "File online with the Secretary of State{state_clause}. Once it is filed the clock starts.",
+    detail: "File online with the Secretary of State{state_clause}. Send us the filing confirmation once you have it.",
     position: 40,
     owner_kind: "client",
     due_offset_days: 30,
@@ -77,14 +82,14 @@ function triMerge(cards) {
 
 describe("copy tokens", () => {
   test("a token with no value leaves a sentence that still reads", () => {
-    const t = "File online with the Secretary of State{state_clause}. Once it is filed the clock starts.";
+    const t = "File online with the Secretary of State{state_clause}. Send us the filing confirmation once you have it.";
     assert.equal(
       renderCopy(t, { state_clause: stateClause("Texas") }),
-      "File online with the Secretary of State in Texas. Once it is filed the clock starts."
+      "File online with the Secretary of State in Texas. Send us the filing confirmation once you have it."
     );
     assert.equal(
       renderCopy(t, { state_clause: stateClause("") }),
-      "File online with the Secretary of State. Once it is filed the clock starts."
+      "File online with the Secretary of State. Send us the filing confirmation once you have it."
     );
   });
 
@@ -259,7 +264,7 @@ describe("expanding the catalog for one client", () => {
     assert.deepEqual(waypoints.map((w) => w.key).sort(), ["form_llc", "no_new_credit"]);
     assert.equal(
       waypoints.find((w) => w.key === "form_llc").detail,
-      "File online with the Secretary of State. Once it is filed the clock starts."
+      "File online with the Secretary of State. Send us the filing confirmation once you have it."
     );
   });
 
@@ -332,5 +337,154 @@ describe("expanding the catalog for one client", () => {
     });
     assert.equal(waypoints[0].paidAlternativePriceCents, 10000);
     assert.equal(waypoints[0].paidAlternativeKind, "llc_filing");
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+   TELLING A RENAMED CARD FROM A NEW ONE.
+
+   The defect these cover, in full: a reviewer re-pulled a byte-identical credit
+   file with one creditor string rewritten from "Credit One Bank" to "CREDIT ONE
+   BANK N.A." — the sort of tidy-up a bureau does to itself — and the client was
+   told on their own portal that they had opened new credit, while the paydown on
+   that same card was written off as missing from the file.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+function tradeline(over = {}) {
+  return {
+    accountType: "Revolving",
+    creditorName: "Credit One Bank",
+    accountIdentifier: "SIM-CRED1-3018",
+    accountOpenedDate: "2022-09-14",
+    ...over
+  };
+}
+
+describe("an account's print", () => {
+  test("a print needs BOTH the opened date and four digits, or it is null", () => {
+    assert.equal(accountPrint("2022-09-14", "SIM-CRED1-3018"), "o:2022-09-14|n:3018");
+    assert.equal(accountPrint(null, "SIM-CRED1-3018"), null, "no opened date, no print");
+    assert.equal(accountPrint("2022-09-14", "SIM-X-99"), null, "three digits is not four");
+    assert.equal(accountPrint("2022-09-14", null), null);
+    assert.equal(accountPrint("", ""), null);
+  });
+
+  test("an opened date is read whether it is a day or a full timestamp", () => {
+    assert.equal(openedDay("2022-09-14"), "2022-09-14");
+    assert.equal(openedDay("2022-09-14T00:00:00.000Z"), "2022-09-14");
+    assert.equal(openedDay("not a date"), null);
+    assert.equal(openedDay(null), null);
+  });
+
+  test("RENAMING THE CREDITOR DOES NOT CHANGE THE PRINT", () => {
+    const before = revolvingPrints({ tradelines: [tradeline()] });
+    const after = revolvingPrints({ tradelines: [tradeline({ creditorName: "CREDIT ONE BANK N.A." })] });
+    assert.deepEqual([...before.get("credit_one_bank")], ["o:2022-09-14|n:3018"]);
+    assert.deepEqual([...after.get("credit_one_bank_n_a")], ["o:2022-09-14|n:3018"]);
+  });
+
+  test("three bureau rows for one card collapse to ONE print", () => {
+    const prints = revolvingPrints({
+      tradelines: [tradeline({ source: "EX" }), tradeline({ source: "EQ" }), tradeline({ source: "TU" })]
+    });
+    assert.deepEqual([...prints.get("credit_one_bank")], ["o:2022-09-14|n:3018"]);
+  });
+
+  test("an account the file cannot identify gets an EMPTY print list, not a made-up one", () => {
+    const accounts = withAccountPrints(
+      mergeByCreditor(revolvingAccounts([["Mystery Card", "Experian", 500, 1000, "", "", "MONITOR"]])),
+      { tradelines: [tradeline({ creditorName: "Mystery Card", accountIdentifier: null, accountOpenedDate: null })] }
+    );
+    assert.deepEqual(accounts[0].prints, []);
+  });
+});
+
+describe("a renamed card is UNKNOWN, and unknown is never an accusation", () => {
+  const enrolled = {
+    accounts_at_seed: ["credit_one_bank"],
+    account_prints_at_seed: ["o:2022-09-14|n:3018"],
+    accounts_without_print_at_seed: 0,
+    snapshot_source: "crs_result"
+  };
+  const renamed = [{
+    accountKey: "credit_one_bank_n_a",
+    creditor: "CREDIT ONE BANK N.A.",
+    prints: ["o:2022-09-14|n:3018"]
+  }];
+
+  test("THE REVIEWER'S CASE: the same card under a new name reads as CLEAN", () => {
+    const out = classifyAgainstBaseline(enrolled, renamed);
+    assert.equal(out.verdict, "clean");
+    assert.deepEqual(out.newAccounts, []);
+  });
+
+  test("a genuinely new card — its own number, its own opened date — is still caught", () => {
+    const out = classifyAgainstBaseline(enrolled, [
+      ...renamed,
+      { accountKey: "brand_new_bank_card", creditor: "Brand New Bank Card", prints: ["o:2026-08-01|n:7412"] }
+    ]);
+    assert.equal(out.verdict, "new");
+    assert.deepEqual(out.newAccounts.map((a) => a.creditor), ["Brand New Bank Card"]);
+  });
+
+  test("a card with NO print is unknown — never new, whatever it is called", () => {
+    const out = classifyAgainstBaseline(enrolled, [
+      { accountKey: "who_knows", creditor: "Who Knows", prints: [] }
+    ]);
+    assert.equal(out.verdict, "unknown");
+    assert.deepEqual(out.newAccounts, []);
+    assert.equal(out.reason, "account_not_identifiable");
+  });
+
+  test("a baseline that could not identify all of ITS OWN accounts concludes nothing", () => {
+    const shaky = { ...enrolled, accounts_without_print_at_seed: 1 };
+    const out = classifyAgainstBaseline(shaky, [
+      { accountKey: "brand_new_bank_card", creditor: "Brand New Bank Card", prints: ["o:2026-08-01|n:7412"] }
+    ]);
+    assert.equal(out.verdict, "unknown");
+    assert.equal(out.reason, "baseline_not_fully_identified");
+  });
+
+  test("a baseline written before prints existed concludes nothing either", () => {
+    const legacy = { accounts_at_seed: ["credit_one_bank"], snapshot_source: "crs_result" };
+    const out = classifyAgainstBaseline(legacy, [
+      { accountKey: "brand_new_bank_card", creditor: "Brand New Bank Card", prints: ["o:2026-08-01|n:7412"] }
+    ]);
+    assert.equal(out.verdict, "unknown");
+    assert.equal(out.reason, "baseline_carries_no_account_prints");
+  });
+
+  test("NO BASELINE AT ALL still concludes nothing", () => {
+    assert.equal(classifyAgainstBaseline({ accounts_at_seed: null }, renamed).verdict, "no_baseline");
+    assert.equal(classifyAgainstBaseline(null, renamed).verdict, "no_baseline");
+  });
+
+  test("a pull reporting no cards at all against a baseline that had some is a thin pull", () => {
+    assert.equal(classifyAgainstBaseline(enrolled, []).verdict, "no_accounts_reported");
+  });
+});
+
+describe("what the blocked row says to the client", () => {
+  const say = (n) => newAccountReason(n);
+
+  test("it states what the file shows, does not say the client opened anything, and asks", () => {
+    const one = say([{ creditor: "Brand New Bank Card" }]);
+    assert.equal(
+      one,
+      "Your credit file now shows an account that was not on it when you enrolled: Brand New Bank Card. Let your advisor know if this is not yours."
+    );
+    assert.ok(!/opened/i.test(one), "the client is not told they opened it");
+  });
+
+  test("more than one reads as a sentence too, and a nameless one still does", () => {
+    assert.match(say([{ creditor: "A" }, { creditor: "B" }]), /^Your credit file now shows accounts .*: A, B\. Let your advisor know if any of these are not yours\.$/);
+    assert.match(say([{ creditor: "" }, { creditor: "" }]), /shows 2 accounts that were not on it when you enrolled\./);
+  });
+
+  test("it carries no dollar figure, no outcome claim and no banned word", () => {
+    const text = say([{ creditor: "Brand New Bank Card" }]).toLowerCase();
+    for (const banned of ["qualify", "approved", "guaranteed", "boost", "score", "credit repair", "$"]) {
+      assert.ok(!text.includes(banned), `the blocked reason must not say ${banned}`);
+    }
   });
 });

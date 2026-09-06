@@ -244,6 +244,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/360_waypoint_verification.sql",
   "migrations/361_waypoint_definitions.sql",
   "migrations/362_waypoint_definitions_seed.sql",
+  "migrations/363_waypoint_definitions_copy_and_grants.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",
