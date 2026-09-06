@@ -100,7 +100,8 @@
     .na-saved,.cp-note,.cp-count,.blocker-flag,.record-key,.record-pick label,
     .fact-row,.approve-what,.approve-exp,.approve-url,.approve-nolink,
     .dz-hint,.link-btn,.more>summary,.group-title .chev,.need-meta,.sb-source,
-    .headline-caveat,.round-note,.fact-note,.lender-sub,.lender-nourl){
+    .headline-caveat,.round-note,.fact-note,.lender-sub,.lender-nourl,
+    .na-inq-head,.na-inq-row,.na-inq-bureau,.na-inq-state){
     font-size:var(--fs-caption)!important;
   }
 
@@ -239,8 +240,12 @@
      Red is now kept for a hard stop only — see paintBlockerEdge() below, which
      counts high-severity cards (fraud alert, no written permission, permission
      unreadable) and nothing else. */
+  /* The panel edge follows the same three-colour rule as the cards inside it.
+     A file with open blockers is yellow, not green: green is the answer to
+     "is anything stopping this", and a blocker is exactly the thing that is. */
   .na-group{border-left:4px solid transparent;padding-left:16px;}
-  .na-group.is-open-work{border-left-color:var(--green-line);}
+  .na-group.is-clear{border-left-color:var(--green-line);}
+  .na-group.is-open-work{border-left-color:var(--amber-line);}
   .na-group.is-blocked{border-left-color:var(--red-line);}
   .na-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
   .na-lead{min-width:0;}
@@ -260,15 +265,40 @@
   /* The value saved on the record, kept OUT of the big line above and shown
      here instead — quiet, and labelled as a saved value, never an instruction. */
   .na-saved{font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint);margin:6px 0 0;}
+  /* The inquiry list that sits under the step telling you to remove them. Not a
+     table: four rows on a wide header, so it stays readable next to the big
+     line above it without competing with it. */
+  .na-inq{margin:10px 0 0;}
+  .na-inq-head{font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:5px;}
+  .na-inq-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;
+    border-top:1px solid var(--line);}
+  .na-inq-row:first-of-type{border-top:none;}
+  .na-inq-name{font-weight:700;color:var(--text);}
+  .na-inq-bureau{font-family:'JetBrains Mono',monospace;font-weight:700;
+    color:var(--text-dim);}
+  .na-inq-state{color:var(--text-faint);margin-left:auto;}
   .blockers-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
   .blockers-title{font-size:var(--fs-body);font-weight:800;color:var(--red);}
-  /* GREEN, not amber — owner-set 2026-09-06. An ordinary open task on a clean
-     file is work to do, not a warning. The five cards on Walk1 Funding were all
-     ordinary tasks and all five carried an orange edge, which reads as five
-     problems. A hard stop takes the red edge below (.is-high) and says so in
-     words on the card as well, because colour alone is never the signal
-     (UI-STANDARDS §12.6). */
-  .blocker-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--green-line);border-radius:6px;padding:9px 12px;margin-bottom:8px;}
+  /* YELLOW — owner-set 2026-09-06, restated by Chris on the live screen the
+     same day: "green means go, yellow means a blocker, red means a hard stop."
+
+     This rule was written down twice in this file, two different ways, on the
+     same date. The earlier note above says yellow is a blocker. A later note
+     said "GREEN, not amber — an ordinary open task is work to do, not a
+     warning", and that is what got built. So twelve cards sat under a heading
+     reading ACTIVE BLOCKERS while every one of them was painted "nothing is
+     wrong". Chris on seeing it: "I'm confused about why active blockers are
+     green... they're enigmas."
+
+     The heading is the tiebreak. A card filed under Active blockers IS a
+     blocker, so it takes the yellow edge. If some of these are really ordinary
+     open work and not blockers, the fix is to stop filing them under that
+     heading — not to paint a blocker green.
+
+     Red is still reserved for a hard stop (.is-high below), and colour is never
+     the only signal — every card says its reason in words (UI-STANDARDS §12.6). */
+  .blocker-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--amber-line);border-radius:6px;padding:9px 12px;margin-bottom:8px;}
   .blocker-top{display:flex;justify-content:space-between;align-items:flex-start;}
   .blocker-reason{font-weight:700;font-size:var(--fs-body);color:var(--text);}
   .blocker-age-wrap{text-align:right;flex:0 0 auto;}
@@ -772,6 +802,18 @@
           <div class="na-main big" id="ccp-next-action">Pick a client below.</div>
           <p class="cp-why" id="ccp-cp-why" hidden></p>
           <p class="cp-note" id="ccp-cp-note" hidden></p>
+          <!-- THE INQUIRIES THEMSELVES, UNDER THE STEP THAT SAYS TO REMOVE THEM.
+               "Remove Inquiries" was the biggest text on the screen with nothing
+               under it to remove. The banks were named, but as a grey footnote
+               in Record Facts, three sections down and past the funding round —
+               so the one screen telling you to act did not show you what to act
+               on. Chris on the live page: "where are the inquiries? They were
+               supposed to list off the inquiries so that way we can send them
+               off to get removed first."
+               Same rows, same source, painted where the eye already is
+               (UI-STANDARDS §5: the answer appears where the user is looking).
+               The Issue Inquiry Removal button already lives on this card. -->
+          <div class="na-inq" id="ccp-next-inquiries" hidden></div>
         </div>
       </div>
       <div class="record-pick">
@@ -1733,12 +1775,52 @@ document.addEventListener("DOMContentLoaded", function () {
   /* One line naming the banks that pulled this person's credit, so nobody has
      to open a second screen to find out which four they are. Full names — a
      bureau writes "AMERICAN EXPRESS", never "Amex" (owner rule). */
+  /* THE SAME ROWS, PAINTED UNDER THE NEXT STEP.
+     Record Facts keeps its one-line footnote; this puts the list itself where
+     the instruction to act on it is. Built as DOM nodes with textContent, never
+     an HTML string — a creditor name comes off a credit report and is not ours
+     to trust. */
+  function paintNextInquiries(rows) {
+    var box = $("ccp-next-inquiries");
+    if (!box) return;
+    box.textContent = "";
+    if (!rows || !rows.length) { box.hidden = true; return; }
+    var head = document.createElement("div");
+    head.className = "na-inq-head";
+    head.textContent = rows.length === 1
+      ? "The 1 inquiry on this file"
+      : "The " + rows.length + " inquiries on this file";
+    box.appendChild(head);
+    rows.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "na-inq-row";
+      var name = document.createElement("span");
+      name.className = "na-inq-name";
+      name.textContent = r.name;
+      row.appendChild(name);
+      if (r.bureau) {
+        var b = document.createElement("span");
+        b.className = "na-inq-bureau";
+        b.textContent = r.bureau;
+        row.appendChild(b);
+      }
+      /* No status word here. This list comes off the stored credit report,
+         which knows who pulled the file and nothing about whether a removal
+         has been sent — inquiry_log holds that and this endpoint does not
+         return it. Printing "Pending Removal" from this source would be a
+         claim the source cannot support. */
+      box.appendChild(row);
+    });
+    box.hidden = false;
+  }
+
   function paintInquiries(crsResults) {
     var found = fileInquiries(crsResults);
     var names = $("ccp-inquiry-names");
     if (!found.known) {
       setText("ccp-inquiries", "no report yet");
       if (names) { names.textContent = ""; names.hidden = true; }
+      paintNextInquiries([]);
       return;
     }
     if (!found.rows.length) {
@@ -1748,15 +1830,19 @@ document.addEventListener("DOMContentLoaded", function () {
           + "That is not the same as none — pull a bureau again if this file should have them.";
         names.hidden = false;
       }
+      paintNextInquiries([]);
       return;
     }
     setText("ccp-inquiries", String(found.rows.length));
-    if (names) {
-      names.textContent = "Who pulled this credit: " + found.rows.map(function (r) {
-        return r.bureau ? (r.name + " (" + r.bureau + ")") : r.name;
-      }).join(" · ");
-      names.hidden = false;
-    }
+    /* The run-on line under Client Facts is gone. It printed
+       "Who pulled this credit: CAPITAL ONE (EX) · SYNCB/PAYPAL CREDIT (EX) ·
+       NAVY FEDERAL CU (TU) · CITIBANK NA (EQ)" as one wrapping sentence —
+       Chris, on the live screen: "this is janky and not clear."
+       The same four rows are now a real list under the step that says to remove
+       them, so keeping this was duplication in the worse of the two formats.
+       The count tile beside it still answers "how many". */
+    if (names) { names.textContent = ""; names.hidden = true; }
+    paintNextInquiries(found.rows);
   }
 
   /* WHY A REMOVAL CASE SAYS BLOCKED, AND WHERE IT GETS UNBLOCKED.
@@ -2328,7 +2414,9 @@ document.addEventListener("DOMContentLoaded", function () {
        wrong with the file itself. On this screen that is exactly the
        high-severity set — fraud alert on the report, no written permission on
        record, permission record unreadable (src/fulfillment/next-action.mjs).
-       Ordinary open work is green. */
+       Anything else still open is yellow, and green is kept for a file with
+       nothing open at all — green means go, and a blocker is the thing that
+       stops you going. */
     var panel = $("ccp-blockers-panel");
     if (panel) {
       panel.classList.remove("is-empty");
@@ -2340,6 +2428,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } catch (e) { shown = 0; hard = 0; }
       panel.classList.toggle("is-blocked", hard > 0);
       panel.classList.toggle("is-open-work", hard === 0 && shown > 0);
+      panel.classList.toggle("is-clear", shown === 0);
     }
     var bizCredit = d.business_credit || {};
     paintBusinesses("full", bizCredit.businesses || []);
