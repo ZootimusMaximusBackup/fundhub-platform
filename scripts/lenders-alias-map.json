@@ -206,9 +206,6 @@
     "citibank": "Citi",
     "citibank na": "Citi",
     "citibank n a": "Citi",
-    "cbna": "Citi",
-    "citi cards cbna": "Citi",
-    "citicards cbna": "Citi",
     "citigroup": "Citi",
     "fnbo": "FNBO",
     "first national bank of omaha fnbo": "FNBO",
@@ -442,7 +439,7 @@
     "anb bank": "ANB Bank",
     "apple creek bank": "Apple Creek Bank",
     "arizona bank and trust 0 htlf": "Arizona Bank & Trust (0% - HTLF)",
-    "artisans' bank": "Artisans’ Bank",
+    "artisans' bank": "Artisans\u2019 Bank",
     "associated bank": "Associated Bank",
     "atlantic union bank": "Atlantic Union Bank",
     "bancfirst": "BancFirst",
@@ -618,7 +615,7 @@
     "the farmers bank": "The Farmers Bank",
     "the first bank": "The First Bank",
     "the missouri bank": "The Missouri Bank",
-    "the people's bank": "The People’s Bank",
+    "the people's bank": "The People\u2019s Bank",
     "the peoples bank": "The Peoples Bank",
     "towne bank": "Towne Bank",
     "tri city national bank": "Tri City National Bank",
@@ -1056,7 +1053,7 @@
         "PROSPERWEBBK",
         "COASTL/PROSP"
       ],
-      "do_not_confuse_with": "Prosperity Bank (TX) — a different, unrelated bank that IS in the book"
+      "do_not_confuse_with": "Prosperity Bank (TX) \u2014 a different, unrelated bank that IS in the book"
     },
     "Discover": {
       "legal_name": "Discover Bank",
@@ -1298,7 +1295,7 @@
       "aliases": [
         "PROSPERITY BANK"
       ],
-      "do_not_confuse_with": "Prosper — a different, unrelated online lender"
+      "do_not_confuse_with": "Prosper \u2014 a different, unrelated online lender"
     },
     "Hancock Whitney Bank": {
       "legal_name": "Hancock Whitney Bank",
@@ -1823,25 +1820,25 @@
       "People's United Bank": [
         {
           "lender_table": "InBranchBizCC",
-          "name": "People’s United Bank",
+          "name": "People\u2019s United Bank",
           "eligible_states": "MA",
           "external_row_id": "LEGACY-INBRANCHBIZCC-PEOPLE-S-UNITED-BANK"
         },
         {
           "lender_table": "OnlineBizCC",
-          "name": "People’s United Bank",
+          "name": "People\u2019s United Bank",
           "eligible_states": "ME, NH",
           "external_row_id": "LEGACY-ONLINEBIZCC-PEOPLE-S-UNITED-BANK"
         },
         {
           "lender_table": "OnlineBizCC",
-          "name": "People’s United Bank (0% - Personal)",
+          "name": "People\u2019s United Bank (0% - Personal)",
           "eligible_states": "VT",
           "external_row_id": "LEGACY-ONLINEBIZCC-PEOPLE-S-UNITED-BANK-0-PERSONAL"
         },
         {
           "lender_table": "InBranchBizCC",
-          "name": "People’s United Bank (Now M&T)",
+          "name": "People\u2019s United Bank (Now M&T)",
           "eligible_states": "CT",
           "external_row_id": "LEGACY-INBRANCHBIZCC-PEOPLE-S-UNITED-BANK-NOW-M-T"
         }
@@ -2171,5 +2168,9 @@
       }
     ],
     "count": "10 of the 26 active bank datapoints, and 1 of the 6 banks that have a named relationship manager."
+  },
+  "deliberately_unmapped": {
+    "cbna": "Bare CBNA is Citibank's issuing code AND the code on the store cards Citi issues for other brands - MACYS/CBNA, THD/CBNA, CBNA/BBY, EXXON/CBNA, OFFICEDEPOT/CBNA. Measured 2026-09-05: mapping it to Citi pulled 75 of Citi's 86 inquiry rows from store cards, which pushed Experian to 30.2% and put EX/EQ on Citi. Strip them and Citi reads 9 of 11 Equifax. A store card is not the bank's business card and must not vote on which bureau that bank pulls. Spellings that name Citi outright - CITI CARDS CBNA, CITICARDS CBNA, CITIBANK NA - stay mapped.",
+    "citi cards cbna / citicards cbna": "Every CBNA-suffixed spelling is contaminated by the store cards Citi issues for other brands. Measured 2026-09-05: with them mapped Citi read EX/EQ, and with only the bare code removed it read EX. The 11 rows that name Citibank outright read 9 Equifax, 1 Experian, 1 TransUnion. Rather than pick a bureau by hand, all CBNA spellings are unmapped so Citi is decided only by rows that actually say Citibank."
   }
 }

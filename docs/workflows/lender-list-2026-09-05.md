@@ -180,7 +180,7 @@ Four kinds of source, ranked. Higher beats lower.
    26 banks, with the bureau written in a labelled field. Trusted most.
    Read: 26 banks, 25 of them named properly.
 2. **Credit checks we have actually seen** (`docs/legacy-strong/inquiry-master-database.csv`).
-   5380 real credit checks off client reports. 2403 of them are on a bank we can name.
+   5380 real credit checks off client reports. 2328 of them are on a bank we can name.
    A bank is only given a bureau here when we have seen at least 10 of its checks, and
    the bureau accounts for at least 30% of them and at least 5 checks. The full split is below.
 3. **The written-up Notion pages** (four of them) and the state funding boards table.
@@ -202,7 +202,6 @@ that one wins, so the bureau written into the book can be wider than this column
 | Navy Federal Credit Union | 126 | TU 111 (88%), EX 15 (12%) | TU |
 | Wells Fargo | 94 | EX 42 (45%), EQ 33 (35%), TU 19 (20%) | EX/EQ |
 | Discover | 93 | EX 76 (82%), TU 9 (10%), EQ 8 (9%) | EX |
-| Citi | 86 | EQ 58 (67%), EX 26 (30%), TU 2 (2%) | EX/EQ |
 | US Bank | 67 | TU 52 (78%), EX 9 (13%), EQ 6 (9%) | TU |
 | Truist | 60 | EQ 45 (75%), TU 15 (25%) | EQ |
 | OneMain Financial | 56 | EX 25 (45%), TU 24 (43%), EQ 7 (13%) | EX/TU |
@@ -221,6 +220,7 @@ that one wins, so the bureau written into the book can be wider than this column
 | Prosper | 13 | TU 13 (100%) | TU |
 | Huntington Bank | 13 | TU 8 (62%), EQ 5 (38%) | EQ/TU |
 | First Citizens Bank | 12 | EQ 7 (58%), EX 5 (42%) | EX/EQ |
+| Citi | 11 | EQ 9 (82%), EX 1 (9%), TU 1 (9%) | EQ |
 | BMO Harris | 11 | TU 11 (100%) | TU |
 | Universal Credit | 11 | TU 11 (100%) | TU |
 | Fifth Third Bank | 10 | TU 10 (100%) | TU |
