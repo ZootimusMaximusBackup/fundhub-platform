@@ -6,7 +6,7 @@
 import { esc } from "./escape.mjs";
 import { usd, median, spaced, parsePct } from "./format.mjs";
 import { rankedRevolving, targetBal, targetText, paydownAmt, paydownSentence, bureauStatus,
-  heroCard, utilTotalsKnown } from "./derive.mjs";
+  heroCard, utilTotalsKnown, accountFactSentences, payDownCardsLine } from "./derive.mjs";
 import { cover, ctaPage, section, table, utilBar, PB } from "./chrome.mjs";
 import { svgTwoTrack, svgPaydownBars, svgSeverity } from "./charts.mjs";
 
@@ -19,6 +19,22 @@ const BUREAU_LABEL = Object.freeze({
 function firstName(client) {
   const raw = String(client?.applicant || "").trim() || "Client";
   return raw.split(/\s+/)[0];
+}
+
+/**
+ * What "full repair" means ON THIS FILE. The literal it replaces read
+ * "charge-offs removed, lates addressed, utilization under 10%" for every
+ * client, including files carrying no charge-off and no late at all.
+ */
+function fullRepairMeans(client) {
+  const c = client || {};
+  const bits = [];
+  const kinds = (c.negatives || []).map((n) => String(n.type || "").toLowerCase());
+  if (kinds.some((k) => k.includes("charge"))) bits.push("charge-offs removed");
+  if (kinds.some((k) => k.includes("late"))) bits.push("lates addressed");
+  if (kinds.length && !bits.length) bits.push("the negative items on this file addressed");
+  if (utilTotalsKnown(c)) bits.push("utilization under 10%");
+  return bits.join(", ");
 }
 
 /** Bureau keys ordered lowest score first, the way the Python ranks them. */
@@ -37,11 +53,8 @@ export function buildCreditAnalysis(client) {
   const spread = scoreVals.length ? Math.max(...scoreVals) - Math.min(...scoreVals) : "";
   const h = [cover(c, "credit analysis report", "Financial Profile Assessment")];
 
-  const have = [];
-  if ((c.mortgages || []).length) have.push("You have a mortgage.");
-  if ((c.installments || []).length) have.push("You have installment loans.");
-  if ((c.revolving || []).length) have.push("You have revolving cards.");
-  const haveTxt = have.join(" ") || "You have real credit activity.";
+  // Shared with the roadmap's opening paragraph — one derivation, not two.
+  const haveTxt = accountFactSentences(c).join(" ") || "You have real credit activity.";
   const first = esc(firstName(c));
   h.push(`<p>${first}, let me be straight with you. ${esc(haveTxt)}
     This report breaks down exactly what is on this file: scores, cards, and what to do next.
@@ -197,11 +210,18 @@ bureaus. Your best and worst are ${esc(spread)} points apart. Closing that gap i
   // 04 AU
   const au = c.au_account || {};
   h.push(section("04", "au accounts", "Authorized User (AU) Accounts"));
-  h.push(table(["creditor", "bureau", "limit", "balance", "utilization", "age", "impact"],
-    [[esc(au.creditor), esc(au.bureau), esc(usd(au.limit)), esc(usd(au.balance)),
-      esc(au.util), esc(au.age), '<span class="tag open">NEUTRAL</span>']]));
-  h.push("<p>AU accounts cannot help you get funded - lenders do not count them in funding "
-    + "decisions. But this one is not hurting you either. Leave it alone.</p>");
+  /* F53. "But this one is not hurting you either. Leave it alone." was printed
+     under an EMPTY table for every client with no authorized-user account. No
+     AU row, no sentence about an AU row. */
+  if (au.creditor) {
+    h.push(table(["creditor", "bureau", "limit", "balance", "utilization", "age", "impact"],
+      [[esc(au.creditor), esc(au.bureau), esc(usd(au.limit)), esc(usd(au.balance)),
+        esc(au.util), esc(au.age), '<span class="tag open">NEUTRAL</span>']]));
+    h.push("<p>AU accounts cannot help you get funded - lenders do not count them in funding "
+      + "decisions. But this one is not hurting you either. Leave it alone.</p>");
+  } else {
+    h.push("<p>No authorized user accounts are listed on this file.</p>");
+  }
 
   // 05 negatives
   h.push(PB);
@@ -276,7 +296,8 @@ bureaus. Your best and worst are ${esc(spread)} points apart. Closing that gap i
     `<div class="card"><div class="lbl">${esc(spaced("projected pre-approval"))}</div>`
     + `<div class="big">${esc(usd(c.preapproval_after))}</div>`
     + `<div class="sub">${esc(spaced("after utilization fix"))}</div>`
-    + "<div class=\"body\">Pay down your two revolving cards. That alone moves your pre-approval.</div></div>",
+    /* F53. "your two revolving cards" for a file that shows one, or five. */
+    + `<div class="body">${esc(payDownCardsLine(c))} That alone moves your pre-approval.</div></div>`,
     `<div class="card"><div class="lbl">${esc(spaced("the delta"))}</div>`
     + `<div class="big">+${esc(usd(delta))}</div>`
     + `<div class="sub">${esc(spaced("gained by paying down cards"))}</div>`
@@ -340,8 +361,10 @@ bureaus. Your best and worst are ${esc(spread)} points apart. Closing that gap i
   ]);
   h.push(table(["stage", "action", "score impact", "funding impact"],
     stages.map((r) => r.map(esc))));
-  h.push(`<p>After full repair - charge-offs removed, lates addressed, utilization under
-      10% - your Experian score moves from ${esc(s.experian ?? "")} toward 700+. At that level you unlock
+  // F53. Only the repairs this file actually needs are named as repairs.
+  const repairMeans = fullRepairMeans(c);
+  h.push(`<p>After full repair${repairMeans ? ` - ${esc(repairMeans)}` : ""} - your Experian score
+      moves from ${esc(s.experian ?? "")} toward 700+. At that level you unlock
       premium cards, SBA 7(a) loans, and personal loans up to $40,000+. The gap between where you
       are and where you could be is not years of waiting. It is targeted action on a short list.</p>
       <p>Ready to move? Book your strategy call at ${esc(c.booking_url)}.</p>`);

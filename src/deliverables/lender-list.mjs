@@ -38,8 +38,8 @@ export function buildLenderList(client) {
      does not have. */
   const utilLead = c.util_pct
     ? ` And your utilization is at ${esc(c.util_pct)} - that's critical.`
-    : " No open card on this file reports a credit limit, so there is no overall utilization"
-      + " figure to read.";
+    : " No open card on this file reports a credit limit above $0, so there is no overall"
+      + " utilization figure to read.";
   h.push(`<p><b>${esc(firstName(c))}, here's the honest truth.</b></p>
       <p>Your Experian score sits at ${esc(c.scores?.experian ?? "")}. Your median score is ${esc(med)}.${utilLead}</p>`);
   if (now.length) {

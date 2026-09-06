@@ -182,8 +182,11 @@ test("F52 — the roadmap never prints a paydown total it worked out from an unk
       `${file.filename} targets $0`);
     if (file.type === "roadmap") {
       assert.match(text, /AMEX PLATINUM \(NPSL\) \$5,200 - - -/);
+      /* F52b. "reports a credit limit" was false for a card whose limit IS
+         reported, as $0. "above $0" is true in both states, and is the same
+         sentence in all three printers — src/deliverables/three-printer-wording.test.mjs. */
       assert.match(text,
-        /No open card on this file reports a credit limit, so there is no 10% total to work back to\./);
+        /No open card on this file reports a credit limit above \$0, so there is no 10% total to work back to\./);
     }
   }
   assert.equal(checked, 4, "all four documents were read back and checked");
@@ -206,7 +209,7 @@ test("F52 — a total that covers only some cards says which ones it does not", 
     assert.match(text, /Total paydown to reach 10% utilization: \$600\./,
       "the cards that DO report a limit still get a real total");
     assert.match(text,
-      /1 card on this file reports no limit, so nothing for it is in this number\./,
+      /1 card on this file has no 10% target, so nothing for it is in this number\./,
       "and the client is told the total is partial");
   }
   assert.ok(sawRoadmap, "the roadmap was not among the printed documents");

@@ -51,12 +51,31 @@ function usd(v) {
    instruction the client cannot follow. Same card, same document, two
    different answers. Unknown has to read as unknown in EVERY place the value
    is rendered, so both places now go through here. */
-function paydownInstruction(row) {
+/* THREE STATES, NOT TWO. ZERO IS NOT NULL.
+   F52b. row[3] is the reported credit limit and it holds one of three things: a
+   positive number, the number ZERO, or null. row[5] alone cannot tell the last
+   two apart — utilTarget() in black-report-client.mjs blanks both — so this
+   printer told the holder of a card whose limit IS reported, as $0, that "no
+   credit limit is reported for this card". A reported zero and a missing limit
+   both mean there is no 10% target; they are not the same sentence. The web
+   pages (src/deliverables/derive.mjs noTargetReason) and the WeasyPrint printer
+   (scripts/black-reports/fundhub_gen.py no_target_reason) carry these exact
+   words, and src/deliverables/three-printer-wording.test.mjs fails if any one
+   of the three moves without the other two. */
+export function noTargetReason(row) {
+  const raw = row?.[3];
+  const lim = raw === null || raw === undefined || raw === "" ? null : Number(raw);
+  if (lim === null || !Number.isFinite(lim)) return "No credit limit is reported for this card";
+  if (lim > 0) return "";
+  return "The credit limit reported for this card is $0";
+}
+
+export function paydownInstruction(row) {
   const account = row?.[0] || "";
   const balance = usd(row?.[2]);
   const target = String(row?.[5] || "");
   if (target) return `Pay ${account} from ${balance} down to ${target}.`;
-  return `${account} - ${balance} owed. No credit limit is reported for this card, so there is no 10% target to pay down to. Keep the balance moving down and we will set a target when a limit reports.`;
+  return `${account} - ${balance} owed. ${noTargetReason(row)}, so there is no 10% target to pay down to. Keep the balance moving down and we will set a target when a limit reports.`;
 }
 
 /* THE PAYDOWN TOTAL, AND WHY IT IS NOT ARITHMETIC.
@@ -78,19 +97,49 @@ function cardsWithNoTarget(c) {
   return openRevolving(c).filter((row) => !String(row[5] || "").trim()).length;
 }
 
-function totalPaydownSentence(c) {
+export function totalPaydownSentence(c) {
   // No open revolving cards at all is not "no limit reported" — there is simply
   // no paydown plan to describe, so nothing is said about one.
   if (!openRevolving(c).length) return "";
   if (c.util_target_balance == null || c.util_total_balance == null) {
-    return "No open card on this file reports a credit limit, so there is no 10% total to work back to. Keep the balances moving down and we will set a target as soon as a limit reports.";
+    // F52b. "reports a credit limit" is false for a card reporting one of $0.
+    return "No open card on this file reports a credit limit above $0, so there is no 10% total to work back to. Keep the balances moving down and we will set a target as soon as a limit reports.";
   }
   const owed = usd(Math.max(0, c.util_total_balance - c.util_target_balance));
   const missing = cardsWithNoTarget(c);
   const tail = missing
-    ? ` That covers the cards that report a limit. ${missing} card${missing === 1 ? "" : "s"} on this file report${missing === 1 ? "s" : ""} no limit, so nothing for ${missing === 1 ? "it" : "them"} is in this number.`
+    ? ` That covers the cards that report a limit above $0. ${missing} card${missing === 1 ? "" : "s"} on this file ${missing === 1 ? "has" : "have"} no 10% target, so nothing for ${missing === 1 ? "it" : "them"} is in this number.`
     : "";
   return `Total paydown to reach 10% utilization: ${owed}.${tail} You do not have to do it all at once - start with the card at the highest percentage.`;
+}
+
+/** Bureau names this file shows as CLEAN, in the order the mapper listed them. */
+export function cleanBureaus(c) {
+  return (c?.bureaus || [])
+    .filter((row) => row && row[1] === "CLEAN")
+    .map((row) => String(row[0] || ""))
+    .filter(Boolean);
+}
+
+/**
+ * The closing page's opening sentence, built from this file and nothing else.
+ * Identical in src/deliverables/chrome.mjs ctaPage() and in
+ * scripts/black-reports/fundhub_gen.py cta_page().
+ */
+export function ctaLead(c) {
+  const clean = cleanBureaus(c);
+  if (clean.length) {
+    return `You have ${clean.length === 1 ? "a clean bureau" : "clean bureaus"} ready for `
+      + `funding now - ${clean.join(", ")}. Apply on ${clean.length === 1 ? "it" : "those"} `
+      + "while we repair the rest in parallel.";
+  }
+  const openNow = (c?.lenders_now || []).length;
+  if (openNow) {
+    return `You have ${openNow} lender${openNow === 1 ? "" : "s"} you can apply `
+      + "to today. Book the call and we will work the list in the right order.";
+  }
+  return "Book the call and we will put the fixes in this pack in the order that unlocks the "
+    + "most money.";
 }
 
 function moneyRange(lo, hi) {
@@ -454,9 +503,15 @@ class Report {
       x: 48, y: H - 200, size: 20, font: this.bold, color: WHITE
     });
     this.rainbow(48, H - 212, 130, 3);
-    const lead = (c.lenders_now || []).length
-      ? "You have lenders you can apply to today. Book the call and we will work the list in the right order."
-      : "Book the call and we will put the fixes in this pack in the order that unlocks the most money.";
+    /* F53. THE LAST PAGE OF THE PACK. The web pages and the WeasyPrint printer
+       both said "You have clean bureaus ready for funding now." to every client,
+       including one whose every bureau this system had just marked DIRTY. This
+       printer never made that claim — it led on lenders — so the three said
+       three different things on the same page for the same client. All three now
+       run this order: the clean bureaus if the file shows any, else the lenders
+       already open today, else no claim about either.
+       src/deliverables/three-printer-wording.test.mjs fails if one moves. */
+    const lead = ctaLead(c);
     let ly = H - 246;
     for (const line of wrap(lead, this.font, 10, CONTENT - 20)) {
       this.page.drawText(line, { x: 48, y: ly, size: 10, font: this.font, color: rgb(0.72, 0.72, 0.72) });
@@ -829,7 +884,12 @@ function snapshot(c, r) {
   afterOptimizationTable(c, r);
   r.eyebrow("06 / NEXT STEP");
   r.heading("Your Next Step");
-  r.para(`${firstName(c)}, here is the honest truth. You are fundable at ${usd(c.preapproval_now)} right now. The version of you that shows up in 60-90 days - with utilization under 10% and this list worked through - is the version that gets offered more money at better rates.`);
+  /* F53. "You are fundable at $0 right now" is what this printed for a client
+     whose file gives no pre-approval — buildBlackReportClient forces a missing
+     one to 0 (black-report-client.mjs:1112). The claim is made only when the
+     figure is above zero; the rest of the sentence is true either way. */
+  const fundableNow = Number.isFinite(Number(c.preapproval_now)) && Number(c.preapproval_now) > 0;
+  r.para(`${firstName(c)}, here is the honest truth.${fundableNow ? ` You are fundable at ${usd(c.preapproval_now)} right now.` : ""} The version of you that shows up in 60-90 days - with utilization under 10% and this list worked through - is the version that gets offered more money at better rates.`);
   for (const row of c.strategy || []) r.item(null, row.title, row.lines);
   if (!(c.strategy || []).length) {
     r.para("Do NOT open new accounts before funding. Every new card or loan drops your average account age and can trigger automatic declines. Lock in your funding first. Build after.");
@@ -876,7 +936,19 @@ function lenders(c, r) {
   r.addPage(false);
   r.eyebrow("01 / AVAILABLE NOW");
   r.heading("Available Right Now");
-  r.para(`${firstName(c)}, here is the honest truth. Your median score is ${med || "-"} and your utilization is ${c.util_pct || "-"}.`);
+  /* F54. "your utilization is -." A dash is the right thing in a TABLE cell and
+     the wrong thing mid-sentence: it reads as a typo, not as an unknown. Same
+     shape as the roadmap's "with the Secretary of State for -." A figure the
+     file does not carry does not get a clause. */
+  const truthBits = [];
+  if (med) truthBits.push(`your median score is ${med}`);
+  if (c.util_pct) truthBits.push(`your utilization is ${c.util_pct}`);
+  if (truthBits.length) {
+    r.para(`${firstName(c)}, here is the honest truth. ${truthBits.join(" and ")
+      .replace(/^y/, "Y")}.`);
+  } else {
+    r.para(`${firstName(c)}, here is the honest truth. This file does not carry a score or a utilization figure yet, so this list is matched on what it does carry.`);
+  }
   const now = c.lenders_now || [];
   const after = c.lenders_after || [];
   if (now.length) {

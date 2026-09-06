@@ -273,7 +273,7 @@ def target_bal(row):
         if n is not None:
             return n
     lim = parse_money(row[3] if row and len(row) > 3 else None)
-    if lim is not None:
+    if lim is not None and lim > 0:
         return int(round(lim * 0.1))
     return None
 
@@ -300,6 +300,119 @@ def paydown_amt(row):
 TARGET_UNKNOWN = "-"
 
 
+# THREE STATES, NOT TWO. ZERO IS NOT NULL AND NULL IS NOT ZERO.
+#
+# F52b. The limit cell holds one of three things:
+#   * a positive number -- the file states a ceiling, so 10% of it is a target;
+#   * the number ZERO   -- the file states a ceiling of nothing. That is a KNOWN
+#                          value, not a missing one, and 10% of it is $0, which
+#                          is not a paydown target any client can act on;
+#   * None / ""         -- the file does not say.
+#
+# target_bal() used to ask only `lim is not None`, so the middle case computed
+# int(round(0 * 0.1)) = 0 and printed as an instruction: "Pay SECURED CARD from
+# $900 down to $0", in all four bodies. Saying "no credit limit is reported"
+# about a card whose limit IS reported, as $0, is its own false statement, so
+# the two cases share the outcome and not the words.
+#
+# These words are identical in src/deliverables/derive.mjs (noTargetReason,
+# noTargetCell) and src/underwrite/black-report-node.mjs (noTargetReason), and
+# src/deliverables/three-printer-wording.test.mjs fails if one of the three
+# moves without the other two.
+
+
+def limit_state(row):
+    """'known' (a positive stated ceiling), 'zero' (reported $0), or 'unknown'."""
+    lim = parse_money(row[3] if row and len(row) > 3 else None)
+    if lim is None:
+        return "unknown"
+    return "known" if lim > 0 else "zero"
+
+
+def no_target_reason(row):
+    """Why this card has no 10% target, in the client's own words."""
+    state = limit_state(row)
+    if state == "known":
+        return ""
+    if state == "zero":
+        return "The credit limit reported for this card is $0"
+    return "No credit limit is reported for this card"
+
+
+def no_target_cell(row):
+    """The same fact as a table cell."""
+    state = limit_state(row)
+    if state == "known":
+        return ""
+    return "limit reported as $0" if state == "zero" else "no limit reported"
+
+
+def no_target_cell_cap(row):
+    """no_target_cell() at the start of a cell: 'Limit reported as $0'."""
+    cell = no_target_cell(row)
+    return (cell[0].upper() + cell[1:]) if cell else ""
+
+
+def clean_bureaus(c):
+    """Bureau names this file shows as CLEAN, in the mapper's own order."""
+    return [str(row[0]) for row in (c.get("bureaus") or [])
+            if row and len(row) > 1 and row[1] == "CLEAN" and row[0]]
+
+
+def account_fact_sentences(c):
+    """'You have a mortgage.' and its two siblings -- only for rows that exist."""
+    out = []
+    if c.get("mortgages"):
+        out.append("You have a mortgage.")
+    if c.get("installments"):
+        out.append("You have installment loans.")
+    if c.get("revolving"):
+        out.append("You have revolving cards.")
+    return out
+
+
+def file_fact_sentences(c):
+    """The accounts AND the clean bureaus. Empty file, empty list."""
+    out = account_fact_sentences(c)
+    clean = clean_bureaus(c)
+    if len(clean) == 1:
+        out.append(f"You have a clean {clean[0]}.")
+    elif len(clean) > 1:
+        out.append("You have clean bureaus: " + ", ".join(clean) + ".")
+    return out
+
+
+def high_util_cards(c):
+    """Open cards at 50% utilization or more. Unknown utilization is not high."""
+    out = []
+    for row in open_revolving(c):
+        p = parse_pct(row[4] if len(row) > 4 else None)
+        if p is not None and p >= 50:
+            out.append(row)
+    return out
+
+
+def holding_you_back(c):
+    """The closing sentence, with only the things this file actually shows."""
+    bits = []
+    high = len(high_util_cards(c))
+    if high:
+        bits.append("one card carrying a high balance - fixable with a paydown plan"
+                    if high == 1 else
+                    f"{high} cards carrying high balances - fixable with a paydown plan")
+    negs = len(c.get("negatives") or [])
+    if negs:
+        bits.append("one negative item - fixable with dispute letters" if negs == 1
+                    else f"{negs} negative items - fixable with dispute letters")
+    if not bits:
+        return ""
+    if len(bits) == 1:
+        return (f"the one thing holding you back right now is {bits[0]}. "
+                "It is not permanent. It is on the repair list starting Month 1.")
+    return (f"the two things holding you back right now are {bits[0]} and {bits[1]}. "
+            "Neither one is permanent. Both are on the repair list starting Month 1.")
+
+
 def target_text(row):
     """The paydown target as printed, or None when the file cannot know it."""
     tgt = target_bal(row)
@@ -313,7 +426,7 @@ def paydown_sentence(row):
     tgt = target_text(row)
     if tgt is not None:
         return f"Pay {account} from {bal} down to {tgt}"
-    return (f"{account} - {bal} owed. No credit limit is reported for this card, "
+    return (f"{account} - {bal} owed. {no_target_reason(row)}, "
             f"so there is no 10% target to pay down to")
 
 
@@ -376,15 +489,16 @@ def total_paydown_sentence(c, total_pd, start):
     if not open_revolving(c):
         return ""
     if not util_totals_known(c):
-        return ("<p><b>No open card on this file reports a credit limit, so there is no 10% "
-                "total to work back to.</b> Keep the balances moving down and we will set a "
-                "target as soon as a limit reports.</p>")
+        # F52b. "reports a credit limit" is false for a card reporting one of $0.
+        return ("<p><b>No open card on this file reports a credit limit above $0, so there is "
+                "no 10% total to work back to.</b> Keep the balances moving down and we will "
+                "set a target as soon as a limit reports.</p>")
     missing = cards_with_no_target(c)
     tail = ""
     if missing:
-        tail = (f" That covers the cards that report a limit. {missing} "
+        tail = (f" That covers the cards that report a limit above $0. {missing} "
                 f"card{'' if missing == 1 else 's'} on this file "
-                f"report{'s' if missing == 1 else ''} no limit, so nothing for "
+                f"{'has' if missing == 1 else 'have'} no 10% target, so nothing for "
                 f"{'it' if missing == 1 else 'them'} is in this number.")
     return (f"<p><b>Total paydown to reach 10% utilization: {usd(total_pd)}.</b>{tail} "
             f"You do not have to do this all at once. {esc(start)}</p>")
@@ -662,6 +776,22 @@ def cover(c, doctype, title, footer_label):
 </div>"""
 
 def cta_page(c):
+    # F53. THE LAST PAGE OF ALL FOUR DOCUMENTS said "You have clean bureaus ready
+    # for funding now." to every client, including one whose every bureau this
+    # system had just marked DIRTY. The lead now comes off the file.
+    clean = clean_bureaus(c)
+    open_now, _locked = lender_buckets(c)
+    if clean:
+        lead = ("You have " + ("a clean bureau" if len(clean) == 1 else "clean bureaus")
+                + " ready for funding now - " + ", ".join(clean) + ". Apply on "
+                + ("it" if len(clean) == 1 else "those") + " while we repair the rest in "
+                "parallel.")
+    elif open_now:
+        lead = (f"You have {len(open_now)} lender{'' if len(open_now) == 1 else 's'} you can "
+                "apply to today. Book the call and we will work the list in the right order.")
+    else:
+        lead = ("Book the call and we will put the fixes in this pack in the order that "
+                "unlocks the most money.")
     return f"""
 <div class="cta-page">
   <div><span class="brand">fundhub.</span>
@@ -669,8 +799,7 @@ def cta_page(c):
              letter-spacing:.3em;color:#7d7d7d;margin-left:10px;">{spaced('next steps')}</span></div>
   <h2>Let Us Build Your Game Plan Together</h2>
   <div class="rule"></div>
-  <p>You have clean bureaus ready for funding now. Apply on those while we repair
-     the rest in parallel.</p>
+  <p>{esc(lead)}</p>
   {qr_html(c['booking_url'])}
   <div class="lbl">{spaced('scan to book your call instantly')}</div>
   <p class="url">{esc(c['booking_url'])}</p>
@@ -924,6 +1053,41 @@ def svg_dispute_flow():
 # 4. DOCUMENT 1 — CREDIT ANALYSIS REPORT
 # ----------------------------------------------------------------------------
 
+def has_entity(c):
+    """True only when the file names a business entity. No company row, no claim."""
+    return bool((c.get("business") or {}).get("hasEntity"))
+
+
+def entity_name(c):
+    """The entity's own name when the file carries one, else a neutral noun."""
+    return str((c.get("business") or {}).get("name") or "").strip() or "A business entity"
+
+
+def pay_down_cards_line(c):
+    """How many open cards there actually are to pay down. Never 'your two'."""
+    n = len(open_revolving(c))
+    if not n:
+        return "There are no open revolving cards on this file to pay down."
+    if n == 1:
+        return "Pay down your open revolving card."
+    return f"Pay down your {n} open revolving cards."
+
+
+def full_repair_means(c):
+    """What 'full repair' means ON THIS FILE, rather than on a template one."""
+    bits = []
+    kinds = [str(n.get("type") or "").lower() for n in (c.get("negatives") or [])]
+    if any("charge" in k for k in kinds):
+        bits.append("charge-offs removed")
+    if any("late" in k for k in kinds):
+        bits.append("lates addressed")
+    if kinds and not bits:
+        bits.append("the negative items on this file addressed")
+    if util_totals_known(c):
+        bits.append("utilization under 10%")
+    return ", ".join(bits)
+
+
 def build_credit_analysis(c):
     s = c["scores"]
     med = median(list(s.values()))
@@ -931,14 +1095,8 @@ def build_credit_analysis(c):
     h = [cover(c, "credit analysis report", "Financial Profile Assessment",
                "financial profile assessment")]
 
-    have = []
-    if c.get("mortgages"):
-        have.append("You have a mortgage.")
-    if c.get("installments"):
-        have.append("You have installment loans.")
-    if c.get("revolving"):
-        have.append("You have revolving cards.")
-    have_txt = " ".join(have) or "You have real credit activity."
+    # Shared with the roadmap's opening paragraph -- one derivation, not two.
+    have_txt = " ".join(account_fact_sentences(c)) or "You have real credit activity."
     first = esc((c.get("applicant") or "Client").split()[0])
     h.append(f"""<p>{first}, let me be straight with you. {esc(have_txt)}
     This report breaks down exactly what is on this file: scores, cards, and what to do next.
@@ -1084,11 +1242,17 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
     # 04 AU
     au = c["au_account"]
     h.append(section("04", "au accounts", "Authorized User (AU) Accounts"))
-    h.append(table(["creditor", "bureau", "limit", "balance", "utilization", "age", "impact"],
-                   [(au["creditor"], au["bureau"], usd(au["limit"]), usd(au["balance"]),
-                     au["util"], au["age"], '<span class="tag open">NEUTRAL</span>')]))
-    h.append("<p>AU accounts cannot help you get funded - lenders do not count them in funding "
-             "decisions. But this one is not hurting you either. Leave it alone.</p>")
+    # F53. "But this one is not hurting you either" was printed under an EMPTY
+    # table for every client with no authorized-user account.
+    if au.get("creditor"):
+        h.append(table(["creditor", "bureau", "limit", "balance", "utilization", "age", "impact"],
+                       [(au["creditor"], au["bureau"], usd(au["limit"]), usd(au["balance"]),
+                         au["util"], au["age"], '<span class="tag open">NEUTRAL</span>')]))
+        h.append("<p>AU accounts cannot help you get funded - lenders do not count them in "
+                 "funding decisions. But this one is not hurting you either. Leave it "
+                 "alone.</p>")
+    else:
+        h.append("<p>No authorized user accounts are listed on this file.</p>")
 
     # 05 negatives
     h.append(PB)
@@ -1156,7 +1320,8 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
         f'<div class="card"><div class="lbl">{spaced("projected pre-approval")}</div>'
         f'<div class="big">{usd(c["preapproval_after"])}</div>'
         f'<div class="sub">{spaced("after utilization fix")}</div>'
-        f'<div class="body">Pay down your two revolving cards. That alone moves your pre-approval.</div></div>',
+        # F53. "your two revolving cards" for a file that shows one, or five.
+        f'<div class="body">{esc(pay_down_cards_line(c))} That alone moves your pre-approval.</div></div>',
         f'<div class="card"><div class="lbl">{spaced("the delta")}</div>'
         f'<div class="big">+{usd(delta)}</div>'
         f'<div class="sub">{spaced("gained by paying down cards")}</div>'
@@ -1214,8 +1379,10 @@ bureaus. Your best and worst are {spread} points apart. Closing that gap is the 
         "Unlocks business funding"
     ))
     h.append(table(["stage", "action", "score impact", "funding impact"], stages))
-    h.append(f"""<p>After full repair - charge-offs removed, lates addressed, utilization under
-      10% - your Experian score moves from {s['experian']} toward 700+. At that level you unlock
+    # F53. Only the repairs this file actually needs are named as repairs.
+    repair_means = full_repair_means(c)
+    h.append(f"""<p>After full repair{' - ' + esc(repair_means) if repair_means else ''} - your Experian score
+      moves from {s['experian']} toward 700+. At that level you unlock
       premium cards, SBA 7(a) loans, and personal loans up to $40,000+. The gap between where you
       are and where you could be is not years of waiting. It is targeted action on a short list.</p>
       <p>Ready to move? Book your strategy call at {esc(c['booking_url'])}.</p>""")
@@ -1241,12 +1408,24 @@ def build_funding_snapshot(c):
     ]))
     h.append(svg_waterfall(usd(c["preapproval_now"]), "+" + usd(delta), usd(c["preapproval_after"]),
                            [("TODAY", "Current pre-approval"),
-                            ("UTILIZATION FIX", "Pay down two cards"),
+                            # F53. "Pay down two cards" for a file that shows one, or five.
+                            ("UTILIZATION FIX", pay_down_cards_line(c)),
                             ("PROJECTED", "After optimization")]))
     h.append('<div class="note">PERSONAL LOAN PRE-APPROVAL BAND · UNDERWRITEIQ</div>')
-    h.append(f"""<p><b>You are fundable right now. A personal loan is within reach today. But you
+    # F53. "You are fundable right now. A personal loan is within reach today."
+    # was printed for every client, including one this file gives a pre-approval
+    # of nothing. src/underwrite/black-report-node.mjs prints its equivalent only
+    # when there is a gap to close; this asks the file the same two questions.
+    fundable_now = isinstance(c.get("preapproval_now"), (int, float)) and c["preapproval_now"] > 0
+    if fundable_now and delta > 0:
+        h.append(f"""<p><b>You are fundable right now at {usd(c["preapproval_now"])}. But you
       are leaving {usd(delta)} on the table by not fixing a few things first. The biggest fixes
       are fast.</b></p>""")
+    elif fundable_now:
+        h.append(f"""<p><b>You are fundable right now at {usd(c["preapproval_now"])}.</b></p>""")
+    elif delta > 0:
+        h.append(f"""<p><b>You are leaving {usd(delta)} on the table by not fixing a few things
+      first. The biggest fixes are fast.</b></p>""")
 
     h.append(section("02", "breakdown", "Breakdown by Category"))
     h.append("<h3>Personal Cards</h3>")
@@ -1271,8 +1450,16 @@ def build_funding_snapshot(c):
     h.append("<h3>Child Support / Public Obligations</h3>")
     h.append(table(["account", "status", "balance", "notes"], c["public_obligations"]))
     h.append("<h3>Business Accounts</h3>")
-    h.append("<p>No business entity on file. You are leaving a full suite of business funding "
-             "off the table. We cover how to fix this below.</p>")
+    # F53. "No business entity on file" was printed even for a client whose file
+    # names one. The Node printer has always asked c.business first
+    # (src/underwrite/black-report-node.mjs businessLine()); this now does too.
+    if has_entity(c):
+        h.append(f"<p>{esc(entity_name(c))} is on file. The next step is the business credit "
+                 "profile: an EIN, a dedicated business checking account, and vendor accounts "
+                 "that report.</p>")
+    else:
+        h.append("<p>No business entity on file. You are leaving a full suite of business funding "
+                 "off the table. We cover how to fix this below.</p>")
 
     h.append(PB)
     h.append(section("03", "costing you", "What Is Costing You Money"))
@@ -1303,24 +1490,42 @@ def build_funding_snapshot(c):
             f"{n.get('creditor')} - {n.get('type')} - {n.get('balance')} - {n.get('bureau')}",
             n.get("why") or n.get("detail") or "Dispute this item first."
         ))
-    costing.append((
-        "No Business Entity Registered",
-        "Without a business entity you cannot access business credit programs. Forming an LLC "
-        "unlocks a whole second tier of funding.",
-    ))
+    if not has_entity(c):
+        costing.append((
+            "No Business Entity Registered",
+            "Without a business entity you cannot access business credit programs. Forming an LLC "
+            "unlocks a whole second tier of funding.",
+        ))
     h.append('<div class="steps">' + "".join(
         f'<div class="step"><div class="n">{i}</div><div><div class="t">{esc(t)}</div>'
         f'<div class="small">{esc(d)}</div></div></div>'
         for i, (t, d) in enumerate(costing, 1)) + "</div>")
 
     h.append(section("04", "not a factor", "What Does Not Affect Your Funding"))
-    h.append("""<ul class="plain">
-      <li><b>Inquiries.</b> They do NOT affect funding decisions at FundHub. Cleanup only.</li>
-      <li><b>Authorized user account.</b> Cannot help your funding, but clean and not hurting you. Keep it.</li>
-      <li><b>Score alone.</b> The charge-off and utilization hurt you more than the number itself.</li>
-      <li><b>Multiple addresses.</b> Does not block funding. Cleaned up by your personal info letters.</li>
-      <li><b>Name variations.</b> Does not block funding, but needs consolidating to your legal name.</li>
-      </ul>""")
+    # F53. Four of these five lines asserted something about this client's file --
+    # an authorized-user account, a charge-off, several addresses, several name
+    # spellings -- and printed for every client whether or not the file held any
+    # of it. Each line now appears only when the row behind it is on the file.
+    not_factor = ["<li><b>Inquiries.</b> They do NOT affect funding decisions at FundHub."
+                  " Cleanup only.</li>"]
+    if (c.get("au_account") or {}).get("creditor"):
+        not_factor.append("<li><b>Authorized user account.</b> Cannot help your funding, but"
+                          " clean and not hurting you. Keep it.</li>")
+    has_charge_off = any("charge" in str(n.get("type") or "").lower()
+                         for n in (c.get("negatives") or []))
+    not_factor.append(
+        "<li><b>Score alone.</b> The charge-off and utilization hurt you more than the number"
+        " itself.</li>" if has_charge_off else
+        "<li><b>Score alone.</b> What sits behind the number moves your funding more than the"
+        " number itself.</li>")
+    pd_kinds = [str((p[0] if p else "") or "").lower() for p in (c.get("personal_data") or [])]
+    if any("address" in k for k in pd_kinds):
+        not_factor.append("<li><b>Multiple addresses.</b> Does not block funding. Cleaned up by"
+                          " your personal info letters.</li>")
+    if any("name" in k for k in pd_kinds):
+        not_factor.append("<li><b>Name variations.</b> Does not block funding, but needs"
+                          " consolidating to your legal name.</li>")
+    h.append('<ul class="plain">' + "".join(not_factor) + "</ul>")
 
     h.append(PB)
     # F45. "Where You Could Be" is the LOCKED list. It used to print every lender
@@ -1348,8 +1553,15 @@ def build_funding_snapshot(c):
              "Build after.</p><p><b>Your fastest wins:</b></p>")
     wins = fastest_wins(c)
     h.append("<ul class=\"plain\">" + "".join(f"<li>{esc(w)}</li>" for w in wins) + "</ul>")
-    h.append("<p>Those three moves alone can push your score past 680 and your pre-approval "
-             "past $15,000.</p>")
+    # F53. "Those three moves alone can push your score past 680 and your
+    # pre-approval past $15,000" printed under a list of one move, for a client
+    # whose median score was already 700 and whose pre-approval was already
+    # $50,000. The count is the list's own, and the two figures are this file's.
+    if wins:
+        moves = ("That one move is what takes" if len(wins) == 1
+                 else f"Those {len(wins)} moves are what take")
+        h.append(f"<p>{esc(moves)} your pre-approval from "
+                 f"{usd(c['preapproval_now'])} toward {usd(c['preapproval_after'])}.</p>")
     h.append(cta_page(c))
     return "".join(h)
 
@@ -1366,7 +1578,7 @@ def build_lender_list(c):
     h.append(f"""<p><b>{esc(c['applicant'].split()[0])}, here's the honest truth.</b></p>
       <p>Your Experian score sits at {c['scores']['experian']}. Your median score is {med}.{
         " And your utilization is at " + c["util_pct"] + " - that's critical." if c.get("util_pct")
-        else " No open card on this file reports a credit limit, so there is no overall utilization figure to read."}</p>""")
+        else " No open card on this file reports a credit limit above $0, so there is no overall utilization figure to read."}</p>""")
     # F45, ported from src/underwrite/black-report-node.mjs:861-899. The matcher
     # returns TWO buckets -- availableNow and afterOptimization -- and this
     # printer read only the flattened list, so it told every client "No lenders
@@ -1497,9 +1709,16 @@ def build_roadmap(c):
     h = [cover(c, "credit optimization roadmap",
                f"{first}'s 6-Month Business Readiness Roadmap", "business readiness roadmap")]
 
+    # F53. This paragraph used to assert a mortgage, paid-off auto loans and a
+    # clean TransUnion for EVERY client, whatever the file said. It now says only
+    # what this file carries, and on a file that carries none of it, it says that
+    # instead of inventing something.
+    facts = file_fact_sentences(c)
+    facts_txt = (" ".join(facts) + " You are not starting from zero." if facts
+                 else "There is not much on this file yet, and that is the starting point we "
+                      "work from.")
     h.append(f'<div class="callout"><p style="margin:0">A note before we dive in: {esc(first)}, '
-             f'I have looked at every inch of your credit file. You have a mortgage. You have '
-             f'paid-off auto loans. You have a clean TransUnion. You are not starting from zero. '
+             f'I have looked at every inch of your credit file. {esc(facts_txt)} '
              f'What we are doing over the next 6 months is clearing the road so the money can '
              f'flow.</p></div>')
 
@@ -1525,12 +1744,20 @@ def build_roadmap(c):
     h.append(f'<div class="note">{spaced("projected median score range · anchored at month 1 and month 6 targets")}</div>')
 
     h.append("<h3>Where You Stand Right Now vs. Where You're Going</h3>")
+    # F55. `score_targets` is initialised to four empty strings in
+    # src/underwrite/black-report-client.mjs:32 and is never assigned anywhere in
+    # this repository, so the whole "month 6" column was four BLANK cells on
+    # every real client -- which reads as a broken document rather than as an
+    # unknown. The Node printer already answers this exact field in words
+    # (black-report-node.mjs afterScore()); its words are used here and in
+    # src/deliverables/roadmap.mjs so the three printers agree.
+    NO_SCORE_TARGET = "Set at your next pull"
     st = c["score_targets"]
     stand = [
-        ("Median Score", med, st.get("median") or ""),
-        ("Experian Score", c["scores"]["experian"], st.get("experian") or ""),
-        ("TransUnion Score", c["scores"]["transunion"], st.get("transunion") or ""),
-        ("Equifax Score", c["scores"]["equifax"], st.get("equifax") or ""),
+        ("Median Score", med, st.get("median") or NO_SCORE_TARGET),
+        ("Experian Score", c["scores"]["experian"], st.get("experian") or NO_SCORE_TARGET),
+        ("TransUnion Score", c["scores"]["transunion"], st.get("transunion") or NO_SCORE_TARGET),
+        ("Equifax Score", c["scores"]["equifax"], st.get("equifax") or NO_SCORE_TARGET),
     ]
     for row in ranked_revolving(c)[:2]:
         tgt = target_text(row)
@@ -1540,8 +1767,9 @@ def build_roadmap(c):
         stand.append((
             f"{row[0]} Utilization",
             f"{row[4]} ({usd(row[2])} / {usd(row[3])})" if tgt is not None
-            else f"{usd(row[2])} owed, no limit reported",
-            f"Under 10% ({tgt})" if tgt is not None else "No limit reported - no target"
+            else f"{usd(row[2])} owed, {no_target_cell(row)}",
+            f"Under 10% ({tgt})" if tgt is not None
+            else f"{no_target_cell_cap(row)} - no target"
         ))
     # F45. lenders_now are open TODAY. Printing 0 told a client with five
     # matches that nobody would lend to him.
@@ -1596,15 +1824,31 @@ def build_roadmap(c):
     h.append("<h3>Step 4: Inquiry Removal Letters - Experian</h3>")
     h.append("<p>Inquiries do NOT affect your funding. But clean is clean. Send removal letters "
              "for duplicates and for any inquiry that did not result in an open account.</p>")
+    # F54. `llc_fee` is initialised to null in
+    # src/underwrite/black-report-client.mjs:29 and is never assigned anywhere in
+    # this repository, so usd() rendered "-" and every real client read "with the
+    # Secretary of State for -." A dash inside a sentence is not an honest
+    # rendering of unknown. No fee on the file, no fee in the sentence.
+    llc_fee = parse_money(c.get("llc_fee"))
+    llc_fee_clause = "" if llc_fee is None else f" for {usd(llc_fee)}"
     h.append(f"<h3>Step 5: Form Your LLC</h3><ul class='plain'>"
-             f"<li>File your LLC in {c['state']} online with the Secretary of State for "
-             f"{usd(c['llc_fee'])}.</li>"
+             f"<li>File your LLC in {c['state']} online with the Secretary of State"
+             f"{llc_fee_clause}.</li>"
              f"<li>Use your address at {esc(c['address'])}.</li>"
              f"<li>Once filed, the clock starts. LLC age matters for lenders.</li>"
              f"<li>Open a dedicated business checking account. Even $100 in it is fine to start.</li></ul>")
+    # F53. "You qualify for a personal loan right now" was an assertion of
+    # current eligibility printed for every client, including one whose file
+    # gives a pre-approval of nothing. The claim is now made only when the file
+    # carries a pre-approval above zero.
+    pre_now = c.get("preapproval_now")
+    qualifies_now = isinstance(pre_now, (int, float)) and pre_now > 0
     h.append(f"<h3>Step 6: Secure Your Personal Loan NOW</h3>"
-             f"<p>You qualify for a personal loan right now, before any repairs. Current "
-             f"pre-approval estimate: {usd(c['preapproval_now'])}. Do NOT open any new credit "
+             + (f"<p>You qualify for a personal loan right now, before any repairs. Current "
+                f"pre-approval estimate: {usd(pre_now)}. "
+                if qualifies_now else
+                "<p>Lock in whatever personal loan you can get before any repairs. ")
+             + f"Do NOT open any new credit "
              f"cards or accounts before you lock this in - new accounts lower your average "
              f"account age and trigger hard inquiries. Get the funding first. Build the credit "
              f"profile after.</p>")
@@ -1627,8 +1871,20 @@ def build_roadmap(c):
     h.append("<p>Round 2 escalation letters go out for anything that came back verified. Round 2 "
              "requests the method of verification, cites specific FCRA violations where the "
              "process was improper, and escalates the charge-off.</p>")
-    h.append("<p><b>Month 3 score projection:</b> Experian 650-665, Equifax 655-670, TransUnion "
-             "holding at 725. Pre-approval estimate climbs toward $12,000-$15,000.</p>")
+    # F53. This read "TransUnion holding at 725" for every client, which states a
+    # score this file may not carry, and "$12,000-$15,000" regardless of the
+    # pre-approval already on the file. The projection now names only the bureaus
+    # this file actually scores, and the pre-approval figure is this client's.
+    proj_bits = []
+    for label, key in (("Experian", "experian"), ("Equifax", "equifax"),
+                       ("TransUnion", "transunion")):
+        v = (c.get("scores") or {}).get(key)
+        if not isinstance(v, (int, float)):
+            continue
+        proj_bits.append(f"{label} holding at or above {v}")
+    if proj_bits:
+        h.append(f"<p><b>Month 3 score projection:</b> {esc(', '.join(proj_bits))}. Pre-approval "
+                 f"estimate climbs toward {usd(c['preapproval_after'])}.</p>")
 
     # Month 4
     h.append(PB)
@@ -1693,7 +1949,7 @@ def build_roadmap(c):
         # client cannot check themselves against.
         if target_text(row) is None:
             reveal.append((f"{row[0]} balance", usd(row[2]),
-                           "Lower - no limit reported, so no 10% target"))
+                           f"Lower - {no_target_cell(row)}, so no 10% target"))
             continue
         reveal.append((f"{row[0]} utilization", row[4], "Under 10%"))
     reveal.append(("Overall utilization", c["util_pct"] or TARGET_UNKNOWN, "Under 10%"))
@@ -1765,9 +2021,13 @@ def build_roadmap(c):
 
     h.append(PB)
     h.append(section("09", "call to action", "Your Call to Action"))
-    h.append(f"""<p>{esc(first)}, the two things holding you back right now are maxed out credit
-      cards - fixable with a paydown plan - and a handful of old negatives - fixable with dispute
-      letters. Neither one is permanent. Both are on the repair list starting Month 1.</p>
+    # F53. This named maxed-out cards and old negatives for every client. On a
+    # file with neither it was simply untrue, so the count and the kind now come
+    # off the file, and a file with neither gets no such sentence at all.
+    back = holding_you_back(c) or (
+        "there is nothing on this file to dispute or pay down, so the six months ahead are "
+        "about building the business side rather than repairing the personal one.")
+    h.append(f"""<p>{esc(first)}, {esc(back)}</p>
       <p>Book your strategy call at {esc(c['booking_url'])}.</p>""")
     h.append('<p class="small">This roadmap was prepared by your FundHub advisor based on your '
              'current credit profile. Projected scores and pre-approval amounts are estimates '

@@ -167,8 +167,11 @@ describe("no open card reports a limit — the four pages", () => {
     const html = docs["optimization_roadmap.html"];
     assert.ok(!/Total paydown to reach 10% utilization/.test(html),
       "there is no total when there is no limit anywhere");
-    assert.ok(html.includes("No open card on this file reports a credit limit, so there is no "
-      + "10% total to work back to"), "and it says so instead of going quiet");
+    /* F52b. "reports a credit limit" was false for a card whose limit IS
+       reported, as $0. "above $0" is true of both, and is the same sentence in
+       all three printers. */
+    assert.ok(html.includes("No open card on this file reports a credit limit above $0, so "
+      + "there is no 10% total to work back to"), "and it says so instead of going quiet");
   });
 
   test("nothing is targeted at $0 anywhere", () => {
@@ -191,8 +194,8 @@ describe("no open card reports a limit — the four pages", () => {
 
   test("the lender list says what the file cannot tell the client", () => {
     const html = docs["lender_match_list.html"];
-    assert.ok(html.includes("No open card on this file reports a credit limit, so there is no "
-      + "overall utilization figure to read"));
+    assert.ok(html.includes("No open card on this file reports a credit limit above $0, so "
+      + "there is no overall utilization figure to read"));
   });
 });
 
@@ -204,7 +207,7 @@ describe("some cards report a limit and some do not — the four pages", () => {
     const html = docs["optimization_roadmap.html"];
     assert.ok(html.includes("Total paydown to reach 10% utilization: $3,500."),
       "the cards that do report a limit still get a real total");
-    assert.ok(html.includes("1 card on this file reports no limit, so nothing for it is in "
+    assert.ok(html.includes("1 card on this file has no 10% target, so nothing for it is in "
       + "this number."), "and the client is told the total is partial");
   });
 

@@ -238,7 +238,35 @@ const BUREAUS_NONE = Object.freeze({});
 
    blackReportClient did NOT move, which is the evidence that F52's mapper change
    touches only a file where no open card reports a limit — the baseline fixture
-   has limits, so its record is byte-identical. */
+   has limits, so its record is byte-identical.
+
+   MOVED AGAIN 2026-09-06, W10 ROUND 3 VERIFIER REPAIR — generatorScript AND, for
+   the first time in this sequence, ALL FOUR Node PDF text shas. The four engine
+   pins and both client-dict pins are unchanged, which is the evidence that
+   nothing about what the mapper computes moved: only what the printers SAY.
+
+     WHY ALL FOUR PDFs AND NOT ONE. The closing page is the same page in all four
+     documents, and its opening sentence changed. It used to read "You have
+     clean bureaus ready for funding now." in the web pages and the WeasyPrint
+     printer — printed to EVERY client, including one whose every bureau this
+     system had just marked DIRTY — while this printer led on lenders instead, so
+     the same client's pack said two different things depending on which printer
+     made it. All three now run one order: the clean bureaus if the file shows
+     any, else the lenders already open today, else no claim about either. For
+     this baseline client the page now reads "You have clean bureaus ready for
+     funding now - Equifax, TransUnion.", which is what its own `bureaus` rows
+     say. Verified by extracting the text of all four PDFs on 2026-09-06.
+
+     ALSO IN THIS PRINTER, and not visible in this fixture's text: "You are
+     fundable at $0 right now" is no longer printed when the file gives no
+     pre-approval, and the lender list's "your utilization is -." no longer puts
+     a bare dash inside a sentence. This client has both figures, so its words
+     are unchanged by those two.
+
+     IN fundhub_gen.py: the $0-limit repair (a limit REPORTED as zero is a known
+     value, not a missing one, and has no 10% target), the same closing-page
+     sentence, and the removal of eleven hardcoded claims about accounts,
+     bureaus and history that the file may not carry. */
 const BASELINE = Object.freeze({
   engineMaxed:            "0581c1b9b5f713dc7958b5e3e1e961b0be245beac174814d9a04068e1a692d0a",
   engineMaxedSuggestions: "d06e816746ef7dddb015f77ebf605b9a7f30f15df1d233b8e47702f4577f2d19",
@@ -246,15 +274,15 @@ const BASELINE = Object.freeze({
   engineNoBureaus:        "79f0c7c1d8eb1853e314681051005eeafd3b07550da2855ab9eb6bbffe8a8260",
   blackReportClient:      "d4ead7287903034f5100f0b80ff5e85925e514a34611164beb727bef969599a8",
   emptyBlackReportClient: "21826d2ea2496e6674a8bb909de81d2aef49a277c3470c1f854094950fb2ca79",
-  generatorScript:        "f9925e8921922e521a108b90be122e8240232529279b0439be73668d50a1c050"
+  generatorScript:        "2ede6b82c067b04bd2d00406d267663c13e1dfb255483bb71f069ed8fe1e4d3d"
 });
 
 /** The four PDFs the in-process printer produces, and the words inside each. */
 const BASELINE_NODE_PDFS = Object.freeze([
-  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "aae3d12922f71f2a9beb04719fabb432fdf049ff075a1aa8f9a47702832d832a" },
-  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 4, textSha: "9578d5447d637d1d6449393fe048d2b07c478033409e48f9f8d040aef1343c3a" },
-  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 8, textSha: "eb60bf04a4d78f147be4d91bf05a88f7a94d908c5e9eaf56fa13ca865afb2681" },
-  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 5, textSha: "8cd1b3ccd90d09f9b7f06f9c2177c37bc74177d83c3bc054520e00d645d3c4e2" }
+  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "b50624440e5469cfffe27e829e0c2afad3ac5c3965f8bfb8d8461a2543f6a091" },
+  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 4, textSha: "43065fb2999aa7952ae423883df1f7478e5b88ea24e84ae42a5fdddd163bad42" },
+  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 8, textSha: "3279129eb17841fa3f1461b3731b789ca08bc4377b2caaab5ee3ec7354e6af35" },
+  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 5, textSha: "d9b5579b74da266f79274034100d3cdfe5ffa0c6aafb8c529caabfcef84835f2" }
 ]);
 
 /** Every document a client receives, in order. [filename, type, bureau]. */
