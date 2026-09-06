@@ -764,3 +764,104 @@ The file exists, the routes exist and the tables exist. That was all that was ch
 Three separate claims today that something was "not built" turned out to be wrong, so the
 opposite mistake is just as available: a screen that is present is not a screen that
 works. A read-only pass over that one journey answers it.
+
+---
+
+# Creative Factory — what it is actually missing
+
+Chris: **"WHAT ELSE IS THE CREATIVE FACOTRY MISSING AS FAR AS USABILITY. IT SEEMS LIKE
+ITS DONE."**
+
+Four read-only lanes audited it, each checked by a critic that hunted for what it missed.
+Raw evidence: `docs/ops/_lanes/2026-09-06-cf-screen.md`, `-cf-endpoints.md`, `-cf-data.md`,
+`-cf-generate.md`.
+
+## The verdict
+
+**It is not a shell. It is a real, careful, well-built screen, and almost every control
+on it calls an endpoint that really exists.** Nothing here needs rebuilding.
+
+**But you cannot get an ad out of it today**, and seven separate things stop you. Any one
+of them alone is enough. All seven are small.
+
+**The important part for the ad-script job: the text path is nearly done.** Brand Studio
+already generates real copy today with a real model, no vendor setup needed. Most of what
+is broken in Creative Factory is about pictures and video. Scripts are text.
+
+## The seven, in the order they would stop you
+
+**1. You cannot click your way to the screen.** The whole **Marketing** heading is hidden
+from the menu, taking Creative Factory, Campaigns, Social Studio and Content with it.
+Three separate rules do the hiding, across `public/app/shell.js` and
+`public/app/crm-sidebar.css`. Fixing two of the three changes nothing. Today the only way
+in is typing the address.
+
+**2. The screen cannot tell which partner it is for.** There is no partner picker on the
+page and nothing hands it one. It only works if `?partner_id=<code>` is already in the
+web address. Open it from a bookmark and every panel is empty, every button is grey, and
+nothing says why.
+
+**3. The marketing suite is off by default, and the on-switch is on a different screen.**
+`db/migrations/172_wl_marketing.sql` ships it false for everybody. The switch lives in
+Brand Studio, owner only. Creative Factory tells you it is off. It does not tell you
+where to turn it on.
+
+**4. No vendor is switched on.** The table that says "use this service to make ads" ships
+with zero rows, and no seed file, no migration and no button anywhere puts a row in it.
+Someone types SQL by hand once. Four of the five picture and video adapters also carry
+placeholder web addresses, which is a factory setting, not a dead end: the same row that
+switches a vendor on carries its real address.
+
+**5. The robot that runs jobs sees nothing, and reports success.** A Netlify scheduled
+function fires every two minutes. Its query comes back empty because of row-level
+security, so it does no work and says it went fine. Nothing runs unless you press "Run
+queued jobs now" yourself. **No test covers it, which is why nobody caught it.**
+
+**6. Every asset would be blocked, for a reason that is not the asset's fault.** The
+compliance screen requires an offer type: funding, credit cards, or credit repair. The
+Generate form never asks for one and never sends one. So every asset gets stopped, and
+the red box reads `offer_type must be one of funding, credit_cards, credit_repair; got
+undefined` — engineer language on a screen built for someone who does not read code. The
+plain wording already exists in `docs/compliance/creative-block-reasons.md`.
+**Every test passes the offer type in by hand, so the tests are green and the screen is
+broken.** That is the most useful single finding in this audit.
+
+**7. Even with a working vendor, there is nothing to look at.** Three separate problems,
+not one hole. The words of a written ad are thrown away, because no column holds them.
+The picture's address is saved correctly on every asset, but nothing ever uploads a file
+to that address. And a one-line bug in a safety filter strips the harmless
+"has a preview" flag along with the real storage key, so the library would say "no
+preview available" either way.
+
+## Two smaller ones worth naming
+
+- **"Resize" in the Kind dropdown can never work.** It needs to be told which existing
+  picture to resize, and the form has no way to pick one. It also fails three times with
+  a pause between each before giving up.
+- **The copy provider demands the wrong key.** `src/creative/providers/copy.mjs` refuses
+  to run without `ANTHROPIC_API_KEY`, but `src/agents/model.mjs` prefers OpenAI when an
+  OpenAI key is present, by an owner decision written into that file. A machine holding
+  only an OpenAI key gets turned away for a key it does not need.
+
+## What already works, and was nearly missed
+
+**Brand Studio generates real copy today.** Its "Generate copy" button calls a real model
+and saves real words to the page. "Generate logo" makes a real image with no vendor and
+no key at all. Both sit behind the same owner switch as Creative Factory. So "nothing
+comes out" is true of one screen, not of this repo.
+
+The compliance display is done properly: blocked assets are kept, not deleted, the reason
+is saved beside them, the database refuses a blocked asset with no reason, and the screen
+has a "Why it was stopped" panel plus a reference table of all 29 reasons.
+
+## What this means for the ad-script build
+
+The generator lands here as planned. Three of the seven do not touch it at all, because
+they are about images: the vendor row, the file upload, and the picture preview.
+
+**For text, the shortest path to working is four things:** unhide the menu, give the
+screen a partner picker, send the offer type from the form, and add a column for the
+words. That is roughly two days, and none of it is new surface.
+
+**COMPLIANCE REVIEW REQUIRED** when the offer-type fix is built. It decides which rule
+set an ad is screened under, so it is not a cosmetic form field.
