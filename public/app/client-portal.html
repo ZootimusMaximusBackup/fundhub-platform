@@ -135,6 +135,9 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .status-line .sb-main{font-size:var(--fs-title);font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums}
 .status-line .sb-main b{font-family:var(--mono)}
 .prog-card .stepper{padding:18px 22px 16px}
+.prog-link{padding:0 22px 18px}
+.prog-link a{font-size:var(--fs-body);font-weight:500;color:inherit;text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px}
+.prog-link a:hover{border-color:currentColor}
 .score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
 @media(min-width:640px){.score-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .score-grid .sb-eyebrow{font-family:var(--mono);font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:4px}
@@ -503,15 +506,35 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <div class="sb-eyebrow" id="sb-eyebrow">Current Status</div>
           <div class="sb-main" id="sb-main">Your funding file is open. Amounts show here when a round is approved on your file.</div>
         </div>
-        <div class="stepper" id="stepper">
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Booked</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Diagnostic Paid</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Docs Received</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Started</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Submitted</div></div>
-          <div class="step current" data-step="approved"><span class="line"></span><div class="dot">●</div><div class="lbl">Round Approved</div></div>
-          <div class="step future" data-step="funded"><span class="line"></span><div class="dot">6</div><div class="lbl">Round Funded</div></div>
-          <div class="step future" data-step="final"><span class="line"></span><div class="dot">7</div><div class="lbl">File Finalized</div></div>
+        <!-- THE POST-CALL STEPPER IS RETIRED. It is not corrected, and here is
+             why it could not be.
+
+             It was EIGHT HARDCODED TICKS and nothing painted it. Five were
+             stamped `done`, and the sixth — Round Approved — was stamped
+             `current`, on every file, forever. So a client whose round had not
+             been submitted, let alone approved, was shown five completed steps
+             and told an approval was in progress. Nothing in this screen's
+             payload said any of that was true.
+
+             The sister stepper above (#stepper-pre) shows what an honest one
+             costs: paintPreStepper() moves exactly TWO steps, because Booked and
+             Diagnostic Paid are the only two this payload can prove, and it
+             leaves the other six alone rather than guessing. There is no fact
+             here for docs received, round started, submitted, approved, funded
+             or finalized — so a corrected version of this stepper would be eight
+             grey circles that never move, which tells a client less than the
+             status line above it already does.
+
+             The status line stays; it is painted from real data. The link below
+             goes to the page that DOES know where a file stands.
+
+             The labels were also the FUNDING journey. This card is inside
+             .funding-only, so body.no-funding hides it from a client with no
+             funding entitlement — but that gate is about what they bought, not
+             about which journey they are on, and it never made the eight ticks
+             true for the funding clients who did see them. -->
+        <div class="prog-link">
+          <a href="/progress.html">See exactly where your file stands →</a>
         </div>
       </section>
 
@@ -2265,6 +2288,88 @@ document.addEventListener("DOMContentLoaded", async function () {
      tells a signed-in client to sign in — the wording never arrives and the
      signature can never be recorded. */
   whenClientId(load);
+})();
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE ACTIVITY TAB, WHICH HAS NEVER SHOWN ANYTHING.
+
+   #tp-act ships one row reading "No activity recorded on this file yet" and no
+   code in this file has ever touched it. Every other tab on this card has a
+   painter — paintMessages, paintPays, paintDocs — and this one was left out, so
+   the sentence was not an empty state, it was the only state.
+
+   IT IS PAINTED FROM /api/read/client-progress, whose `timeline` field is
+   described in docs/workflows/portal-progress-contract.md. Those rows come from
+   repair_decision_log through TIMELINE_SQL and are already rendered into plain
+   English for a client by timelineLine() (src/repair/lens.mjs:206) — written,
+   tested, and staff-only until now. Nothing new is being written here; a read
+   that existed is being pointed at a tab that existed.
+
+   THE ENDPOINT MAY NOT BE THERE YET. It is built by a separate lane against the
+   same written contract. A 404, a refusal or an error leaves the shipped empty
+   state exactly as it is — this block only ever REPLACES that sentence when it
+   has real rows to replace it with, so the failure mode is the screen this file
+   already ships and not a broken tab.
+
+   IT DOES NOT CLAIM A COMPLAINT WAS LODGED. The text comes from the server and
+   is printed as given; this block adds no words of its own. That matters because
+   nothing in this system records whether a CFPB or state attorney general
+   complaint was ever actually submitted (src/metro2/letters/catalog.mjs:57-65).
+
+   SEPARATE FROM THE BLOCK ABOVE ON PURPOSE. That one goes through FHData and the
+   screen's own client-id resolution; this one asks a single endpoint that pins a
+   client to their own file, so it needs neither and cannot break either.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+
+  function escape2(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function when(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.getUTCDate() + " " + MONTHS[d.getUTCMonth()];
+  }
+
+  function token() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+
+  function paint(rows) {
+    var pane = document.getElementById("tp-act");
+    if (!pane || !rows.length) return;      // no rows: the shipped sentence stands
+    pane.innerHTML = rows.slice(0, 40).map(function (e) {
+      return '<div class="timeline-item"><span class="td">' + escape2(when(e.at)) +
+             "</span><span>" + escape2(e.text || "") + "</span></div>";
+    }).join("");
+  }
+
+  function load() {
+    var t = token();
+    if (!t) return;
+    fetch("/api/read/client-progress", {
+      headers: { authorization: "Bearer " + t, accept: "application/json" },
+      credentials: "same-origin"
+    }).then(function (r) {
+      return r.ok ? r.json() : null;
+    }).then(function (d) {
+      if (!d || d.ok !== true || !Array.isArray(d.timeline)) return;
+      paint(d.timeline);
+    }).catch(function () { /* the shipped empty state stands */ });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", load);
+  } else {
+    load();
+  }
 })();
 </script>
 </body>

@@ -313,6 +313,9 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
         <p class="cc-note">
           Open this screen with a client in the address bar — <code>consent-capture.html?client_id=&lt;id&gt;</code>.
           To authorize dispute letters, add <code>&amp;kind=dispute_authorization</code>.
+          For a recorded client call, <code>&amp;kind=call_recording</code>, and to use what they
+          said in an advert, <code>&amp;kind=marketing_use</code> — those two are asked separately
+          on purpose, because agreeing to be recorded is not agreeing to be advertised.
         </p>
       </div>
     </div>
@@ -363,7 +366,18 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
 
   var $ = function (id) { return document.getElementById(id); };
 
-  var ALLOWED_KINDS = { soft_pull_consent: 1, dispute_authorization: 1 };
+  /* call_recording and marketing_use added 2026-09-05 with the CSM role.
+     TWO, NOT ONE, and that is the whole point: agreeing to be recorded is not
+     agreeing to appear in an advert, and a client may say yes to the first and
+     no to the second. Each is captured on its own visit to this screen so
+     neither can ride in on the other's tick. db/migrations/291 widens the
+     database CHECK; src/consent/disclosures.mjs holds the words. */
+  var ALLOWED_KINDS = {
+    soft_pull_consent: 1,
+    dispute_authorization: 1,
+    call_recording: 1,
+    marketing_use: 1
+  };
   var clientId = param("client_id");
   var rawKind = param("kind");
   var kind = (rawKind && ALLOWED_KINDS[rawKind]) ? rawKind : "soft_pull_consent";

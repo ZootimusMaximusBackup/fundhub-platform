@@ -347,13 +347,34 @@
        and the finance-gated screens (staff-teams, agent-editor,
        products-commissions). "sales_manager" resolves in allowedFor(). */
     sales_manager: "sales_manager",
+    /* Client Success Manager gets the shared staff surface plus the consent
+       desk. They run recorded check-in and interview calls, so capturing
+       call_recording and marketing_use consent (291) is the one thing they
+       cannot do their job without — same reason closer and funding_advisor
+       carry it. NO NEW SCREEN: the CSM queue is a view on surfaces that
+       already exist. "csm" resolves in allowedFor(). */
+    csm: "csm",
     /* Principal types, not staff roles — they are gated here on staff.role only
        because no principals table exists yet. 'partner' is seeded into the
        staff_roles catalog by db/migrations/036_partner_role.sql purely to make
        brand-studio.html reachable; 'client' and 'affiliate' have no catalog row
        and nothing issues them a session. When the accounts table and its own
        auth land, these three move out of ROLE_TABS and 036 is reverted. */
-    client: ["client-portal.html"],
+    /* A CLIENT MAY NOW OPEN THE AFFILIATE SCREEN, and only because the owner
+       decided it. docs/workflows/portal-rebuild-plan.md section 4 (2026-09-05)
+       says pressing "Refer a friend" in the portal "instantly provisions their
+       access to affiliate.html". Their principal kind stays `client`
+       (db/migrations/340_client_light_affiliate.sql), so without this row the
+       screen they were just given would bounce them straight back out.
+
+       THIS ROW IS NAVIGATION, NOT A GATE, and the difference matters here. The
+       real gate is on the endpoint: /api/read/affiliate-portal returns rows for
+       the caller's OWN affiliate id, taken from their session and never from the
+       address bar. A client who has not pressed the button holds no affiliate
+       id, so they reach the screen and it tells them they are not enrolled —
+       which is the state the screen is written to show. Nothing about what any
+       client can READ changes by adding this line. */
+    client: ["client-portal.html", "affiliate.html"],
     affiliate: ["affiliate.html"],
     /* NO CAMPAIGNS ROW YET, AND THAT IS AN OPEN QUESTION, NOT AN OVERSIGHT.
        A partner cannot reach campaign-manager.html from any screen (proven live
@@ -414,6 +435,8 @@
     setter: "pipeline.html",
     // The Sales pipeline is the thing they own, so it is where they land.
     sales_manager: "sales-floor.html",
+    // One client at a time is the job, so that is the screen they land on.
+    csm: "client-control-panel.html",
     client: "client-portal.html",
     affiliate: "affiliate.html",
     partner: "partner-galaxy.html"
@@ -448,6 +471,7 @@
     if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY).concat(CONSENT_DESK_ONLY);
     if (m === "funding_advisor") return staffTabs().concat(ADVISOR_ONLY).concat(CONSENT_DESK_ONLY);
     if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY).concat(FINANCE_ONLY);
+    if (m === "csm") return staffTabs().concat(CONSENT_DESK_ONLY);
     if (m === "staff" || !m) return staffTabs();
     return m.slice();
   }

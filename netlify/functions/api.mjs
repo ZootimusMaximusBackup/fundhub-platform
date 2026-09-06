@@ -67,6 +67,8 @@ import readDocuments from "../../api/read/documents.mjs";
 import readBankInbox from "../../api/read/bank-inbox.mjs";
 import readFundingRounds from "../../api/read/funding-rounds.mjs";
 import readAffiliates from "../../api/read/affiliates.mjs";
+import readAffiliatePortal from "../../api/read/affiliate-portal.mjs";
+import affiliatesRefer from "../../api/affiliates/refer.mjs";
 import readPartners from "../../api/read/partners.mjs";
 import readPartnerProduction from "../../api/read/partner-production.mjs";
 import readPartnerHomeTiles from "../../api/read/partner-home-tiles.mjs";
@@ -119,6 +121,7 @@ import readCallOutcomes from "../../api/read/call-outcomes.mjs";
 import readUnrecordedCalls from "../../api/read/unrecorded-calls.mjs";
 import callOutcomesWrite from "../../api/call-outcomes.mjs";
 import readCustomerInsights from "../../api/read/customer-insights.mjs";
+import readCsmQueue from "../../api/read/csm-queue.mjs";
 import customerInsightsWrite from "../../api/customer-insights.mjs";
 import marketingFlagsWrite from "../../api/marketing-flags.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
@@ -219,10 +222,12 @@ import documentById from "../../api/documents/[id].mjs";
 import documentsUpload from "../../api/documents-upload.mjs";
 import documentsDownload from "../../api/documents-download.mjs";
 import paymentLinks from "../../api/payment-links.mjs";
+import paidServices from "../../api/paid-services.mjs";
 import contracts from "../../api/contracts.mjs";
 import readContracts from "../../api/read/contracts.mjs";
 import readPortalContracts from "../../api/read/portal-contracts.mjs";
 import readPortalSummary from "../../api/read/portal-summary.mjs";
+import readClientProgress from "../../api/read/client-progress.mjs";
 import contractsSign from "../../api/contracts/sign.mjs";
 import messagesOutbound from "../../api/messages-outbound.mjs";
 import agentsWrite from "../../api/agents.mjs";
@@ -371,6 +376,25 @@ export const ROUTES = {
   "read/ai-bureau-config": readAiBureauConfig,
   "read/proxy-sessions": readProxySessions,
   "read/affiliates": readAffiliates,
+
+  /* ONE AFFILIATE'S OWN referrals, payouts, rates and gates. Routed in the same
+     commit as the handler, because this endpoint exists precisely to end a
+     feature that was built and never connected: public/app/affiliate.html has
+     declared `var LEADS=[]` (:398) and `var PAYOUTS=[]` (:477) since it was
+     written and assigned neither, so both tables have always read "No referrals
+     on file". An unrouted handler here would reproduce that exact failure.
+
+     read/affiliates above is a different question and stays as it is: that one
+     answers STAFF with per-affiliate counts across the roster. This one answers
+     the affiliate — or a client who has become a light affiliate — with their
+     own rows, and pins a non-staff caller to themselves. */
+  "read/affiliate-portal": readAffiliatePortal,
+
+  /* "Refer a friend". Turns a client into a light affiliate and hands back
+     their share link (docs/workflows/portal-rebuild-plan.md §4, owner-set).
+     Routed with its handler and its migration for the same reason as every
+     other line here. Not under "read/" — it writes. */
+  "affiliates/refer": affiliatesRefer,
   "read/partners": readPartners,
   /* Where a partner stands against the production floor — the only filter on the
      partner base (W0-decisions.md, W1-money-model.md §6). The monthly job writes
@@ -547,6 +571,7 @@ export const ROUTES = {
   "read/unrecorded-calls": readUnrecordedCalls,
   "call-outcomes": callOutcomesWrite,
   "read/customer-insights": readCustomerInsights,
+  "read/csm-queue": readCsmQueue,
   "customer-insights": customerInsightsWrite,
   "marketing-flags": marketingFlagsWrite,
 
@@ -893,6 +918,13 @@ export const ROUTES = {
   // call. Routed in the same commit as the handler and the migration.
   "payment-links": paymentLinks,
 
+  /* The self-serve paid round (331_paid_service_requests.sql,
+     src/paid-services/). GET the price list, POST to mint a hosted checkout
+     link. Charges nothing — no card is readable from this process. A HYPHEN and
+     no slash on purpose: routes.test.mjs forbids a key under the "documents/"
+     prefix branch, and a flat key is resolved by the exact lookup. */
+  "paid-services": paidServices,
+
   // ── The contract generator (124_contracts.sql, src/contracts/) ─────────────
   //
   // Routed in the SAME COMMIT as the handlers, the migration and both screens.
@@ -932,6 +964,7 @@ export const ROUTES = {
   "read/contracts": readContracts,
   "read/portal-contracts": readPortalContracts,
   "read/portal-summary": readPortalSummary,
+  "read/client-progress": readClientProgress,
   "contracts/sign": contractsSign,
 
   // ── The outbound queue ─────────────────────────────────────────────────────

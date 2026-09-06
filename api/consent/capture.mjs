@@ -90,7 +90,44 @@ import {
    requireRole(...allowed) middleware, so it does not inherit SUPER_ROLES, and an
    implicit super-role is exactly the kind of thing that should not be implicit
    on a consumer-consent endpoint. */
+/* CONSENT_ROLES IS THE PULL-EQUIVALENT SET AND MUST NOT GROW.
+   src/http/consent-capture.test.mjs asserts it equals SOFT_PULL_ROLES exactly,
+   because a consent is the thing that unlocks a credit pull — a wider set here
+   is a way around the narrower one on the pull endpoint. That reasoning holds
+   only for the kinds that lead to a pull, which is why the CSM is NOT added
+   here. Adding them here was the first attempt and the test was right to
+   refuse it. */
 const CONSENT_ROLES = new Set(["owner", "admin", "closer", "funding_advisor"]);
+
+/* The conversation consents. A CSM is the person actually in the call where
+   these are given, so they may record them — and only these. Nothing in this
+   pair unlocks a credit pull, a dispute letter, or anything else. */
+const CONVERSATION_KINDS = new Set(["call_recording", "marketing_use"]);
+const CONVERSATION_ROLES = new Set([...CONSENT_ROLES, "csm"]);
+
+/* Who may reach the endpoint at all. The real decision is per kind, below,
+   once the kind is known — this is only the early out. */
+const ANY_CONSENT_ROLE = CONVERSATION_ROLES;
+
+/* rolesForKind — the set that may act on THIS kind. Anything that is not a
+   conversation consent falls back to the narrow, pull-equivalent set, so a
+   kind added later is gated tightly until somebody widens it on purpose. */
+function rolesForKind(kind) {
+  return CONVERSATION_KINDS.has(kind) ? CONVERSATION_ROLES : CONSENT_ROLES;
+}
+
+/* refuseKindForRole — the per-kind gate. Returns true when it has answered. */
+function refuseKindForRole(res, principal, kind) {
+  if (principal.kind !== "staff") return false;
+  const role = String(principal.staff?.role || "").trim().toLowerCase();
+  if (rolesForKind(kind).has(role)) return false;
+  res.status(403).json({
+    ok: false,
+    error: "forbidden",
+    code: "role_may_not_capture_this_kind"
+  });
+  return true;
+}
 
 const DEFAULT_KIND = "soft_pull_consent";
 
@@ -101,7 +138,7 @@ export default async function handler(req, res) {
   // THE SECOND GATE. requireRole() writes its own 403 and returns false.
   // Clients are not role-gated — they are gated by ownsClient() below, which is
   // a stronger check: a client principal may only ever act on themself.
-  if (principal.kind === "staff" && !requireRole(res, principal.staff, CONSENT_ROLES)) return;
+  if (principal.kind === "staff" && !requireRole(res, principal.staff, ANY_CONSENT_ROLE)) return;
 
   // Fail closed on the org before any branch runs. A principal with no org
   // cannot have a row written for them and cannot be told about anybody's
@@ -147,6 +184,7 @@ async function handleGet(req, res, principal, orgId) {
     return res.status(403).json({ ok: false, error: "forbidden" });
   }
   const kind = normalizeKind(q.kind);
+  if (refuseKindForRole(res, principal, kind)) return;
   if (!kind) {
     return res.status(400).json({ ok: false, error: `kind must be one of: ${CONSENT_KINDS.join(", ")}` });
   }
@@ -324,6 +362,7 @@ async function handlePost(req, res, principal, orgId) {
     return res.status(403).json({ ok: false, error: "forbidden" });
   }
   const kind = normalizeKind(body.kind);
+  if (refuseKindForRole(res, principal, kind)) return;
   if (!kind) {
     return res.status(400).json({ ok: false, error: `kind must be one of: ${CONSENT_KINDS.join(", ")}` });
   }

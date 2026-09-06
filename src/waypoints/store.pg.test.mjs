@@ -11,7 +11,7 @@
 // CLAUDE.md §12: with DATABASE_URL unset these skip and the suite still reports
 // zero failures, so a green `npm test` is not evidence any of this ran.
 
-import { test, before, after, describe } from "node:test";
+import { test, before, beforeEach, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
@@ -56,6 +56,33 @@ describe("client waypoints and paid service requests", { skip: !HAVE_DB ? "no DA
        VALUES ($1,'client',$2,'Waypoint Pgtest Client','invited',$3) RETURNING id`,
       [org, "waypoint_pg_test_acct@example.com", client]
     )).rows[0].id;
+  });
+
+  /* ADDED 2026-09-05 BY THE PAID-ROUND LANE, AS A FIXTURE CHANGE ONLY.
+     No assertion in this file was altered, weakened or removed.
+
+     db/migrations/345 adds uq_paid_service_requests_one_open — one OPEN paid
+     request per client per service kind — because the read-then-insert guards
+     around this table could all be beaten by two presses milliseconds apart,
+     and were, against a real Postgres. Every test below shares one fixture
+     client and none of them stood its rows down, so the second test to open a
+     dispute_round for that client now collides with a control that is doing
+     exactly its job.
+
+     Standing the previous test's rows down is the honest fix: these tests are
+     about what the table refuses on ONE request, not about a client holding
+     several at once — which is the thing 345 makes impossible on purpose. The
+     rows are cancelled rather than deleted, so round_no keeps its slot and
+     nextSelfServeRoundNo() still reads a real sequence. */
+  beforeEach(async () => {
+    if (!client) return;
+    await db.query(
+      `UPDATE paid_service_requests
+          SET status = 'cancelled', resolved_at = now()
+        WHERE client_id = $1::uuid
+          AND status IN ('quoted', 'awaiting_payment')`,
+      [client]
+    );
   });
 
   after(async () => {
