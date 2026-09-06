@@ -4,6 +4,7 @@
 import { grant } from "../entitlements/entitlements.mjs";
 import { onRepairEvent } from "./handlers.mjs";
 import { emit } from "../events/bus.mjs";
+import { seedClientWaypoints } from "../waypoints/seed.mjs";
 
 /** Portal bureau-response door keys off this catalog code (client-portal doors). */
 const REPAIR_ENTITLEMENT = "metro2-letter-pack";
@@ -145,8 +146,29 @@ export async function enrollRepairProgram(db, {
     payload
   });
 
+  /* THE CLIENT'S CHECKLIST, and this is the only place anything creates one.
+
+     client_waypoints has existed since migration 330 and nothing outside a test
+     had ever written to it, so every client's list was empty and every read of
+     it returned []. Hung off this enrolment rather than a new trigger of its
+     own: enrolment is the moment the plan becomes theirs.
+
+     IDEMPOTENT. Unique (client_id, key) plus an upsert, and paydown rows are
+     matched to their card by params rather than by key, so the double dispatch
+     this file already performs — and a re-run months later — produce one set.
+     Details in src/waypoints/seed.mjs.
+
+     BEST-EFFORT, LIKE THE EVENT ABOVE IT. By the time we reach this line the
+     program, the entitlement and the welcome email are committed. A checklist
+     that could not be built is a checklist to fix, not a reason to lose an
+     enrolment that already happened, so the failure is reported in the return
+     value and never thrown. */
+  const checklist = await seedClientWaypoints(db, { orgId, clientId })
+    .catch((err) => ({ ok: false, seeded: [], error: String(err?.message || err) }));
+
   return {
     ok: true,
+    checklist,
     program: {
       id: row.id,
       client_id: row.client_id,
