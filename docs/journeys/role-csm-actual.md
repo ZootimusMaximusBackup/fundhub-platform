@@ -18,7 +18,7 @@ Traced from: `src/handlers/customer-insights.mjs`, `src/register-all.mjs`,
 ```mermaid
 flowchart TD
     A[deposit.paid or sale.closed] --> B[onPaidMidCheckin]
-    B --> C["Task: Mid-journey check-in<br/>assignee_role = csm<br/>due in 7 days"]
+    B --> C["Task: Mid-journey check-in<br/>assignee_role = csm<br/>due in 90 days"]
     C --> D[CSM calls the client<br/>phone or AI reach-out, not a Meet]
 
     E[round.funded] --> F[onRoundFundedInsights]
@@ -41,12 +41,18 @@ flowchart TD
 is now `csm`, so both moved together. Registered live at
 `src/register-all.mjs:14`.
 
-**GAP — the mid check-in is not at the halfway point.** It fires **7 days after
-payment** (`MID_DUE_DAYS = 7`). Chris described the check-in as happening
-halfway through the service. A real halfway is computable —
-`contracts.signed_at + term_days/2`, which is day 90 on the standard 180-day
-agreement — but nothing computes it and nothing was changed to. Recorded as a
-gap, not reconciled. Chris's decision.
+**The mid check-in fires at day 90**, the halfway point of the 180-day term that
+is the only program length stated anywhere in this repo. It was 7 days after
+payment until 2026-09-05, which was a welcome call wearing the wrong name — a
+week in, nothing has happened yet, so "how is it going" had no answer.
+
+`MID_DUE_DAYS` in `src/handlers/customer-insights.mjs` is the one number.
+
+`UNVERIFIED` — it is not computed per contract. `contracts.signed_at +
+term_days/2` looks like the right answer and cannot be built: nothing writes
+`term_days` onto a contract, 287 deliberately moved the term into the agreement
+text, and zero contracts carry one. A client on a different-length agreement
+gets the same day 90.
 
 ---
 
@@ -138,5 +144,16 @@ attributes an upsell to whoever was on the check-in call.
 plus `consent-capture.html`, matching how closer and funding advisor are set up.
 Lands on `client-control-panel.html`. **No new screen was added.**
 
-`UNVERIFIED` — there is no CSM work queue endpoint yet. A CSM sees their tasks
-through the existing task surfaces, not through a view built for this role.
+**The CSM has a queue.** `GET /api/read/csm-queue` returns their open tasks with,
+for each one, the client's name, what they owe, and what they already own — the
+three questions a check-in call needs answered before it starts. Balance comes
+from `v_invoice_aging` and is **null when the client has no invoice, never 0**,
+because "owes nothing" and "we have not looked" are different answers.
+
+**The consent screen takes all four kinds.** `consent-capture.html?client_id=…
+&kind=call_recording` and `&kind=marketing_use`. Asked on separate visits so
+neither rides in on the other's tick.
+
+**A CSM may record the two conversation consents and NOT a soft-pull consent.**
+A consent is what unlocks a credit pull, so the role set on this endpoint is
+gated per kind: `role_may_not_capture_this_kind` is the refusal.
