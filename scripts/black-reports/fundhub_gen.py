@@ -1306,6 +1306,28 @@ def build_lender_list(c):
 # 7. DOCUMENT 4 — OPTIMIZATION ROADMAP
 # ----------------------------------------------------------------------------
 
+# What this client actually has, read off their own file. This paragraph used to
+# assert a mortgage, paid-off auto loans and a clean TransUnion for everybody, which
+# was false for anyone who had none of them. Say nothing rather than guess.
+def what_you_have(c):
+    has = []
+    if c.get("mortgages"):
+        has.append("You have a mortgage.")
+    if c.get("installments"):
+        has.append("You have installment loans.")
+    if c.get("revolving"):
+        has.append("You have revolving cards.")
+    clean = [str(b[0]).strip() for b in (c.get("bureaus") or [])
+             if len(b) > 1 and str(b[1]).upper() != "DIRTY" and str(b[0]).strip()]
+    if len(clean) == 1:
+        has.append("You have a clean %s." % clean[0])
+    elif len(clean) > 1:
+        has.append("Your %s and %s files are clean." % (", ".join(clean[:-1]), clean[-1]))
+    if not has:
+        return ""
+    return " ".join(has) + " You are not starting from zero. "
+
+
 def build_roadmap(c):
     med = median(list(c["scores"].values()))
     delta = c["preapproval_after"] - c["preapproval_now"]
@@ -1314,8 +1336,7 @@ def build_roadmap(c):
                f"{first}'s 6-Month Business Readiness Roadmap", "business readiness roadmap")]
 
     h.append(f'<div class="callout"><p style="margin:0">A note before we dive in: {esc(first)}, '
-             f'I have looked at every inch of your credit file. You have a mortgage. You have '
-             f'paid-off auto loans. You have a clean TransUnion. You are not starting from zero. '
+             f'I have looked at every inch of your credit file. {esc(what_you_have(c))}'
              f'What we are doing over the next 6 months is clearing the road so the money can '
              f'flow.</p></div>')
 

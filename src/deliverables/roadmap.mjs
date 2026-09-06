@@ -27,6 +27,26 @@ function firstName(client) {
   return raw.split(/\s+/)[0];
 }
 
+// What this client actually has, read off their own file. This paragraph used to
+// assert a mortgage, paid-off auto loans and a clean TransUnion for everybody,
+// which was false for anyone who had none of them. Say nothing rather than guess.
+function whatYouHave(c) {
+  const has = [];
+  if ((c.mortgages || []).length) has.push("You have a mortgage.");
+  if ((c.installments || []).length) has.push("You have installment loans.");
+  if ((c.revolving || []).length) has.push("You have revolving cards.");
+  // bureaus rows are [name, status, negatives, note]; anything not DIRTY is clean.
+  const clean = (c.bureaus || [])
+    .filter((b) => Array.isArray(b) && String(b[1] || "").toUpperCase() !== "DIRTY")
+    .map((b) => String(b[0] || "").trim())
+    .filter(Boolean);
+  if (clean.length === 1) has.push(`You have a clean ${clean[0]}.`);
+  else if (clean.length > 1) has.push(`Your ${clean.slice(0, -1).join(", ")} and ${clean[clean.length - 1]} files are clean.`);
+  // Only claim they are ahead when the file shows something they are ahead with.
+  if (!has.length) return "";
+  return `${has.join(" ")} You are not starting from zero. `;
+}
+
 export function buildRoadmap(client) {
   const c = client || {};
   const med = median(c.scores || {});
@@ -39,8 +59,7 @@ export function buildRoadmap(client) {
     `${first}'s 6-Month Business Readiness Roadmap`)];
 
   h.push(`<div class="callout"><p style="margin:0">A note before we dive in: ${esc(first)}, `
-    + "I have looked at every inch of your credit file. You have a mortgage. You have "
-    + "paid-off auto loans. You have a clean TransUnion. You are not starting from zero. "
+    + `I have looked at every inch of your credit file. ${esc(whatYouHave(c))}`
     + "What we are doing over the next 6 months is clearing the road so the money can "
     + "flow.</p></div>");
 
