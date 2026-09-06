@@ -23,12 +23,19 @@ import { computeTiered } from "./tiers.mjs";
 
 export const FRONT_END = "front_end";
 export const BACK_END = "back_end";
+/* Money recovered on a deal somebody else closed — the CSM working an overdue
+   balance. Not front_end: the closer already earned that on this same deal, and
+   paying it twice pays two people for one event. See 293_csm_collections_basis.sql. */
+export const COLLECTIONS = "collections";
 
 /** amount_basis values, split by which basis may use them. Mirrors the CHECK
  *  constraint in 013_commission_rules.sql — these are formulas, not config. */
 export const AMOUNT_BASES = Object.freeze({
   [FRONT_END]: ["sale_price", "deposit_collected", "cash_collected", "paid_amount"],
-  [BACK_END]: ["amount_funded", "amount_approved", "success_fee"]
+  [BACK_END]: ["amount_funded", "amount_approved", "success_fee"],
+  // Cash actually received, net of refunds. A collections commission on an
+  // amount merely invoiced would pay for work not yet done.
+  [COLLECTIONS]: ["cash_collected"]
 });
 
 const iso = (v) => (v instanceof Date ? v.toISOString() : new Date(v).toISOString());
@@ -145,7 +152,7 @@ export function idempotencyKey({ basis, saleId, roundId, staffId, ruleId, eventR
  *
  * input:
  *   org_id        required
- *   basis         'front_end' | 'back_end'
+ *   basis         'front_end' | 'back_end' | 'collections'
  *   sale          sales row
  *   product       products row (for the name snapshot)
  *   client        clients row (for the code snapshot)
@@ -191,8 +198,9 @@ export function computeCommission(input) {
   } = input;
 
   if (!org_id) throw new TypeError("computeCommission: org_id is required");
-  if (basis !== FRONT_END && basis !== BACK_END) {
-    throw new TypeError(`computeCommission: basis must be ${FRONT_END} or ${BACK_END}, got ${basis}`);
+  if (!Object.prototype.hasOwnProperty.call(AMOUNT_BASES, basis)) {
+    throw new TypeError(
+      `computeCommission: basis must be one of ${Object.keys(AMOUNT_BASES).join(", ")}, got ${basis}`);
   }
   if (!occurredAt) throw new TypeError("computeCommission: occurredAt is required");
 

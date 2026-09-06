@@ -42,6 +42,7 @@ const MIGRATION = path.join(ROOT, "db/migrations/094_demo_logins.sql");
 /* The seventh staff login. 094 was already applied when sales_manager was
    built, and an edit to an applied migration never runs — see the roster test. */
 const SALES_MANAGER_MIGRATION = path.join(ROOT, "db/migrations/112_sales_manager_role.sql");
+const CSM_MIGRATION = path.join(ROOT, "db/migrations/290_csm_role.sql");
 const LOGIN_PAGE = path.join(ROOT, "public/login.html");
 const SHELL = path.join(ROOT, "public/app/shell.js");
 
@@ -203,13 +204,14 @@ describe("the gate is actually wired into both login paths", () => {
 describe("the roster is the same in all four places", () => {
 
   test("ten logins, one per role", () => {
-    // Seven staff since sales_manager was built on 2026-08-01
-    // (db/migrations/112_sales_manager_role.sql), plus the three principals.
-    assert.equal(DEMO_LOGINS.length, 10);
-    assert.equal(DEMO_STAFF.length, 7);
+    // Eight staff since csm was built on 2026-09-05
+    // (db/migrations/290_csm_role.sql), which followed sales_manager on
+    // 2026-08-01 (112_sales_manager_role.sql). Plus the three principals.
+    assert.equal(DEMO_LOGINS.length, 11);
+    assert.equal(DEMO_STAFF.length, 8);
     assert.equal(DEMO_ACCOUNTS.length, 3);
     const roles = DEMO_LOGINS.map((d) => d.role);
-    assert.equal(new Set(roles).size, 10, `duplicate role in the roster: ${roles}`);
+    assert.equal(new Set(roles).size, 11, `duplicate role in the roster: ${roles}`);
   });
 
   test("every role is one public/app/shell.js grants tabs to", () => {
@@ -234,7 +236,7 @@ describe("the roster is the same in all four places", () => {
     for (const d of DEMO_LOGINS) {
       assert.ok(isDemoEmail(d.email), `${d.email} is not on ${DEMO_EMAIL_DOMAIN}`);
     }
-    assert.equal(new Set(DEMO_LOGINS.map((d) => d.email)).size, 10, "duplicate demo address");
+    assert.equal(new Set(DEMO_LOGINS.map((d) => d.email)).size, 11, "duplicate demo address");
   });
 
   test("every name reads as a demo account", () => {
@@ -257,8 +259,11 @@ describe("the roster is the same in all four places", () => {
        sales_manager role was built on 2026-08-01, and migrate.mjs keys
        schema_migrations on <dir>/<file> — editing an applied migration is a
        silent no-op. So 112_sales_manager_role.sql carries that one login, and
-       the roster is checked against both rather than against 094 alone. */
-    const sql = read(MIGRATION) + "\n" + read(SALES_MANAGER_MIGRATION);
+       290_csm_role.sql carries the CSM added on 2026-09-05 for the same
+       reason. The roster is checked against all three rather than 094 alone,
+       and every future role migration that seeds a login joins this list. */
+    const sql = read(MIGRATION) + "\n" + read(SALES_MANAGER_MIGRATION)
+              + "\n" + read(CSM_MIGRATION);
     for (const d of DEMO_LOGINS) {
       assert.ok(sql.includes(`'${d.email}'`),
         `no demo-login migration mentions ${d.email}`);
@@ -467,20 +472,20 @@ describe("GET /api/auth/login — the switcher's roster, gated server-side", () 
     }
   });
 
-  test("switch on: all ten, each with the label, the portal and a home", async () => {
+  test("switch on: all eleven, each with the label, the portal and a home", async () => {
     const res = await getOptions("1");
     assert.equal(res.code, 200);
     assert.equal(res.body.demo.enabled, true);
     assert.equal(res.body.demo.password, DEMO_PASSWORD);
     const logins = res.body.demo.logins;
-    assert.equal(logins.length, 10);
+    assert.equal(logins.length, 11);
     for (const d of logins) {
       for (const k of ["role", "email", "name", "label", "portal", "home"]) {
         assert.ok(d[k] && String(d[k]).trim(), `demo login ${d.role} has no ${k}`);
       }
       assert.ok(isDemoEmail(d.email), `${d.email} is not on the demo domain`);
     }
-    assert.equal(new Set(logins.map((d) => d.role)).size, 10, "duplicate role in the switcher");
+    assert.equal(new Set(logins.map((d) => d.role)).size, 11, "duplicate role in the switcher");
   });
 
   test("the reply carries nothing the page does not render", async () => {

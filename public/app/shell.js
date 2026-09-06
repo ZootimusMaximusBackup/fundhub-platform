@@ -347,6 +347,13 @@
        and the finance-gated screens (staff-teams, agent-editor,
        products-commissions). "sales_manager" resolves in allowedFor(). */
     sales_manager: "sales_manager",
+    /* Client Success Manager gets the shared staff surface plus the consent
+       desk. They run recorded check-in and interview calls, so capturing
+       call_recording and marketing_use consent (291) is the one thing they
+       cannot do their job without — same reason closer and funding_advisor
+       carry it. NO NEW SCREEN: the CSM queue is a view on surfaces that
+       already exist. "csm" resolves in allowedFor(). */
+    csm: "csm",
     /* Principal types, not staff roles — they are gated here on staff.role only
        because no principals table exists yet. 'partner' is seeded into the
        staff_roles catalog by db/migrations/036_partner_role.sql purely to make
@@ -428,6 +435,8 @@
     setter: "pipeline.html",
     // The Sales pipeline is the thing they own, so it is where they land.
     sales_manager: "sales-floor.html",
+    // One client at a time is the job, so that is the screen they land on.
+    csm: "client-control-panel.html",
     client: "client-portal.html",
     affiliate: "affiliate.html",
     partner: "partner-galaxy.html"
@@ -462,6 +471,7 @@
     if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY).concat(CONSENT_DESK_ONLY);
     if (m === "funding_advisor") return staffTabs().concat(ADVISOR_ONLY).concat(CONSENT_DESK_ONLY);
     if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY).concat(FINANCE_ONLY);
+    if (m === "csm") return staffTabs().concat(CONSENT_DESK_ONLY);
     if (m === "staff" || !m) return staffTabs();
     return m.slice();
   }

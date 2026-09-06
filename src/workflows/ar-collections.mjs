@@ -10,6 +10,7 @@ import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { addTags } from "./tags.mjs";
+import { createTask } from "../lib/create-task.mjs";
 import {
   getInvoice,
   markEscalated,
@@ -26,6 +27,9 @@ export const EMAIL_AR_02 = "EMAIL-AR-02-REMINDER";
 export const SMS_AR_02 = "SMS-AR-02-REMINDER";
 export const EMAIL_AR_03 = "EMAIL-AR-03-FINAL-NOTICE";
 export const SMS_AR_03 = "SMS-AR-03-FINAL-NOTICE";
+
+export const AR_04_TASK_TITLE = "Overdue balance — call the client";
+export const AR_04_SOURCE_WORKFLOW = "ar-collections-handoff";
 
 const OPEN = ["draft", "sent", "reminded", "escalated", "partially_paid"];
 
@@ -148,12 +152,43 @@ async function chase({ event, db, step, env }) {
   });
   if (third.skipped) return { done: true, stoppedAt: "before-ar-03", first, second, third };
 
+  /* AR-04. Three automated notices have not been paid, so the machine is done
+     and a person takes over. Until 290_csm_role.sql there was nobody to take
+     over: this step escalated the invoice, tagged the client, and stopped, so
+     the ladder ended in a tag nothing read. The CSM owns the client after the
+     sale, so the CSM gets the call.
+
+     dedupeOn "event" means a replay of this run finds the existing task and
+     reports created:false rather than stacking a second one on the same
+     invoice — see createTask's header, a replay hitting an existing task is
+     the system working. */
   const handoff = await step.run("ar-04-handoff", async () => {
     const row = await getInvoice(db, { invoiceId });
     if (!stillOpen(row)) return { skipped: true, reason: row?.status || "missing" };
     const escalated = await markEscalated(db, { invoiceId });
     await addTags(db, clientId, ["ar:collections-handoff"]);
-    return { skipped: false, escalated: !!escalated };
+
+    const ctx = await arContext(db, row, payload);
+    const task = await createTask(db, {
+      orgId,
+      clientId,
+      title: AR_04_TASK_TITLE,
+      sourceWorkflow: AR_04_SOURCE_WORKFLOW,
+      assigneeRole: "csm",
+      eventId: `${eventId}:04`,
+      dedupeOn: "event",
+      body: [
+        `Invoice ${ctx.invoice_number} is still open. Balance due: ${ctx.balance_due}.`,
+        "Three automated notices have gone out and none were paid. This one is a call, not another message.",
+        "",
+        "Log what happened with POST /api/customer-insights if the call turns into an interview,",
+        "and take a payment through the link already on the invoice if they can pay now.",
+        "",
+        `[event:${eventId}]`
+      ].join("\n")
+    });
+
+    return { skipped: false, escalated: !!escalated, taskCreated: !!task?.created, taskId: task?.id || null };
   });
 
   return { done: true, first, second, third, handoff };

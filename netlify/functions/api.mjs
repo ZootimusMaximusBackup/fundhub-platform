@@ -121,6 +121,7 @@ import readCallOutcomes from "../../api/read/call-outcomes.mjs";
 import readUnrecordedCalls from "../../api/read/unrecorded-calls.mjs";
 import callOutcomesWrite from "../../api/call-outcomes.mjs";
 import readCustomerInsights from "../../api/read/customer-insights.mjs";
+import readCsmQueue from "../../api/read/csm-queue.mjs";
 import customerInsightsWrite from "../../api/customer-insights.mjs";
 import marketingFlagsWrite from "../../api/marketing-flags.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
@@ -570,6 +571,7 @@ export const ROUTES = {
   "read/unrecorded-calls": readUnrecordedCalls,
   "call-outcomes": callOutcomesWrite,
   "read/customer-insights": readCustomerInsights,
+  "read/csm-queue": readCsmQueue,
   "customer-insights": customerInsightsWrite,
   "marketing-flags": marketingFlagsWrite,
 
