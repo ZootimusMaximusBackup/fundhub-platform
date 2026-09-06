@@ -196,6 +196,19 @@ today, so the score itself is also `null` for every real client.
   4th renders as "Mar 3". The `at` field carries the real UTC timestamp and is
   the authoritative one; the drift is in the existing shared function, not in
   this endpoint.
+
+  **HOW THE TWO CLIENT SCREENS HANDLE IT (2026-09-05).** They print ONE date per
+  row and they take it from `at`. `text` arrives with its own date on the front —
+  `Mar 3 · letters mailed to all three bureaus` — and both screens used to print
+  their own beside it, so every row showed two dates a day apart. The leading
+  `Mon D · ` is now stripped off the words. If that prefix is not in the shape
+  expected, or `at` cannot be parsed, the renderer prints no date of its own and
+  the string keeps whatever it carries — so exactly one date reaches the client
+  in every branch. `timelineParts()` in `public/progress.html` and `parts()` in
+  the Activity-tab block of `public/app/client-portal.html` are deliberate
+  duplicates; those two files share no script. **If `timelineLine()` ever stops
+  putting the date on the front, both copies become no-ops and neither screen
+  breaks** — they simply fall through to printing `at`.
 * **`scores.business[].pulledAt` is always null, and so is the score.** No
   per-business pull timestamp exists in `businesses` or inside `entity_data`.
   Separately, nothing in this repository WRITES a business credit score — every

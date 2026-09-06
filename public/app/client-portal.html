@@ -532,11 +532,33 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
              .funding-only, so body.no-funding hides it from a client with no
              funding entitlement — but that gate is about what they bought, not
              about which journey they are on, and it never made the eight ticks
-             true for the funding clients who did see them. -->
-        <div class="prog-link">
-          <a href="/progress.html">See exactly where your file stands →</a>
-        </div>
+             true for the funding clients who did see them.
+
+             THE LINK ITSELF IS NOT IN THIS CARD, and that is deliberate. See
+             the block immediately after this section. -->
       </section>
+
+      <!-- ══ 2b · THE LINK TO THE PROGRESS PAGE ═══════════════════════════
+           OUTSIDE .funding-only ON PURPOSE. It used to sit inside the funding
+           card above, and body starts with class="no-funding" (:386), so every
+           client who had not bought funding — which includes every repair
+           client, the people the progress page is mostly FOR — could not see
+           the only link to it that exists anywhere.
+
+           IT ALSO HAD TO SURVIVE THE LINK GATE IN shell.js. progress.html is a
+           customer page at the SITE ROOT, like contract.html and
+           portal-login.html; it is not an /app/ screen, has no sidebar row and
+           is in no role's tab list. screenOf() used to call it a screen anyway,
+           which meant gateLinks() hid whatever card it was in AND the
+           capture-phase click interceptor cancelled the click — measured in
+           Chromium on 2026-09-05: pressing it did nothing, the address bar
+           never changed. screenOf() now returns "" for an absolute href that is
+           not under /app/, so both gates leave this link alone.
+           e2e/progress-page.spec.mjs clicks it and asserts the address bar
+           moved; a visibility check cannot see that failure. -->
+      <div class="prog-link" id="prog-link">
+        <a href="/progress.html">See exactly where your file stands →</a>
+      </div>
 
       <section class="card" id="sb-scores-card" hidden>
         <div class="card-title">Your credit scores</div>
@@ -566,14 +588,14 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <div class="promo-bd">
           <div class="promo-main">
             <div class="eyebrow">CP-00 <span class="sep">/</span> RECOMMENDED NEXT</div>
-            <div class="pt" id="promo-title">Credit repair, done-for-you</div>
-            <div class="pd">Your round funded. If you want repair work before the next round, talk to your
+            <div class="pt" id="promo-title">Capital readiness, done-for-you</div>
+            <div class="pd">Your round funded. If you want capital-readiness work before the next round, talk to your
               advisor — the price is set on the call.</div>
             <div class="pwhy"><span class="pulse"></span> Next step after funding — not included yet</div>
           </div>
           <div class="promo-side">
             <div class="promo-price">On your call<span class="pu">ask your advisor</span></div>
-            <button class="btn-book" type="button" data-book="Credit repair, done-for-you">Ask about this</button>
+            <button class="btn-book" type="button" data-book="Capital readiness, done-for-you">Ask about this</button>
             <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY" hidden>Unlock now</button>
           </div>
         </div>
@@ -677,23 +699,23 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 
           <article class="tile locked" data-tile="REPAIR_DFY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
-            <div class="tt">Credit repair, done-for-you</div>
-            <div class="td">Repair work run for you. Pricing is set on your call.</div>
+            <div class="tt">Capital readiness, done-for-you</div>
+            <div class="td">We run your capital-readiness work for you. Pricing is set on your call.</div>
             <div class="tp">On your call</div>
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY" hidden>Unlock</button>
-              <button class="btn-advise" type="button" data-book="Credit repair, done-for-you">Talk to an advisor</button>
+              <button class="btn-advise" type="button" data-book="Capital readiness, done-for-you">Talk to an advisor</button>
             </div>
           </article>
 
           <article class="tile locked" data-tile="REPAIR_TRIAL">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
-            <div class="tt">Repair test run (first round, done for you)</div>
+            <div class="tt">Capital readiness test run (first round, done for you)</div>
             <div class="td">One round to start. Pricing is set on your call.</div>
             <div class="tp">On your call</div>
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="REPAIR_TRIAL" hidden>Unlock</button>
-              <button class="btn-advise" type="button" data-book="Repair test run (first round, done for you)">Talk to an advisor</button>
+              <button class="btn-advise" type="button" data-book="Capital readiness test run (first round, done for you)">Talk to an advisor</button>
             </div>
           </article>
 
@@ -926,12 +948,12 @@ var PRODUCTS = {
     desc:'We run the funding round with you. Plus 10% of what funds, due when the money lands. Pricing is set on your call.'
   },
   REPAIR_DFY:{
-    name:'Credit repair, done-for-you',
+    name:'Capital readiness, done-for-you',
     price:'On your call',
-    desc:'Repair work run for you. Pricing is set on your call.'
+    desc:'We run your capital-readiness work for you. Pricing is set on your call.'
   },
   REPAIR_TRIAL:{
-    name:'Repair test run (first round, done for you)',
+    name:'Capital readiness test run (first round, done for you)',
     price:'On your call',
     desc:'One round to start. Pricing is set on your call.'
   },
@@ -2307,10 +2329,15 @@ document.addEventListener("DOMContentLoaded", async function () {
    that existed is being pointed at a tab that existed.
 
    THE ENDPOINT MAY NOT BE THERE YET. It is built by a separate lane against the
-   same written contract. A 404, a refusal or an error leaves the shipped empty
-   state exactly as it is — this block only ever REPLACES that sentence when it
-   has real rows to replace it with, so the failure mode is the screen this file
-   already ships and not a broken tab.
+   same written contract, and until that lane merges this read 404s.
+
+   WHAT A FAILED READ SAYS, AND WHY IT CHANGED. It used to leave the shipped
+   sentence — "No activity recorded on this file yet." — standing. That sentence
+   is a STATEMENT ABOUT THE FILE, and a read that never answered proves nothing
+   about the file. A client with a year of history would have been told nothing
+   had happened. So a failed read now says the read failed, in those words, and
+   the "nothing yet" sentence is kept for the one case that earns it: the
+   endpoint answered, and answered with an empty list.
 
    IT DOES NOT CLAIM A COMPLAINT WAS LODGED. The text comes from the server and
    is printed as given; this block adds no words of its own. That matters because
@@ -2332,37 +2359,81 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   function when(iso) {
-    if (!iso) return "—";
+    if (!iso) return null;
     var d = new Date(iso);
-    if (isNaN(d.getTime())) return "—";
+    if (isNaN(d.getTime())) return null;
     return d.getUTCDate() + " " + MONTHS[d.getUTCMonth()];
+  }
+
+  /* ONE DATE PER ROW. timeline[].text ALREADY BEGINS WITH A DATE — timelineLine()
+     (src/repair/lens.mjs:206) returns "Mar 3 · letters mailed to all three
+     bureaus", formatted in America/Los_Angeles — and this tab was printing its
+     own UTC date beside it. Two dates on every row, disagreeing by a day
+     whenever the event was stored near midnight (the endpoint lane watched `at`
+     say 2026-03-04T00:00:00.000Z against a text of "Mar 3").
+
+     `at` owns the date, because it is the authoritative field and because the
+     progress page at /progress.html formats the same event from the same field.
+     The duplicate is stripped off the words. If the prefix is not in the shape
+     expected, or `at` is unusable, this adds no date of its own and the string
+     keeps whatever it carries — so exactly one date reaches the client either
+     way. Kept deliberately identical to timelineParts() in public/progress.html;
+     these two files share no script and each carries its own copy. */
+  var TL_DATE_PREFIX = /^[A-Za-z]{3,9}\.?\s+\d{1,2}\s*·\s*/;
+
+  function parts(e) {
+    e = e || {};
+    var raw = String(e.text == null ? "" : e.text);
+    var d = when(e.at);
+    if (d && TL_DATE_PREFIX.test(raw)) {
+      var words = raw.replace(TL_DATE_PREFIX, "");
+      if (words) return { when: d, words: words };
+    }
+    return { when: TL_DATE_PREFIX.test(raw) ? null : d, words: raw };
   }
 
   function token() {
     try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
   }
 
+  function row(dateText, words) {
+    return '<div class="timeline-item"><span class="td">' + escape2(dateText || "—") +
+           "</span><span>" + escape2(words) + "</span></div>";
+  }
+
   function paint(rows) {
     var pane = document.getElementById("tp-act");
-    if (!pane || !rows.length) return;      // no rows: the shipped sentence stands
+    if (!pane) return;
+    if (!rows.length) return;               // answered, and empty: the shipped sentence is true
     pane.innerHTML = rows.slice(0, 40).map(function (e) {
-      return '<div class="timeline-item"><span class="td">' + escape2(when(e.at)) +
-             "</span><span>" + escape2(e.text || "") + "</span></div>";
+      var p = parts(e);
+      return row(p.when, p.words);
     }).join("");
+  }
+
+  /* THE READ DID NOT ANSWER. Say that, and only that. This must never leave
+     "No activity recorded on this file yet." on screen, because that sentence
+     claims something about the file that a failed read cannot know. */
+  function unavailable() {
+    var pane = document.getElementById("tp-act");
+    if (!pane) return;
+    pane.innerHTML = row(null,
+      "We could not load your activity just now. Nothing is wrong with your file — " +
+      "this list did not load. Please refresh in a few minutes.");
   }
 
   function load() {
     var t = token();
-    if (!t) return;
+    if (!t) return;                          // signed out: not this block's message to write
     fetch("/api/read/client-progress", {
       headers: { authorization: "Bearer " + t, accept: "application/json" },
       credentials: "same-origin"
     }).then(function (r) {
       return r.ok ? r.json() : null;
     }).then(function (d) {
-      if (!d || d.ok !== true || !Array.isArray(d.timeline)) return;
+      if (!d || d.ok !== true || !Array.isArray(d.timeline)) return unavailable();
       paint(d.timeline);
-    }).catch(function () { /* the shipped empty state stands */ });
+    }).catch(function () { unavailable(); });
   }
 
   if (document.readyState === "loading") {

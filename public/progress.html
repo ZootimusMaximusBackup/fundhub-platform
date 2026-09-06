@@ -303,6 +303,34 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     return isNaN(d.getTime()) ? null : d;
   }
 
+  /* ── safeUrl — the second half of the escaping rule ───────────────────────
+
+     esc() protects everything that lands in innerHTML. It does NOT protect a
+     value that is ASSIGNED to location.href or put on an <a href>, and this
+     page does both with URLs it got back from the API: the signed report link
+     from api/documents-download.mjs, and the hosted checkout link from
+     api/paid-services.mjs.
+
+     `javascript:` in either one runs script in this document's own origin,
+     right next to the fh_token the header above calls the thing being
+     protected. So does `data:` and `vbscript:`. An allowlist, not a denylist:
+     only http, https and a same-site relative path are ever handed to the
+     browser. Anything else returns null and the caller says the link could not
+     be opened, which is the honest answer for a link we will not follow.
+
+     Parsed with the URL constructor against this page's own origin so that
+     "/x", "  javascript:…" (leading spaces), "JaVaScRiPt:…" and
+     "java\tscript:…" all resolve the same way the browser would resolve them,
+     rather than being pattern-matched by hand. */
+  function safeUrl(u) {
+    var raw = String(u == null ? "" : u).trim();
+    if (!raw) return null;
+    var parsed;
+    try { parsed = new URL(raw, window.location.origin); } catch (e) { return null; }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return parsed.href;
+  }
+
   /** "3 March 2026", or null. Never today's date as a stand-in. */
   function longDate(iso) {
     var d = parseDate(iso);
@@ -314,6 +342,44 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
   function monthName(iso) {
     var d = parseDate(iso);
     return d ? MONTHS[d.getUTCMonth()] : null;
+  }
+
+  /* ── ONE DATE PER TIMELINE ROW, AND `at` OWNS IT ──────────────────────────
+
+     THE BUG THIS CLOSES. timeline[].text arrives with a date ALREADY ON THE
+     FRONT of it. timelineLine() (src/repair/lens.mjs:206) returns
+     `${when} · ${words}` — "Mar 3 · letters mailed to all three bureaus" — and
+     it formats `when` in America/Los_Angeles. This page then printed
+     longDate(e.at) beside it in UTC. Two dates on every row, and they disagree
+     by a day whenever the event is stored near midnight: the endpoint lane
+     watched `at` say 2026-03-04T00:00:00.000Z while the same row's text said
+     "Mar 3" (contract-deviations.md, "KNOWN DRIFT IN AN EXISTING SHARED
+     FUNCTION").
+
+     WHO OWNS THE DATE: `at`. It is the authoritative field — the endpoint lane
+     says so in the same handoff — and it is the one this whole page already
+     formats everywhere else, so a client sees one date style, not two.
+
+     HOW THE DUPLICATE GOES: the leading "Mon D · " is removed from the words.
+
+     AND IF THE PREFIX IS NOT THERE in the shape we expect, we add NOTHING.
+     The string keeps whatever date it carries and this returns no date of its
+     own. Same the other way: a row with no usable `at` keeps its text intact.
+     Either branch puts exactly one date on the row, which is the property that
+     matters — a renderer that guesses wrong must not be able to print two. */
+  var TL_DATE_PREFIX = /^[A-Za-z]{3,9}\.?\s+\d{1,2}\s*·\s*/;
+
+  function timelineParts(e) {
+    e = e || {};
+    var raw = String(e.text == null ? "" : e.text);
+    var when = longDate(e.at);
+    if (when && TL_DATE_PREFIX.test(raw)) {
+      var words = raw.replace(TL_DATE_PREFIX, "");
+      if (words) return { when: when, words: words };
+    }
+    /* No prefix to remove, or removing it would leave nothing to say. The
+       string stands alone and this renderer prints no date beside it. */
+    return { when: TL_DATE_PREFIX.test(raw) ? null : when, words: raw };
   }
 
   /** Whole days from now until `iso`. Negative means it has passed. */
@@ -376,10 +442,31 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
      general. src/metro2/letters/catalog.mjs:57-65 records that NOTHING in this
      system knows whether such a complaint was actually submitted — only that a
      letter was produced. So this page describes them as prepared and sent by
-     us, and never as lodged, accepted or on record anywhere. */
-  function roundNote(round) {
+     us, and never as lodged, accepted or on record anywhere.
+
+     AND IT MUST NOT IMPLY WORK IS HAPPENING WHEN IT IS NOT. The sentence below
+     is written in the present tense — "we prepare them and send them for you" —
+     which reads as a promise about this file, right now. On a file the stage
+     says is cancelled or on hold, nothing is being prepared and nothing is
+     being sent, so the present tense would be a claim the data contradicts.
+     Those two stages get their own sentence instead.
+
+     The stage key is the only fact available here. There is no "prepared" flag
+     anywhere in the payload — an earlier draft of this page drew a green ticked
+     PREPARED chip off `!!stage.key`, which was true for cancelled, on_hold,
+     stalled, intake and awaiting_documents alike. That chip is gone and does
+     not come back without a field that actually means prepared. */
+  var ROUND_NOTE_STOPPED = { cancelled: "cancelled", on_hold: "on hold" };
+
+  function roundNote(round, stageKey) {
     var n = Number(round);
     if (!(n >= 4)) return null;
+    var stopped = ROUND_NOTE_STOPPED[String(stageKey || "")];
+    if (stopped) {
+      return "Rounds 4 and above are escalation letters. Your file is " + stopped
+           + ", so none are being prepared or sent right now. "
+           + "Nothing has been reported as received or accepted by anyone.";
+    }
     return "Rounds 4 and above are escalation letters. We prepare them and send them for you. "
          + "We do not report them as received or accepted by anyone until we hear back.";
   }
@@ -432,7 +519,7 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     }
     if (waitLine) html += '<div class="stage-l" style="margin-top:10px">' + waitLine + '</div>';
 
-    var note = roundNote(cur);
+    var note = roundNote(cur, stage.key);
     if (note) html += '<div class="note">' + esc(note) + '</div>';
 
     el.innerHTML = html;
@@ -556,7 +643,9 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     api(DOWNLOAD_PATH + "?id=" + encodeURIComponent(id)).then(function (r) {
       panelBusy = false;
       var d = r.body && r.body.document;
-      var link = d && d.download && (d.download.url || d.download.path);
+      /* safeUrl(), not the raw reply. A link we will not follow is treated
+         exactly like a link that is not there — see safeUrl() above. */
+      var link = safeUrl(d && d.download && (d.download.url || d.download.path));
       if (r.status === 401) { if (w) w.close(); return toLogin(); }
       if (!link) {
         if (w) w.close();
@@ -910,8 +999,34 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     }, 0);
   }
 
+  /* ONE OPEN REQUEST AT A TIME, CHECKED AT EVERY DOOR INTO THIS FLOW.
+
+     There are two doors: the "Continue" button on the round card, and the
+     "Have us do it" button on a checklist item. The round card hides its
+     button when PAID.inFlight is true; the checklist button does not know
+     about PAID at all, so without this the second door walked straight past
+     the first door's refusal.
+
+     inFlightNow() is also set to true by this page once a request has actually
+     been created — see startPaidRound(). The payload only describes the state
+     the page LOADED in, and a press changes that state. Re-reading nothing and
+     pressing again is how a client ends up with two quoted rounds. */
+  function inFlightNow() {
+    return !!(PAID && PAID.inFlight);
+  }
+
+  function refuseSecondRound() {
+    dialog({
+      title: "You already have one in progress",
+      sub: "We are working on the round you asked for. There is nothing more to do here — "
+         + "reload this page in a little while and it will show where it has got to.",
+      actions: [{ label: "Close", ghost: true }]
+    });
+  }
+
   /** Step one: the price, broken out, before anything is committed. */
   function confirmPaidRound() {
+    if (inFlightNow()) return refuseSecondRound();
     var comps = selectedComponents();
     if (!comps.length) return;
     var rows = comps.map(function (c) {
@@ -955,6 +1070,7 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
 
   /** Step three: ask the server for a hosted checkout link and hand it over. */
   function startPaidRound() {
+    if (inFlightNow()) return refuseSecondRound();
     var comps = selectedComponents().map(function (c) { return c.key; });
     dialog({
       title: "One moment",
@@ -990,8 +1106,17 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
       /* `checkout_url`, snake case — api/paid-services.mjs:186. The camelCase
          spellings are kept as a fallback and cost nothing; the snake one is what
          actually arrives. */
-      var url = r.body && (r.body.checkout_url || r.body.checkoutUrl
-              || (r.body.request && (r.body.request.checkout_url || r.body.request.checkoutUrl)));
+      /* safeUrl() — a checkout link that is not http(s) is not opened and is
+         treated as no link at all, which falls through to the "not ready yet"
+         branch below. See safeUrl(). */
+      var url = safeUrl(r.body && (r.body.checkout_url || r.body.checkoutUrl
+              || (r.body.request && (r.body.request.checkout_url || r.body.request.checkoutUrl))));
+      /* A REQUEST NOW EXISTS. ok:true means the endpoint accepted it and a
+         paid_service_requests row is open, whether or not a link came back
+         with it. The payload this page loaded said inFlight:false and that is
+         no longer true, so the page's own copy is corrected here rather than
+         waiting for a reload. Every door into the flow reads it. */
+      if (r.ok && PAID) PAID.inFlight = true;
       if (r.ok && url) {
         dialog({
           title: "Your payment page is ready",
@@ -1015,8 +1140,12 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
       if (r.ok && !url) {
         return dialog({
           title: "Your payment page is not ready yet",
-          sub: "Nothing has been charged and no card has been touched. "
-             + "Give it a moment and press the button again — if it keeps happening, message us and we will set it up for you.",
+          /* NO "press it again" HERE. Your request is already saved, and this
+             page now refuses a second press for exactly that reason — telling
+             a client to press a button that will decline them is worse than
+             telling them nothing. Message us is the one route that works. */
+          sub: "Nothing has been charged and no card has been touched. Your request is saved, "
+             + "so there is no need to press again. Message us and we will send you the payment link.",
           actions: [{ label: "Close", ghost: true }]
         });
       }
@@ -1120,9 +1249,9 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
        this page escapes everything it did not write itself, without asking
        where it came from. */
     el.innerHTML = '<div class="tl">' + list.map(function (e) {
-      var when = longDate(e.at);
-      return '<div class="ev">' + (when ? '<div class="d">' + esc(when) + '</div>' : '')
-           + '<div class="x">' + esc(e.text || "") + '</div></div>';
+      var row = timelineParts(e);
+      return '<div class="ev">' + (row.when ? '<div class="d">' + esc(row.when) + '</div>' : '')
+           + '<div class="x">' + esc(row.words) + '</div></div>';
     }).join("") + '</div>';
   }
 
