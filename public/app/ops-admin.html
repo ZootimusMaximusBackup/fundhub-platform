@@ -368,10 +368,14 @@
       <div>
 
         <div class="section">
-          <div class="section-title">AR + Collections — Oldest Unpaid First<span class="section-meta">—</span></div>
+          <div class="section-title">AR + Collections — Oldest Unpaid First<span class="section-meta" id="ar-total">Loading…</span></div>
+          <!-- AMOUNT OWED IS A COLUMN NOW. This table had Client / Invoice /
+               Days Overdue / Status and no dollar figure anywhere on it, so the
+               one question an AR table exists to answer — how much money is
+               sitting out there — could not be read off it. -->
           <table class="admin" id="ar-table">
-            <tr><th>Client</th><th>Invoice</th><th aria-sort="descending">Days Overdue</th><th>Status</th></tr>
-            <tr><td colspan="4" class="empty-note" style="border-bottom:none">No unpaid invoices loaded — needs an AR read endpoint</td></tr>
+            <tr><th>Client</th><th>Invoice</th><th>Amount owed</th><th aria-sort="descending">Overdue</th><th>Status</th></tr>
+            <tr><td colspan="5" class="empty-note" style="border-bottom:none">Loading unpaid invoices…</td></tr>
           </table>
         </div>
 
@@ -1043,34 +1047,128 @@ document.addEventListener("DOMContentLoaded", function () {
     return Math.round(h / 24) + "d ago";
   }
 
-  // AR oldest unpaid first.
-  if (FHData.invoices) {
-    FHData.wire(FHData.invoices({ status: "open", limit: 50 }), "AR table", function (data) {
-      var table = document.getElementById("ar-table");
-      if (!table) return null;
-      var rows = (data.items || []).filter(function (r) {
-        return Number(r.balance_due || r.open_balance || 0) > 0;
-      });
-      rows.sort(function (a, b) {
-        var ad = a.due_at ? new Date(a.due_at).getTime() : 0;
-        var bd = b.due_at ? new Date(b.due_at).getTime() : 0;
-        return ad - bd;
-      });
-      var html = "<tr><th>Client</th><th>Invoice</th><th aria-sort=\"descending\">Days Overdue</th><th>Status</th></tr>";
-      if (!rows.length) {
-        html += '<tr><td colspan="4" class="empty-note" style="border-bottom:none">No unpaid invoices</td></tr>';
-      } else {
-        rows.slice(0, 20).forEach(function (r) {
-          var due = r.due_at ? new Date(r.due_at) : null;
-          var days = due ? Math.max(0, Math.floor((Date.now() - due.getTime()) / 86400000)) : "—";
-          html += "<tr><td>" + esc(r.client_id || "—") + "</td><td class=\"mono\">" +
-            esc(String(r.id || "").slice(0, 8)) + "</td><td>" + esc(String(days)) +
-            "</td><td>" + esc(r.status || r.settlement_state || "open") + "</td></tr>";
-        });
-      }
-      table.innerHTML = html;
-      return "live AR · " + rows.length + " open balance(s)";
+  /* ══ AR + COLLECTIONS ═══════════════════════════════════════════════════
+     This panel said "No unpaid invoices" on 2026-09-06 with a real, sent,
+     unpaid $5,000 success fee in the database, and it would have said that
+     forever. It asked the server for status=open; invoices_status_check permits
+     eight values and "open" is not one of them, so the comparison matched no
+     row. The fix is on the server (src/invoices/ar-filter.mjs maps "open" to a
+     balance rather than to a status that does not exist); the screen keeps
+     asking the same question, which now has an answer.
+
+     THREE THINGS THIS TABLE USED TO PRINT THAT NOBODY COULD ACT ON:
+       · a raw client UUID in a column headed "Client"
+       · no dollar amount at all
+       · "—" in Days Overdue whenever due_at was NULL, which is every invoice
+         this platform raises today — there is no due-date policy yet (031's
+         open question Q2). A dash there reads as "nothing overdue". It is not.
+         The server now says days_overdue: null and the row says the words.
+
+     Money is not coloured and status is not coloured: UI-STANDARDS 12.6 — a
+     white-label tenant's ramp can paint every status the same hue, so the
+     signal here is the word and the position, never a fill. */
+
+  // Same shape as invoiceDisplayNumber() in src/invoices/index.mjs, so the
+  // reference an operator reads here is the one the client reads on the emailed
+  // invoice. If that helper changes, change this with it.
+  function invoiceRef(id) {
+    var s = String(id == null ? "" : id).replace(/-/g, "");
+    return s ? "INV-" + s.slice(0, 8).toUpperCase() : "";
+  }
+
+  // null, not a dash, when the number is unknown — the caller picks the words.
+  function usd(v) {
+    var n = Number(v);
+    if (v == null || v === "" || !isFinite(n)) return null;
+    return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function overdueWords(days) {
+    if (days == null || days === "") return "No due date set";
+    var n = Number(days);
+    if (!isFinite(n)) return "No due date set";
+    if (n <= 0) return "Not due yet";
+    return n === 1 ? "1 day" : n + " days";
+  }
+
+  function statusWords(status) {
+    var s = String(status == null ? "" : status).trim();
+    if (!s) return "Status not recorded";
+    s = s.replace(/_/g, " ");
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  var AR_HEAD = '<tr><th>Client</th><th>Invoice</th><th>Amount owed</th>' +
+    '<th aria-sort="descending">Overdue</th><th>Status</th></tr>';
+
+  function arRow(text) {
+    return '<tr><td colspan="5" class="empty-note" style="border-bottom:none">' + text + "</td></tr>";
+  }
+
+  function paintAr(data) {
+    var table = document.getElementById("ar-table");
+    var total = document.getElementById("ar-total");
+    if (!table) return null;
+
+    // Could not read it. Say that, rather than leaving "Loading…" on the screen.
+    if (!data) {
+      table.innerHTML = AR_HEAD + arRow("We could not load unpaid invoices. Reload the page.");
+      if (total) total.textContent = "Could not load";
+      return null;
+    }
+
+    // The server already filtered to a balance still owed and ordered them
+    // oldest due date first, so nothing is re-filtered or re-sorted here.
+    var rows = data.items || [];
+    if (!rows.length) {
+      table.innerHTML = AR_HEAD + arRow("No unpaid invoices. Bills that go out show here until they are paid.");
+      if (total) total.textContent = "Nothing outstanding";
+      /* A truthful answer, so the footer says so. Returning null here would make
+         wire() call this "sample" data and claim there is no AR table in the
+         database — there is; it read it, and every bill is paid. */
+      return "live AR · nothing outstanding";
+    }
+
+    var owed = 0;
+    var unknown = 0;
+    rows.forEach(function (r) {
+      var n = Number(r.open_balance);
+      if (r.open_balance == null || !isFinite(n)) unknown += 1; else owed += n;
     });
+
+    var shown = rows.slice(0, 25);
+    var html = AR_HEAD;
+    shown.forEach(function (r) {
+      var amount = usd(r.open_balance);
+      html += "<tr><td>" + esc(r.client_name || r.client_code || "Name not on file") +
+        '</td><td class="mono">' + esc(invoiceRef(r.id)) +
+        "</td><td>" + esc(amount == null ? "Amount not recorded" : amount) +
+        "</td><td>" + esc(overdueWords(r.days_overdue)) +
+        "</td><td>" + esc(statusWords(r.status)) + "</td></tr>";
+    });
+    if (rows.length > shown.length) {
+      html += arRow((rows.length - shown.length) + " more unpaid invoices are not shown here.");
+    }
+    table.innerHTML = html;
+
+    var totalWords = usd(owed) + " owed · " + rows.length +
+      (rows.length === 1 ? " invoice" : " invoices");
+    if (unknown) totalWords += " · " + unknown + " with no amount recorded";
+    if (total) total.textContent = totalWords;
+    return "live AR · " + totalWords;
+  }
+
+  if (FHData.invoices) {
+    var arRead = FHData.invoices({ status: "open", limit: 50 });
+    // wire() paints the happy path and owns the footer banner. It does NOT
+    // repaint on a refused or failed read, which is how this table used to sit
+    // on "Loading…" for any role without finance access, so the failure is
+    // painted here.
+    arRead.then(function (res) { if (!res || !res.ok) paintAr(null); },
+                function () { paintAr(null); });
+    FHData.wire(arRead, "AR table", paintAr);
+  } else {
+    paintAr(null);
   }
 
   // Compliance gate — always paint empty, rows, or error. Never leave Loading.

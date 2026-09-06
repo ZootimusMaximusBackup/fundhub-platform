@@ -224,6 +224,9 @@ import documentsUpload from "../../api/documents-upload.mjs";
 import documentsDownload from "../../api/documents-download.mjs";
 import paymentLinks from "../../api/payment-links.mjs";
 import paidServices from "../../api/paid-services.mjs";
+import pushKey from "../../api/push/key.mjs";
+import pushSubscribe from "../../api/push/subscribe.mjs";
+import pushUnsubscribe from "../../api/push/unsubscribe.mjs";
 import contracts from "../../api/contracts.mjs";
 import readContracts from "../../api/read/contracts.mjs";
 import readPortalContracts from "../../api/read/portal-contracts.mjs";
@@ -933,6 +936,17 @@ export const ROUTES = {
      no slash on purpose: routes.test.mjs forbids a key under the "documents/"
      prefix branch, and a flat key is resolved by the exact lookup. */
   "paid-services": paidServices,
+
+  /* ── Web push for the client portal (352_client_push_subscriptions.sql,
+        src/push/) ───────────────────────────────────────────────────────────
+     All three are CLIENT-ONLY and pinned to the caller's own file: there is no
+     client_id parameter on any of them, so no call can register or retire a
+     phone that is not the caller's own. Routed in the same commit as the
+     handlers, the migration and the service worker — this map's header records
+     three features shipped unreachable because nobody added these lines. */
+  "push/key": pushKey,
+  "push/subscribe": pushSubscribe,
+  "push/unsubscribe": pushUnsubscribe,
 
   // ── The contract generator (124_contracts.sql, src/contracts/) ─────────────
   //

@@ -163,17 +163,52 @@ export async function classifyMmsImage(db, {
 
 const PHONE_DIGITS_SQL = `regexp_replace(phone, '[^0-9]', '', 'g')`;
 
+/* WHOSE PHONE IS THIS? — and the answer is allowed to be "we cannot tell".
+ *
+ * This used to be two `LIMIT 1` lookups, which is a promise the data cannot
+ * keep. Nothing stops two people sharing a phone number, and on the live
+ * system nine clients share one. `LIMIT 1` with no ORDER BY does not pick the
+ * right one; it picks whichever row the database happens to hand back first,
+ * and that answer can change between two identical queries. The photo is then
+ * filed on a stranger's record — one real client's government ID sitting on
+ * another client's file, counted as theirs.
+ *
+ * So the LIMIT is gone and the matches are counted. Exactly one match is an
+ * answer. Two or more is not an answer, and the caller must refuse rather than
+ * file the picture against a guess.
+ *
+ * The exact-number lookup is still tried first and on its own: when it finds
+ * exactly one client, that is a better answer than the loose digits match,
+ * which deliberately matches more numbers than it should.
+ *
+ * @returns {{ clientId: string|null, matches: number, ambiguous: boolean }}
+ */
 async function findClientByPhone(db, orgId, phone) {
-  if (!orgId || !phone) return null;
-  const r = await db.query(`SELECT id FROM clients WHERE org_id=$1 AND phone=$2 LIMIT 1`, [orgId, phone]);
-  if (r.rows[0]) return r.rows[0].id;
+  const none = { clientId: null, matches: 0, ambiguous: false };
+  if (!orgId || !phone) return none;
+
+  const exact = await db.query(
+    `SELECT id FROM clients WHERE org_id=$1 AND phone=$2`, [orgId, phone]);
+  if (exact.rows.length === 1) {
+    return { clientId: exact.rows[0].id, matches: 1, ambiguous: false };
+  }
+  if (exact.rows.length > 1) {
+    return { clientId: null, matches: exact.rows.length, ambiguous: true };
+  }
+
   const candidates = phoneCandidates(phone);
-  if (!candidates.length) return null;
-  const d = await db.query(
-    `SELECT id FROM clients WHERE org_id=$1 AND ${PHONE_DIGITS_SQL} = ANY($2) LIMIT 1`,
+  if (!candidates.length) return none;
+  const loose = await db.query(
+    `SELECT id FROM clients WHERE org_id=$1 AND ${PHONE_DIGITS_SQL} = ANY($2)`,
     [orgId, candidates]
   );
-  return d.rows[0]?.id || null;
+  if (loose.rows.length === 1) {
+    return { clientId: loose.rows[0].id, matches: 1, ambiguous: false };
+  }
+  if (loose.rows.length > 1) {
+    return { clientId: null, matches: loose.rows.length, ambiguous: true };
+  }
+  return none;
 }
 
 function mediaList(payload) {
@@ -201,7 +236,22 @@ export async function onInboundMmsDocs(event, db, deps = {}) {
   if (!media.length) return { done: false, reason: "no_media" };
 
   const orgId = event.orgId;
-  const clientId = event.clientId || (await findClientByPhone(db, orgId, payload.from));
+  let clientId = event.clientId || null;
+  if (!clientId && orgId) {
+    const found = await findClientByPhone(db, orgId, payload.from);
+    if (found.ambiguous) {
+      /* Two or more people on this number. Storing the photo now would put one
+         client's identity document on another client's file. The picture is
+         not filed and nothing is registered — the message row itself still
+         exists, so the photo is not lost, it is just not claimed by anybody.
+         The count is logged; the number is not, because it is a client's. */
+      console.warn(
+        `[inbound-mms] ${found.matches} clients share the sending number — photo not filed`
+      );
+      return { done: false, reason: "ambiguous_phone", matches: found.matches };
+    }
+    clientId = found.clientId;
+  }
   if (!orgId || !clientId) return { done: false, reason: "no_client" };
 
   const sid = payload.sid || event.id;

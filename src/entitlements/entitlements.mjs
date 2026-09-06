@@ -13,6 +13,12 @@
 // same payment grants nothing new; a genuine second purchase is a different
 // transaction and so a different row.
 //
+// A grant carrying NO transaction id is held to a stricter rule: if the client
+// already actively holds the code there is nothing to add, so nothing is
+// written. That is what stops one repair purchase from granting the letter pack
+// twice — once from the money and once from the enrolment behind it. See
+// grant() for the full account.
+//
 // NOTHING HARD-DELETES. revoke() stamps revoked_at. A delivered document does not
 // stop having been delivered, and "was this ever active" has to stay answerable.
 
@@ -24,17 +30,35 @@
 export async function forClient(db, { orgId, clientId } = {}) {
   if (!orgId || !clientId) throw new Error("forClient: orgId and clientId are required");
 
+  /* ONE CODE, ONE TILE.
+     This is a LEFT JOIN from the catalogue onto the grants, and a client can
+     hold more than one live grant of the same code — a repair buyer measured on
+     production 2026-09-06 held metro2-letter-pack twice, once from the payment
+     and once from the enrolment that followed it. Without DISTINCT ON the join
+     multiplied the catalogue row and the portal drew the letter pack twice.
+     A duplicate row in the ledger is a bookkeeping question; a duplicate tile on
+     a client's screen is a wrong screen.
+
+     Which grant represents the code: an ACTIVE one over a dead one, then the
+     most recent. The outer query restores the catalogue's own ordering, which
+     DISTINCT ON has to spend on the code. */
   const { rows } = await db.query(
-    `SELECT c.code, c.name, c.description, c.kind, c.sort_order,
-            e.granted_at, e.expires_at, e.revoked_at,
-            COALESCE(e.active, false) AS active,
-            e.source_transaction_id
-       FROM entitlement_catalog c
-       LEFT JOIN v_client_entitlements e
-              ON e.org_id = c.org_id AND e.entitlement_code = c.code
-             AND e.client_id = $2
-      WHERE c.org_id = $1 AND c.active = true
-      ORDER BY c.sort_order, c.code`,
+    `SELECT code, name, description, kind, sort_order,
+            granted_at, expires_at, revoked_at, active, source_transaction_id
+       FROM (
+         SELECT DISTINCT ON (c.code)
+                c.code, c.name, c.description, c.kind, c.sort_order,
+                e.granted_at, e.expires_at, e.revoked_at,
+                COALESCE(e.active, false) AS active,
+                e.source_transaction_id
+           FROM entitlement_catalog c
+           LEFT JOIN v_client_entitlements e
+                  ON e.org_id = c.org_id AND e.entitlement_code = c.code
+                 AND e.client_id = $2
+          WHERE c.org_id = $1 AND c.active = true
+          ORDER BY c.code, COALESCE(e.active, false) DESC, e.granted_at DESC NULLS LAST
+       ) one_per_code
+      ORDER BY sort_order, code`,
     [orgId, clientId]
   );
 
@@ -74,6 +98,46 @@ export async function grant(db, {
   const expiresAt = durationDays
     ? new Date(now.getTime() + durationDays * 86_400_000)
     : null;
+
+  /* A SOURCELESS GRANT ADDS NOTHING TO SOMETHING THEY ALREADY HOLD.
+     Measured on production 2026-09-06: one $200 repair purchase produced TWO
+     live metro2-letter-pack rows. The payment granted it through
+     grantFromTransaction() carrying a real transaction id, and the enrolment
+     granted it again through src/repair/enroll.mjs carrying none. Two paths,
+     one fact, and because the unique index is NULLS NOT DISTINCT a NULL source
+     never collides with a real transaction id, so nothing stopped it.
+
+     A grant with no source_transaction_id is not a purchase — it is somebody
+     or something asserting "this client should have this". If the client
+     already actively holds the code, that assertion is already true and there
+     is nothing to record. A grant that DOES carry a transaction is a distinct
+     piece of money and still gets its own row (the ledger rule pinned by
+     "a genuine second purchase is a second row").
+
+     Revoked grants are deliberately not active, so this never blocks a
+     re-enrolment after a chargeback: that falls through to the reinstate
+     branch below, where it always belonged. */
+  if (!sourceTransactionId) {
+    /* Expiry and revocation are decided by the view and nowhere else, per the
+       rule at the top of has(). The view carries no id, so the row is joined
+       back through the four columns the unique index makes unique. */
+    const live = await db.query(
+      `SELECT e.id
+         FROM entitlements e
+         JOIN v_client_entitlements v
+           ON v.org_id = e.org_id
+          AND v.client_id = e.client_id
+          AND v.entitlement_code = e.entitlement_code
+          AND v.source_transaction_id IS NOT DISTINCT FROM e.source_transaction_id
+        WHERE e.org_id = $1 AND e.client_id = $2 AND e.entitlement_code = $3
+          AND v.active
+        LIMIT 1`,
+      [orgId, clientId, norm]
+    );
+    if (live.rows[0]) {
+      return { granted: false, id: live.rows[0].id, reason: "already_active" };
+    }
+  }
 
   const { rows } = await db.query(
     `INSERT INTO entitlements

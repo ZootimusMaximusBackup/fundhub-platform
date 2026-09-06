@@ -34,6 +34,8 @@ import {
 } from "../../src/http/portal-prequal.mjs";
 import { onRepairPath } from "../../src/repair/on-repair-path.mjs";
 import { mayAuthorizeDisputes } from "../../src/consent/dispute-consent.mjs";
+import { invoiceDisplayNumber } from "../../src/invoices/index.mjs";
+import { formatAmount, invoiceKindLabel } from "../../src/invoices/notify.mjs";
 
 export default async function handler(req, res) {
   if (req.method && req.method !== "GET") {
@@ -187,11 +189,12 @@ export default async function handler(req, res) {
        screen has always needed. These are additions, so a table that will not
        answer must cost the caller the fact it could not read and nothing else —
        the same reasoning as the signing block near the top of this file. */
-    const [callHeld, signedAt, paid, advisor] = await Promise.all([
+    const [callHeld, signedAt, paid, advisor, invoiceDue] = await Promise.all([
       readCallHeld(orgId, clientId),
       readAgreementSignedAt(orgId, clientId),
       readPaymentPosted(orgId, clientId),
-      readAdvisor(orgId, clientId, cf)
+      readAdvisor(orgId, clientId, cf),
+      readInvoiceDue(orgId, clientId)
     ]);
 
     /* SOFT PULL IS TRUE ON EITHER SIGNAL. The custom-field flags are set by the
@@ -245,6 +248,10 @@ export default async function handler(req, res) {
       // all. Separate from repair_path on purpose: they are different questions
       // and they disagree for every funding customer. The card reads THIS one.
       dispute_consent: disputeConsent,
+      /* WHAT SHE OWES, AND THE LINK THAT LETS HER PAY IT. See readInvoiceDue.
+         null means the read failed — the screen must say it could not check,
+         never print a zero. `{ count: 0 }` means it read, and nothing is owed. */
+      invoice_due: invoiceDue,
       advisor,
       stage: portalStage({
         softPullComplete,
@@ -379,6 +386,95 @@ function readPaymentPosted(orgId, clientId) {
       [orgId, clientId]
     );
     return r.rows.length > 0;
+  });
+}
+
+/* ── WHAT SHE OWES ──────────────────────────────────────────────────────────
+ *
+ * COMPLIANCE REVIEW REQUIRED (CLAUDE.md §7) — fee timing and payment rails.
+ * This puts a dollar figure and an existing checkout link in front of a client.
+ * It states no credit outcome and makes no claim; it reports a bill that was
+ * already raised and already emailed.
+ *
+ * WHAT WAS WRONG (walk finding, 2026-09-06). Walk1 Funding's round funded, the
+ * platform raised a $5,000 success-fee invoice, marked it sent, minted a working
+ * checkout link for it, and emailed her chasing payment at 11:21. She then
+ * opened her portal to pay and the Payments tab showed the words "Success Fee"
+ * with a DASH where the amount belongs, and under it "No payments yet". Nothing
+ * on that screen has ever read the invoices table, so there was no number to
+ * print and no link to click. We asked a real customer for five thousand dollars
+ * and then gave her no way to hand it over.
+ *
+ * ONLY WHAT IS STILL OWED. open_balance is 031's computed figure — amount_due
+ * minus everything paid, forced to 0 for void and written_off — so a settled or
+ * cancelled invoice is simply absent rather than being listed as $0.
+ *
+ * THE PAY LINK IS FOUND, NOT MINTED. src/workflows/ar-collections.mjs already
+ * creates one payment_links row per success-fee invoice and puts it in the chase
+ * email. This is a READ endpoint: it hands back the link that exists, and null
+ * when there is not one. It never creates one, never calls a provider, and a
+ * link already marked paid is not offered.
+ *
+ * FAILS SOFT, like every other read below it: null, so the screen can say it
+ * could not check. A read that cannot answer must never come back as $0 owed.
+ */
+function readInvoiceDue(orgId, clientId) {
+  return safeRead("invoice_due", null, async () => {
+    const r = await db.query(
+      `SELECT v.invoice_id      AS id,
+              v.source,
+              v.status,
+              v.currency,
+              v.amount_due,
+              v.amount_paid,
+              v.open_balance,
+              v.due_at,
+              v.sent_at,
+              pay.checkout_url
+         FROM v_invoice_aging v
+         JOIN invoices i ON i.id = v.invoice_id
+         LEFT JOIN LATERAL (
+           SELECT pl.checkout_url
+             FROM payment_links pl
+            WHERE pl.invoice_id = v.invoice_id
+              AND pl.org_id     = v.org_id
+              AND pl.checkout_url IS NOT NULL
+              AND pl.status <> 'paid'
+              AND COALESCE(pl.is_demo, false) = false
+            ORDER BY pl.created_at DESC
+            LIMIT 1
+         ) pay ON TRUE
+        WHERE v.org_id = $1 AND v.client_id = $2
+          AND v.open_balance > 0
+          AND COALESCE(i.is_demo, false) = false
+        ORDER BY v.due_at ASC NULLS LAST, v.created_at ASC`,
+      [orgId, clientId]
+    );
+
+    const items = r.rows.map((row) => ({
+      // The same INV-XXXXXXXX she already has on the emailed invoice.
+      reference: invoiceDisplayNumber(row),
+      kind: invoiceKindLabel(row),
+      amount: Number(row.open_balance),
+      amount_display: formatAmount(row.open_balance, row.currency),
+      currency: row.currency || "USD",
+      status: row.status || null,
+      due_at: row.due_at || null,
+      sent_at: row.sent_at || null,
+      // null is a real answer: there is a bill, and no link to pay it online.
+      pay_url: row.checkout_url || null
+    }));
+
+    const total = items.reduce((sum, it) => sum + (Number.isFinite(it.amount) ? it.amount : 0), 0);
+    const currency = items.length ? items[0].currency : "USD";
+
+    return {
+      count: items.length,
+      currency,
+      total,
+      total_display: formatAmount(total, currency),
+      items
+    };
   });
 }
 
