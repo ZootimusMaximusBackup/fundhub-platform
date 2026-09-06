@@ -9,12 +9,12 @@
 //
 // IT WRITES IN EXACTLY ONE PLACE, AND ONLY EVER TO ADD A STOP.
 // scanForEscalation() records the durable client_escalations row (368) the
-// first time a client's legal or complaint language is seen, and the scan
-// watermark beside it. Both are ON CONFLICT-guarded and neither has an update
-// or delete path here, so this file can add a permanent stop and can never
-// lift one. It used to re-derive that answer from the client's most recent 200
-// messages on every pass, which meant a legal threat EXPIRED once they had sent
-// 200 more — see the comment above PRESCAN_SOURCE.
+// first time a client's legal or complaint language is seen. That INSERT is
+// ON CONFLICT DO NOTHING and there is no update or delete path here, so this
+// file can add a permanent stop and can never lift one. It used to re-derive
+// that answer from the client's most recent 200 messages on every pass, which
+// meant a legal threat EXPIRED once they had sent 200 more — see the comment
+// above PRESCAN_SOURCE.
 //
 //
 // ═══════════════════════════════════════════════════════════════════════════
@@ -181,8 +181,18 @@ export const ESCALATION_PRESCAN = PRESCAN_SOURCE;
  * ON CONFLICT DO NOTHING against 368's UNIQUE (client_id): the FIRST sighting
  * wins. Nothing that happens afterwards — more messages, a longer history, a
  * changed keyword list, a later pass that fails to match — can take it back,
- * because there is no update path here and `fundhub_app` holds no DELETE on
- * that table.
+ * because there is no update path here and `fundhub_app` holds neither UPDATE
+ * nor DELETE on that table.
+ *
+ * THAT SECOND HALF WAS FALSE UNTIL 2026-09-06 AND IT WAS WRITTEN IN FIVE
+ * PLACES. 104_app_role.sql:226 runs ALTER DEFAULT PRIVILEGES ... GRANT SELECT,
+ * INSERT, UPDATE, DELETE ON TABLES TO fundhub_app, so every table created after
+ * it is already fully writable and 368's original `GRANT SELECT, INSERT` added
+ * nothing. It takes an explicit REVOKE, which 368 now carries. Do not restate
+ * the claim anywhere without keeping
+ * src/nudge/escalation-permanence.pg.test.mjs green — it is the only thing
+ * standing between that sentence and fiction, and it asserts the live refusal
+ * as fundhub_app, not just the catalog.
  *
  * Never throws. A failed write must not turn a detected escalation into a
  * permitted send: the caller blocks on the detection, not on the write, and
@@ -217,45 +227,71 @@ export async function hasEscalation(db, clientId) {
 }
 
 /**
- * scanForEscalation — the detector. Reads only what it has not read before.
+ * scanForEscalation — the detector. Reads the client's WHOLE inbound history,
+ * every time, until the durable row exists.
  *
  * Returns true when this client has ever aimed legal or complaint language at
  * us, and writes the durable row the first time it says so.
  *
- * OLDEST FIRST, from the watermark. Two properties follow, and both are the
- * reason the watermark cannot cause a missed stop:
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THERE IS NO WATERMARK, AND REMOVING IT IS THE FIX (2026-09-06, round three)
  *
- *   * nothing between the old mark and the new one is skipped, because the scan
- *     reads forward through that whole span;
- *   * the mark is written only after the scan finishes, so a scan that throws
- *     leaves it where it was and the whole span is read again next time.
+ * The first version read the most recent 200 messages. That was a horizon and
+ * a threat aged out of it. The second version replaced the horizon with a read
+ * watermark in a client_escalation_scans table — and the watermark had the same
+ * disease in a subtler form:
  *
- * The watermark is advanced to the newest row the PRE-FILTER returned, not to
- * the newest inbound row that exists. A message that arrives mid-scan is
- * therefore read on the next pass rather than skipped.
+ *   * it advanced to max(created_at) over EVERY inbound row, including rows the
+ *     pre-filter never returned and the comment above it claimed it did not;
+ *   * the next pass read with a STRICT "created_at > mark", so a message whose
+ *     created_at landed exactly ON the mark was invisible for ever.
+ *
+ * Reproduced in this worktree on a scratch Postgres 16.14 on 2026-09-06 — eleven
+ * ordinary messages, a scan, then "my lawyer will be in touch" stamped at the
+ * same instant as the newest of them:
+ *
+ *     scan 1 -> false; mark = 2026-09-05T18:00:00.000Z
+ *     escalation row present in messages? 1
+ *     scan 2 -> false
+ *     hasEscalation -> false
+ *     blockersFor -> []
+ *     deliverNudge -> queued
+ *     Messages the lawyer-threat client just got: 1
+ *
+ * A boundary of ">=" instead of ">" would fix that one shape and leave every
+ * other one open: a message imported, backfilled or clock-skewed to a timestamp
+ * BEHIND the mark is still permanently invisible, and `messages` has no
+ * insertion-ordered column to mark instead — its primary key is a random uuid.
+ * A mark on a permanent stop is a bet that created_at order equals arrival
+ * order, and that bet is not true in this schema.
+ *
+ * So the mark is gone and the whole history is read on every pass. THE COST WAS
+ * MEASURED RATHER THAN GUESSED, on the same database, ten calls averaged:
+ * 500 inbound rows 3.5 ms, 2,000 rows 8.4 ms, 10,000 rows 39.9 ms. That is the
+ * worst case in every sense — it is the CLEAN client, the one with no
+ * escalation, because hasEscalation() short-circuits this whole function from
+ * the first sighting onward and a client who has threatened us is never scanned
+ * again.
+ *
+ * OLDEST FIRST, so the row that gets recorded is the FIRST time they said it,
+ * not the most recent time.
  */
 export async function scanForEscalation(db, { orgId, clientId } = {}) {
   if (!clientId) return false;
 
   if (await hasEscalation(db, clientId)) return true;
 
-  const mark = (await db.query(
-    `SELECT scanned_through FROM client_escalation_scans WHERE client_id = $1 LIMIT 1`,
-    [clientId]
-  )).rows[0]?.scanned_through || null;
-
-  /* No LIMIT, on purpose — a limit is a horizon and a horizon is the defect.
-     The pre-filter and the watermark are what keep it cheap: a client's whole
-     history is read once, and every pass after that reads only what is new. */
+  /* No LIMIT and no watermark, on purpose — both are horizons and a horizon on
+     a permanent stop is the defect. The pre-filter is what keeps it cheap:
+     Postgres discards the ordinary traffic and JavaScript still decides. */
   const { rows } = await db.query(
     `SELECT id, rendered_body, created_at FROM messages
       WHERE client_id = $1
         AND direction = 'inbound'
         AND rendered_body IS NOT NULL
         AND rendered_body ~* $2
-        ${mark ? "AND created_at > $3::timestamptz" : ""}
       ORDER BY created_at ASC`,
-    mark ? [clientId, ESCALATION_PRESCAN, mark] : [clientId, ESCALATION_PRESCAN]
+    [clientId, ESCALATION_PRESCAN]
   );
 
   for (const m of rows) {
@@ -264,41 +300,9 @@ export async function scanForEscalation(db, { orgId, clientId } = {}) {
     await recordEscalation(db, {
       orgId, clientId, messageId: m.id, saidAt: m.created_at, pattern
     });
-    /* Deliberately NOT advancing the watermark here. The durable row is the
-       memory from now on and hasEscalation() short-circuits above it, so the
-       mark has no further job for this client. */
     return true;
   }
 
-  /* Nothing found. Move the mark forward over the whole span just examined.
-     Advancing past rows the pre-filter did not return is safe ONLY because the
-     pre-filter is a proven superset of every JavaScript pattern — a row it did
-     not return cannot match one. If that stops being true the mark becomes
-     unsafe, which is why escalation-prefilter in ./exits.test.mjs pins it. */
-  const newest = (await db.query(
-    `SELECT max(created_at) AS newest FROM messages
-      WHERE client_id = $1 AND direction = 'inbound'
-        ${mark ? "AND created_at > $2::timestamptz" : ""}`,
-    mark ? [clientId, mark] : [clientId]
-  )).rows[0]?.newest || null;
-  if (newest && orgId) {
-    try {
-      await db.query(
-        `INSERT INTO client_escalation_scans (client_id, org_id, scanned_through)
-         VALUES ($1,$2,$3::timestamptz)
-         ON CONFLICT (client_id) DO UPDATE
-           SET scanned_through = GREATEST(
-                 client_escalation_scans.scanned_through,
-                 EXCLUDED.scanned_through),
-               org_id = EXCLUDED.org_id,
-               updated_at = now()`,
-        [clientId, orgId, new Date(newest).toISOString()]
-      );
-    } catch (err) {
-      /* A watermark that did not save costs a re-read, nothing more. */
-      console.warn(`[nudge/exits] scan mark not saved for client ${clientId}: ${String(err?.message || err)}`);
-    }
-  }
   return false;
 }
 

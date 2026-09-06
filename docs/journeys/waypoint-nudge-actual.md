@@ -65,17 +65,41 @@ flowchart TD
 Two things were wrong here until 2026-09-06 and both are worth stating, because the second one
 is what hid the first.
 
-**Finished rows used to block live ones.** The search took the 200 oldest late rows and only
-then asked whether each one still had a rung left. A row whose four rungs were all used stayed
-late for ever, and being the oldest it came first — so finished rows piled up at the front until
-they filled all 200 places and no live one was ever reached. The sweeper searches the *whole
-platform* at once, so those 200 places are one budget for every client there is. Measured on a
-scratch database: 200 finished rows plus one newly late client produced 200 candidates, none of
-them the live one, and that client got nothing.
+**Rows that could never be chased used to block live ones.** The search took the 200 oldest late
+rows and only *then* asked, one at a time, whether each one was allowed to be chased at all. Any
+row that was not allowed simply stayed late — nothing was written, nothing changed — and being
+the oldest it came first again next time. So dead rows piled up at the front until they filled
+all 200 places and no live client was ever reached. The sweeper searches the *whole platform* at
+once, so those 200 places are one budget for every client there is.
 
-The search now asks "does this row still have a rung left?" **inside** the search, so a row that
-can no longer be chased cannot take a place. Proved by
-`200 finished waypoints do NOT hold the budget against one live client`.
+Round two fixed one narrow version of this: a row whose four rungs were all used. **That was not
+the case that was failing.** The case that was failing is a client the system may never contact
+again — they said STOP, they mentioned a lawyer, their program was finished or cancelled, they
+paid us to do it, or they already replied. Those rows write nothing at all, so there was nothing
+to notice them by. Both reviewers found it independently, and both scenarios were reproduced
+again here on 2026-09-06 before the fix:
+
+* 200 clients whose programs were **cancelled**, plus one newly late client: 200 candidates,
+  the live one not among them, **0 messages** — on that day and every day after.
+* 200 clients who had texted **STOP**, same shape, same result: **0 messages**, for ever.
+
+Now every *permanent* reason to stop is applied **inside** the search, before the 200 are chosen,
+so a client we can never contact again cannot take a place. Temporary reasons are deliberately
+left alone and keep their place in the queue — a checkout link that is still out, the
+one-message-a-day cap, night-time in the client's timezone. Tomorrow those can send, so tomorrow
+they must still be in the line.
+
+This is a shorter queue, never a looser one. Every check the search now does is a check the
+send-time gate was already doing a moment later; the gate still runs on every single message
+before it goes out, and a test fails if the two ever disagree. Proved by
+`200 CANCELLED programs do NOT hold the budget against one live client`,
+`200 clients who texted STOP do NOT hold the budget against one live client`,
+`a TEMPORARILY blocked waypoint keeps its place, and is reached once the hold lifts`, and
+`every waypoint the SQL removes is one the gate would have refused`.
+
+**One honest gap.** A client who has threatened us but has never been looked at yet still holds a
+place for exactly one pass — the pass that looks at them, refuses them, and writes the permanent
+record. From the next pass on they are gone from the line. Nothing is sent to them on that pass.
 
 **And a full queue used to look like a quiet day.** The tally said "considered 200, queued 0,
 skipped 200" and nothing in it said the budget was full. It now reports `budget_exhausted` and
@@ -141,19 +165,23 @@ flowchart TD
     C8 -->|no| GO[Chase]
 ```
 
-Where each one lives in the code:
+Where each one lives in the code, and whether it also drops the row out of the
+line — see "the pass cannot quietly starve" above for why that second column matters:
 
-| Stop | Where |
-|---|---|
-| done / skipped / blocked | `client_waypoints.state`, read fresh in `exits.mjs` |
-| deleted, or ours now | `client_waypoints` row missing, or `owner_kind <> 'client'` |
-| paid the alternative | `paid_service_requests.status` in paid / staged / fulfilled / refunded |
-| rung 4 used | a `waypoint_nudges` row at step 4 — stored, never remembered |
-| the client replied | an inbound `messages` row after our first nudge on that row |
-| STOP or opt-out | `isOptedOut()` — the existing `opt_outs` table, no second store |
-| a lawyer or a complaint about us | a keyword screen over the client's inbound messages, **and a permanent row in `client_escalations`** — see below |
-| program complete / cancelled | `repair_programs.status` |
-| no address | `clients.phone` / `clients.email`, plus that channel's do-not-disturb flag |
+| Stop | Where | Also leaves the line? |
+|---|---|---|
+| done / skipped / blocked | `client_waypoints.state`, read fresh in `exits.mjs` | yes — permanent |
+| deleted, or ours now | `client_waypoints` row missing, or `owner_kind <> 'client'` | yes — permanent |
+| paid the alternative | `paid_service_requests.status` in paid / staged / fulfilled / refunded | yes — permanent |
+| rung 4 used | a `waypoint_nudges` row at step 4 — stored, never remembered | yes — permanent |
+| the client replied | an inbound `messages` row after our first nudge on that row | yes — permanent |
+| STOP or opt-out | `isOptedOut()` — the existing `opt_outs` table, no second store | yes — permanent |
+| a lawyer or a complaint about us | a keyword screen over the client's inbound messages, **and a permanent row in `client_escalations`** — see below | yes, from the pass after the first sighting |
+| program complete / cancelled | `repair_programs.status` | yes — permanent |
+| a checkout link still out | `paid_service_requests.status` = awaiting_payment | **no — keeps its place** |
+| already had a message today, or it is night where they are | the day cap in `db/migrations/365` and `369`, and `clock.mjs` | **no — keeps its place** |
+| we could not tell (a database error) | `check_failed` from `exits.mjs` | **no — keeps its place** |
+| no address | `clients.phone` / `clients.email`, plus that channel's do-not-disturb flag | no — the rung is used up instead |
 
 ### A legal threat does not expire
 
@@ -166,16 +194,28 @@ system queued them a text.
 
 A search is a detector, not a memory. The memory is now a row in `client_escalations`
 (`db/migrations/368`): **one per client, written the first time the words are seen, never
-updated, never removed and never expired.** There is no code that lifts it and the application's
-database user is not granted permission to delete from that table. Once it exists, every chase
-ladder that client has is over.
+updated, never removed and never expired.** Once it exists, every chase ladder that client has is
+over.
 
 Two supporting details, because they are the parts that could go wrong:
 
-* **The 200-message window is gone entirely.** The search reads a client's whole history the
-  first time and only what is new after that, using a read mark in `client_escalation_scans`.
-  The mark moves only over messages actually read, oldest first, and only after a search
-  finishes — so it can make a stop *late*, never make one *missed*.
+* **The application really cannot delete one — and until 2026-09-06 that sentence was false.**
+  Round two wrote it in five places while the app could still delete the row. The reason is dull
+  and worth knowing: `db/migrations/104` hands the app full write access to *every* table made
+  after it, so granting a smaller list later changes nothing. It takes an explicit **take-away**,
+  and `db/migrations/368` now has one. Proved by trying it as the app's own database user on a
+  freshly built database: the delete came back **"permission denied"**, and so did an attempt to
+  edit the row. Not "nothing happened" — refused. `src/nudge/escalation-permanence.pg.test.mjs`
+  fails if that ever stops being true.
+* **There is no window and no bookmark of any kind.** The search reads the client's whole history
+  every time, until the memory row exists. Round two replaced the 200-message window with a
+  bookmark saying "we have read this far", and the bookmark had the same disease: it moved past
+  messages it had not actually looked at, and the next search started strictly *after* it. A
+  threat that landed on the bookmark was invisible for ever. Reproduced on 2026-09-06 — the
+  system queued a text to somebody who had said a lawyer was coming. The bookmark is gone. Reading
+  everything costs 4 milliseconds for a client with 500 messages and 40 for one with 10,000,
+  measured, and only for clients who have *not* threatened us — the memory row short-circuits the
+  rest.
 * **The words list is not written twice.** The database narrows the search using a pattern built
   automatically from the same list the code checks, widened rather than copied. A test fails if
   the database pattern is ever narrower than the code's.
@@ -233,8 +273,16 @@ database, not a gap this table can close.
 named `KNOWN LIMIT` fails if somebody ever closes it, which is the signal to widen this page
 again.
 
-A page renders `sent` as sent. It renders `filed` as filed **only alongside who said so**, and
-`filed_source` exists to be printed rather than hidden.
+**UNVERIFIED — NOTHING SHOWS THIS TO ANYBODY YET.** An earlier version of this page said "a
+page renders `sent` as sent, and `filed` as filed only alongside who said so". That described an
+intention, not the code. Traced on 2026-09-06: nothing outside `src/nudge/` reads
+`regulator_complaints`, and `src/nudge/regulator.mjs` has no production caller at all — no
+endpoint, no route in `netlify/functions/api.mjs`, no workflow. Its only importers are
+`src/nudge/index.mjs`, which nothing outside `src/nudge/` imports either, and its own test file.
+So the table and its rules are real and enforced, and **no screen reads them**. When one is
+built, `filed_source` is the column that says who claimed the filing and it belongs on the screen
+beside the word `filed`, never behind it — but that is a note for whoever builds it, not a
+description of anything running today.
 
 **The client-facing letters still claim nothing.** Rounds 4 and 5 say only when the complaint
 goes out. Round 6 reuses the Round 3 final notice and its own label says it "does not claim
@@ -260,9 +308,12 @@ in this lane fails if it ever does.
 
 ## Proved by running it
 
-`src/nudge/run.pg.test.mjs` (37 tests) and `src/nudge/regulator.pg.test.mjs` (17 tests) against a
-real Postgres 16 — 54 tests, 54 passing, 0 failing, 0 skipped, exit code 0, run twice against the
-same database on 2026-09-06.
+`src/nudge/run.pg.test.mjs` (42 tests), `src/nudge/regulator.pg.test.mjs` (17 tests) and
+`src/nudge/escalation-permanence.pg.test.mjs` (3 tests) against a real Postgres 16.14 (Homebrew, macOS) — **62
+tests, 62 passing, 0 failing, 0 skipped, exit code 0 on every run**, each file run twice against
+the same scratch database on 2026-09-06. The permanence file is the one that connects as the
+application's own unprivileged database user, which is the only way to tell a refusal from a
+delete that silently matched nothing.
 
 * a row completed between planning and sending — nothing sent, no rung used
 * sixteen duplicate triggers, sequential and concurrent — one message row each time

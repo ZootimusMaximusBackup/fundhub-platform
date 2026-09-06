@@ -13,7 +13,7 @@ import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { planNudges, deliverNudge, runNudges, idempotencyKeyFor, STAFF_TASK_ROLE } from "./run.mjs";
-import { blockersFor } from "./exits.mjs";
+import { blockersFor, scanForEscalation, hasEscalation } from "./exits.mjs";
 import { recordOptOut } from "../lib/opt-out.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -42,12 +42,11 @@ async function wipe() {
   if (!orgId) return;
   const ids = `(SELECT id FROM clients WHERE org_id = '${orgId}')`;
   await db.query(`DELETE FROM waypoint_nudges WHERE org_id = $1`, [orgId]);
-  /* Explicit rather than left to the cascade off `clients`, because these two
-     are the durable half of the escalation stop (368) and a leftover row would
-     silently block the next test's client. Run this file twice against one
-     database and a missed cleanup here is what fails on the second run. */
+  /* Explicit rather than left to the cascade off `clients`, because this is the
+     durable half of the escalation stop (368) and a leftover row would silently
+     block the next test's client. Run this file twice against one database and
+     a missed cleanup here is what fails on the second run. */
   await db.query(`DELETE FROM client_escalations WHERE org_id = $1`, [orgId]);
-  await db.query(`DELETE FROM client_escalation_scans WHERE org_id = $1`, [orgId]);
   await db.query(`DELETE FROM regulator_complaints WHERE org_id = $1`, [orgId]);
   await db.query(`DELETE FROM paid_service_requests WHERE org_id = $1`, [orgId]);
   await db.query(`DELETE FROM client_waypoints WHERE org_id = $1`, [orgId]);
@@ -298,7 +297,15 @@ test("the paid alternative bought: the chase stops",
     assert.equal(tally.queued, 0);
     assert.equal(await countMessages(clientId), 0,
       "never chase somebody to do the thing they just paid us to do");
-    const reasons = tally.results.flatMap((r) => r.reasons || []);
+
+    /* The reason is asserted against the GATE, not against the runner's tally.
+       From round three "they paid the alternative" is a PERMANENT stop and is
+       excluded in SQL before the LIMIT, so the row is not a candidate at all and
+       produces no tally entry — which is the whole point: an unchaseable row
+       must not hold a slot. Both halves are checked, and together they are
+       stricter than reading the tally was. */
+    assert.equal(tally.considered, 0, "and it must not even occupy a slot in the pass");
+    const reasons = await blockersFor(db, { waypointId, now: NOON });
     assert.ok(reasons.includes("paid_alternative_bought"), JSON.stringify(reasons));
   });
 
@@ -581,7 +588,7 @@ test("a lawyer stops every ladder that client has", { skip: !HAS_DB }, async () 
 
 test("a cancelled program stops the ladder", { skip: !HAS_DB }, async () => {
   const clientId = await makeClient();
-  await makeWaypoint(clientId);
+  const waypointId = await makeWaypoint(clientId);
   await db.query(
     `INSERT INTO repair_programs (org_id, client_id, program, rounds_cap, price_total, status)
      VALUES ($1,$2,'full',6,1997.00,'cancelled')`,
@@ -590,7 +597,13 @@ test("a cancelled program stops the ladder", { skip: !HAS_DB }, async () => {
   const tally = await runNudges(db, { orgId, now: NOON });
   assert.equal(tally.queued, 0);
   assert.equal(await countMessages(clientId), 0);
-  assert.ok(tally.results.flatMap((r) => r.reasons || []).includes("program_cancelled"));
+
+  /* As above: a cancelled program is a PERMANENT stop from round three, so the
+     row is excluded in SQL and never reaches the tally. The gate is asked
+     directly instead, and the pass is asserted to hold no slot for it. */
+  assert.equal(tally.considered, 0, "a cancelled program must not occupy a slot");
+  const reasons = await blockersFor(db, { waypointId, now: NOON });
+  assert.ok(reasons.includes("program_cancelled"), JSON.stringify(reasons));
 });
 
 test("a blocked waypoint is not chased", { skip: !HAS_DB }, async () => {
@@ -829,7 +842,10 @@ test("the escalation is recorded once and cannot be erased by deleting the messa
   { skip: !HAS_DB }, async () => {
     /* A scan is a detector, not a memory. The durable row in client_escalations
        (368) is the memory, and it has to outlive the evidence: no code path in
-       src/nudge/ removes it, and fundhub_app holds no DELETE on that table. */
+       src/nudge/ removes it. The database half of that — that fundhub_app is
+       not merely un-granted DELETE but explicitly REVOKED it — is asserted in
+       src/nudge/escalation-permanence.pg.test.mjs, which is the only file that
+       connects as that role. This one asserts the behaviour. */
     const clientId = await makeClient();
     await inboundMessage(clientId, "this is a scam", new Date(NOON.getTime() - DAY));
     const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 0 });
@@ -1015,6 +1031,237 @@ test("a missing template names the key it is missing, not just a count",
         [orgId, saved]
       );
     }
+  });
+
+/* ── BLOCKER, ROUND THREE: A PERMANENTLY STOPPED CLIENT MAY NOT HOLD A SLOT ──
+
+   The round-two fix anti-joined the currently-due rung against waypoint_nudges.
+   That catches a waypoint that has ALREADY WRITTEN a row. It does not catch the
+   failing case, which is a waypoint that never writes a row at all: blockersFor
+   refuses it, deliverNudge returns "skipped" and writes nothing, so the row
+   stays not_started, stays overdue, stays the oldest, sorts FIRST, and holds a
+   slot on every pass for ever.
+
+   Both reviewers reproduced it independently and both scenarios are pinned
+   below, at the exact size they used — 200, which is DEFAULT_LIMIT. */
+
+const starvationScenario = async (setup) => {
+  const stopped = [];
+  for (let i = 0; i < 200; i += 1) {
+    const c = await makeClient();
+    /* 100+ days overdue so every one of these sorts AHEAD of the live client. */
+    const w = await makeWaypoint(c, { dueDaysAgo: 100 + i, title: `Stopped ${i}` });
+    await setup(c, w, i);
+    stopped.push(w);
+  }
+  const live = await makeClient();
+  const liveWp = await makeWaypoint(live, { dueDaysAgo: 0, title: "Link your business bank account" });
+  return { stopped, live, liveWp };
+};
+
+test("200 CANCELLED programs do NOT hold the budget against one live client",
+  { skip: !HAS_DB }, async () => {
+    /* Reviewer A's scenario, verbatim. Before the fix, on a scratch Postgres 16.14
+       in this worktree on 2026-09-06:
+         candidates: 200 includes the live one? false
+         tally considered 200 queued 0 skipped 200
+         messages to the live client: 0 / next day: same, total 0 */
+    const { stopped, live, liveWp } = await starvationScenario(async (c) => {
+      await db.query(
+        `INSERT INTO repair_programs (org_id, client_id, program, rounds_cap, price_total, status)
+         VALUES ($1,$2,'full',6,1200.00,'cancelled')`,
+        [orgId, c]
+      );
+    });
+
+    const plan = await planNudges(db, { orgId: null, now: NOON });
+    assert.ok(plan.some((c) => c.waypointId === liveWp),
+      `the live waypoint must be a candidate; got ${plan.length} candidates`);
+    assert.equal(plan.some((c) => stopped.includes(c.waypointId)), false,
+      "a cancelled program's waypoint may not occupy a slot");
+
+    const tally = await runNudges(db, { orgId: null, now: NOON });
+    assert.equal(tally.budget_exhausted, false, "the budget must no longer be full of dead rows");
+    assert.equal(await countMessages(live), 1, "the live client gets their message");
+    assert.equal(tally.queued, 1);
+  });
+
+test("200 clients who texted STOP do NOT hold the budget against one live client",
+  { skip: !HAS_DB }, async () => {
+    /* Reviewer B's scenario, verbatim. Opt-out is the most common permanent stop
+       in any messaging product and it is the one that will actually happen.
+       Before the fix, same worktree, same database:
+         [nudge/run] budget full: 200 of 200 slots used, 1 eligible waypoint(s)
+         not reached this pass
+         pass 1: candidates 200, live included? false, queued 0,
+         budget_exhausted true, messages to live client 0 */
+    const { stopped, live, liveWp } = await starvationScenario(async (c) => {
+      await recordOptOut(db, c, orgId, "sms", "inbound_keyword");
+    });
+
+    const plan = await planNudges(db, { orgId: null, now: NOON });
+    assert.ok(plan.some((c) => c.waypointId === liveWp),
+      `the live waypoint must be a candidate; got ${plan.length} candidates`);
+    assert.equal(plan.some((c) => stopped.includes(c.waypointId)), false,
+      "somebody who said STOP may not occupy a slot");
+
+    const tally = await runNudges(db, { orgId: null, now: NOON });
+    assert.equal(tally.budget_exhausted, false);
+    assert.equal(await countMessages(live), 1, "the live client gets their message");
+    assert.equal(tally.queued, 1);
+  });
+
+test("a TEMPORARILY blocked waypoint keeps its place, and is reached once the hold lifts",
+  { skip: !HAS_DB }, async () => {
+    /* The other half of the rule. A checkout link that is out (payment_in_flight)
+       is not a reason to drop the row from the queue — tomorrow it can send. Only
+       PERMANENT stops are excluded in SQL. */
+    const clientId = await makeClient();
+    const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 1 });
+    const accountId = await makeClientAccount(clientId);
+    await db.query(
+      `INSERT INTO paid_service_requests
+         (org_id, client_id, waypoint_id, service_kind, requested_by_kind,
+          requested_by_account_id, status, price_components, price_total_cents)
+       VALUES ($1,$2,$3,'dispute_round','client',$4,'awaiting_payment',
+               '[{"code":"round_base","label":"Dispute round","quantity":1,"unit_cents":10000,"amount_cents":10000}]'::jsonb,
+               10000)`,
+      [orgId, clientId, waypointId, accountId]
+    );
+
+    const held = await planNudges(db, { orgId, now: NOON });
+    assert.ok(held.some((c) => c.waypointId === waypointId),
+      "a temporary hold must NOT remove the row from the queue");
+    const first = await runNudges(db, { orgId, now: NOON });
+    assert.equal(first.queued, 0, "and it must still send nothing while the hold is on");
+    assert.equal(await countMessages(clientId), 0);
+    assert.ok(first.results.flatMap((r) => r.reasons || []).includes("payment_in_flight"));
+
+    /* The checkout was cancelled. The next day it is chased. */
+    await db.query(
+      `UPDATE paid_service_requests SET status = 'cancelled', resolved_at = now()
+        WHERE waypoint_id = $1`,
+      [waypointId]
+    );
+    const nextDay = new Date(NOON.getTime() + DAY);
+    const second = await runNudges(db, { orgId, now: nextDay });
+    assert.equal(second.queued, 1, "once the hold lifts, the row is chased");
+    assert.equal(await countMessages(clientId), 1);
+  });
+
+test("every waypoint the SQL removes is one the gate would have refused",
+  { skip: !HAS_DB }, async () => {
+    /* THE INVARIANT THAT MAKES THE SQL EXCLUSIONS SAFE. planNudges is an
+       optimisation of the queue and never a substitute for blockersFor. If the
+       two ever disagree — if the SQL drops a row the gate would have permitted —
+       that is a silently missed nudge, and this fails. */
+    const permanentlyStopped = [];
+
+    const stopped = async (label, setup) => {
+      const c = await makeClient();
+      const w = await makeWaypoint(c, { dueDaysAgo: 1, title: label });
+      await setup(c, w);
+      permanentlyStopped.push([label, w]);
+    };
+
+    await stopped("opted out", async (c) => recordOptOut(db, c, orgId, "sms"));
+    await stopped("opted out by email", async (c) => recordOptOut(db, c, orgId, "email"));
+    await stopped("program complete", async (c) => db.query(
+      `INSERT INTO repair_programs (org_id, client_id, program, rounds_cap, price_total, status)
+       VALUES ($1,$2,'full',6,1200.00,'complete')`, [orgId, c]));
+    await stopped("program cancelled", async (c) => db.query(
+      `INSERT INTO repair_programs (org_id, client_id, program, rounds_cap, price_total, status)
+       VALUES ($1,$2,'full',6,1200.00,'cancelled')`, [orgId, c]));
+    await stopped("escalated", async (c) => db.query(
+      `INSERT INTO client_escalations (org_id, client_id, matched_pattern)
+       VALUES ($1,$2,'\\blawyer\\b')`, [orgId, c]));
+    await stopped("paid the alternative", async (c, w) => {
+      const a = await makeClientAccount(c);
+      await db.query(
+        `INSERT INTO paid_service_requests
+           (org_id, client_id, waypoint_id, service_kind, requested_by_kind,
+            requested_by_account_id, status, price_components, price_total_cents,
+            amount_paid_cents, paid_at)
+         VALUES ($1,$2,$3,'dispute_round','client',$4,'paid',
+                 '[{"code":"round_base","label":"Dispute round","quantity":1,"unit_cents":10000,"amount_cents":10000}]'::jsonb,
+                 10000, 10000, now())`,
+        [orgId, c, w, a]);
+    });
+    await stopped("already replied", async (c, w) => {
+      await db.query(
+        `INSERT INTO waypoint_nudges (org_id, client_id, waypoint_id, step, kind, channel,
+           template_key, outcome, idempotency_key)
+         VALUES ($1,$2,$3,1,'client_message','sms',NULL,'queued',$4)`,
+        [orgId, c, w, idempotencyKeyFor(w, 1)]);
+      await inboundMessage(c, "ok I did it", NOON);
+    });
+    await stopped("ladder exhausted", async (c, w) => {
+      await db.query(
+        `INSERT INTO waypoint_nudges (org_id, client_id, waypoint_id, step, kind, channel,
+           template_key, outcome, idempotency_key)
+         VALUES ($1,$2,$3,4,'staff_task',NULL,NULL,'staff_task',$4)`,
+        [orgId, c, w, idempotencyKeyFor(w, 4)]);
+    });
+    await stopped("blocked", async (c, w) => db.query(
+      `UPDATE client_waypoints SET state = 'blocked' WHERE id = $1`, [w]));
+    await stopped("done", async (c, w) => db.query(
+      `UPDATE client_waypoints SET state = 'done', completed_at = now() WHERE id = $1`, [w]));
+    await stopped("ours, not theirs", async (c, w) => db.query(
+      `UPDATE client_waypoints SET owner_kind = 'fundhub' WHERE id = $1`, [w]));
+
+    const plan = await planNudges(db, { orgId, now: NOON });
+    const planned = new Set(plan.map((c) => c.waypointId));
+
+    for (const [label, waypointId] of permanentlyStopped) {
+      assert.equal(planned.has(waypointId), false,
+        `"${label}" is a permanent stop and must not hold a slot`);
+      /* And the other direction: the gate agrees it is a stop, so removing it
+         from the queue cannot have lost a sendable nudge. */
+      const reasons = await blockersFor(db, { waypointId, now: NOON });
+      assert.ok(reasons.length > 0,
+        `"${label}" was removed by the SQL but the gate would have permitted it — ` +
+        `that is a silently missed nudge`);
+    }
+  });
+
+test("a matching message sitting exactly AT the old read mark is still found",
+  { skip: !HAS_DB }, async () => {
+    /* THE HIGH THIS PINS, and it is the reviewer's exact scenario. Round two
+       replaced the 200-message window with a read watermark. The watermark
+       advanced to max(created_at) over EVERY inbound row, and the next pass read
+       with a strict "created_at > mark" — so a threat whose created_at landed on
+       the mark was invisible for ever. Measured in this worktree on 2026-09-06,
+       before the fix:
+         scan 1 -> false; escalation row present in messages? 1
+         scan 2 -> false; hasEscalation -> false
+         blockersFor -> [] ; deliverNudge -> queued
+         Messages the lawyer-threat client just got: 1
+       The mark is gone entirely. This is what proves it. */
+    const clientId = await makeClient();
+    const markAt = new Date(NOON.getTime() - 5 * DAY);
+    for (let i = 10; i > 0; i -= 1) {
+      await inboundMessage(clientId, `ordinary message ${i}`, new Date(markAt.getTime() - i * 1000));
+    }
+    await inboundMessage(clientId, "thanks, will do", markAt);
+
+    /* First look: nothing to find. Whatever bookkeeping this leaves behind must
+       not be able to hide what comes next. */
+    assert.equal(await scanForEscalation(db, { orgId, clientId }), false);
+
+    /* The threat lands at the SAME INSTANT as the newest row already examined. */
+    await inboundMessage(clientId, "my lawyer will be in touch", markAt);
+
+    assert.equal(await scanForEscalation(db, { orgId, clientId }), true,
+      "a threat at the boundary must still be found");
+    assert.equal(await hasEscalation(db, clientId), true);
+
+    const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 1 });
+    const reasons = await blockersFor(db, { waypointId, now: NOON });
+    assert.ok(reasons.includes("escalation"), JSON.stringify(reasons));
+    const tally = await runNudges(db, { orgId, now: NOON });
+    assert.equal(tally.queued, 0);
+    assert.equal(await countMessages(clientId), 0,
+      "a message saying a lawyer is involved must never be missed because a mark moved past it");
   });
 
 test("a pass over an empty org does nothing and does not throw",

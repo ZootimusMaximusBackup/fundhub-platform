@@ -32,27 +32,31 @@
 --
 --
 -- ═══════════════════════════════════════════════════════════════════════════
--- THE WATERMARK, AND WHY IT IS A SEPARATE TABLE
+-- THERE IS NO READ WATERMARK, AND THAT IS DELIBERATE (round three, 2026-09-06)
 --
--- Removing the 200-message window means re-reading a client's whole inbound
--- history on every pass, which for a heavy portal user is thousands of rows to
--- prove a negative. client_escalation_scans records how far the detector has
--- already read, so history is read once and each later pass reads only what is
--- new.
+-- An earlier draft of this file also created client_escalation_scans, a table
+-- recording how far the detector had already read one client's inbound
+-- messages, so a long history was scanned once instead of on every pass. It has
+-- been REMOVED, because a mark on a permanent stop is the same defect as the
+-- 200-message window wearing a different hat:
 --
--- It is a SEPARATE table on purpose. If the watermark lived on
--- client_escalations, then "a row exists" would stop meaning "this client
--- threatened us" and would start meaning "we have looked at this client",
--- which is exactly the kind of overloaded flag that produces a false negative
--- on the one thing that must never have one.
+--   * the mark advanced to max(created_at) over EVERY inbound row, not only the
+--     rows the detector examined;
+--   * the next pass read with a strict "created_at > mark", so a message whose
+--     created_at landed exactly ON the mark was invisible for ever.
 --
--- THE WATERMARK CAN ONLY EVER COST US A LATE STOP, NEVER A MISSED ONE, for two
--- reasons written into src/nudge/exits.mjs:
---   * it advances only to the created_at of a row the detector actually read,
---     and the scan reads OLDEST FIRST, so nothing between the old mark and the
---     new one is skipped;
---   * it is written only after the scan completes, and a scan that throws
---     leaves the mark where it was and returns ["check_failed"], which blocks.
+-- Reproduced on a scratch Postgres 16.14 on 2026-09-06: eleven ordinary messages,
+-- a scan, then "my lawyer will be in touch" stamped at the same instant as the
+-- newest of them — and blockersFor returned [] and a text was queued.
+--
+-- Changing ">" to ">=" would close that one shape and leave the rest open: a
+-- message imported, backfilled or clock-skewed to a timestamp BEHIND the mark
+-- stays invisible, and `messages` has no insertion-ordered column to mark
+-- instead — its primary key is a random uuid. So there is no mark. The whole
+-- inbound history is read on every pass until the row below exists, and the
+-- cost was measured rather than assumed: 3.5 ms at 500 inbound rows, 8.4 ms at
+-- 2,000, 39.9 ms at 10,000, and only ever for a client who has NOT threatened
+-- us, because the row below short-circuits the scan from the first sighting on.
 --
 --
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -63,8 +67,6 @@
 --   message_id NULL — the message has since been deleted, or the escalation
 --     was recorded without one. The escalation still stands; it does not
 --     depend on the evidence row surviving.
---   scanned_through NULL — nothing has been read for this client yet. Not
---     "read up to the epoch".
 --
 -- THIS TABLE STORES NO CLIENT WORDS. `matched_pattern` is the source text of
 -- one of our own regular expressions from src/nudge/exits.mjs, not the client's
@@ -73,7 +75,7 @@
 -- a denial of anything, and it must never be rendered to them.
 --
 --
--- SAFETY. Additive. Creates two tables, touches no existing row, drops nothing.
+-- SAFETY. Additive. Creates one table, touches no existing row, drops nothing.
 -- Re-running it is a no-op.
 
 CREATE TABLE IF NOT EXISTS public.client_escalations (
@@ -113,42 +115,10 @@ COMMENT ON COLUMN public.client_escalations.said_at IS
   'created_at of the inbound message. NULL = unknown. Never a stand-in for seen_at.';
 
 -- ---------------------------------------------------------------------------
--- How far the detector has already read, per client
--- ---------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.client_escalation_scans (
-  client_id        uuid PRIMARY KEY REFERENCES clients(id) ON DELETE CASCADE,
-  org_id           uuid NOT NULL REFERENCES orgs(id),
-
-  -- The created_at of the newest inbound message the detector has read.
-  -- NULL = nothing read yet.
-  scanned_through  timestamptz,
-
-  updated_at       timestamptz NOT NULL DEFAULT now()
-);
-
-COMMENT ON TABLE public.client_escalation_scans IS
-  'A read watermark, not a decision. Says how far src/nudge/exits.mjs has already read one client''s inbound messages so history is scanned once instead of every pass. Advances only over rows actually read, oldest first, and only after a scan completes — so it can delay a stop but cannot cause a missed one. Deleting a row here is safe: the next pass re-reads that client from the beginning.';
-
--- ---------------------------------------------------------------------------
--- updated_at, guarded the same way 330 and 365 guard it
--- ---------------------------------------------------------------------------
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'set_updated_at') THEN
-    DROP TRIGGER IF EXISTS trg_client_escalation_scans_updated ON public.client_escalation_scans;
-    CREATE TRIGGER trg_client_escalation_scans_updated
-      BEFORE UPDATE ON public.client_escalation_scans
-      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-  END IF;
-END $$;
-
--- ---------------------------------------------------------------------------
 -- Row-level security — the same shape 330, 365 and 366 carry
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.client_escalations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.client_escalations FORCE ROW LEVEL SECURITY;
-ALTER TABLE public.client_escalation_scans ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.client_escalation_scans FORCE ROW LEVEL SECURITY;
 
 DO $$
 BEGIN
@@ -160,23 +130,37 @@ BEGIN
     CREATE POLICY client_escalations_app_all ON public.client_escalations
       USING (true) WITH CHECK (true);
   END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-     WHERE schemaname = 'public' AND tablename = 'client_escalation_scans'
-       AND policyname = 'client_escalation_scans_app_all'
-  ) THEN
-    CREATE POLICY client_escalation_scans_app_all ON public.client_escalation_scans
-      USING (true) WITH CHECK (true);
-  END IF;
 END $$;
 
+-- ---------------------------------------------------------------------------
+-- INSERT AND SELECT ONLY — AND THE REVOKE IS THE LOAD-BEARING HALF
+-- ---------------------------------------------------------------------------
+-- THE CLAIM "THE APPLICATION CANNOT DELETE AN ESCALATION" WAS FALSE UNTIL THIS
+-- BLOCK EXISTED, AND IT WAS WRITTEN IN FIVE PLACES INCLUDING THE CHANGELOG.
+--
+-- db/migrations/104_app_role.sql:226 runs
+--
+--   ALTER DEFAULT PRIVILEGES IN SCHEMA public
+--     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO fundhub_app;
+--
+-- so EVERY table created after it — this one included — arrives already fully
+-- writable by the application. A bare "GRANT SELECT, INSERT" adds nothing it
+-- does not already have and removes nothing. Confirmed on a migrated scratch
+-- database on 2026-09-06: has_table_privilege('fundhub_app',
+-- 'public.client_escalations', 'DELETE') returned true.
+--
+-- The REVOKE is what makes the sentence true. Same shape the sister lane used
+-- in 361 and 363, already proven on this database. UPDATE goes too, because the
+-- promise made everywhere else is "written once, never updated, never removed"
+-- and a row the application can rewrite is not written once.
+--
+-- A silent "DELETE 0" is not a refusal. After this runs, a DELETE attempted as
+-- fundhub_app raises "permission denied for table client_escalations", which is
+-- what src/nudge/escalation-permanence.pg.test.mjs asserts.
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'fundhub_app') THEN
-    -- No DELETE on client_escalations. There is no code path that lifts an
-    -- escalation and there should not be one; a stop that the application can
-    -- revoke is not a permanent stop.
+    REVOKE UPDATE, DELETE, TRUNCATE ON public.client_escalations FROM fundhub_app;
     GRANT SELECT, INSERT ON public.client_escalations TO fundhub_app;
-    GRANT SELECT, INSERT, UPDATE, DELETE ON public.client_escalation_scans TO fundhub_app;
   END IF;
 END $$;

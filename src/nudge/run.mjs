@@ -69,8 +69,8 @@ import { db as defaultDb } from "../db.mjs";
 import { emit } from "../events/bus.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { sendTemplated as defaultSend } from "../workflows/messaging.mjs";
-import { STEPS, dueStep, stepFor } from "./ladder.mjs";
-import { blockersFor, contactFor } from "./exits.mjs";
+import { STEPS, FINAL_STEP, dueStep, stepFor } from "./ladder.mjs";
+import { blockersFor, contactFor, BOUGHT_STATUSES, CHASEABLE_STATES } from "./exits.mjs";
 import { destinationKey } from "./destination.mjs";
 import { zoneForClient, isDaytime, localDate } from "./clock.mjs";
 
@@ -88,21 +88,29 @@ export const STAFF_TASK_ROLE = "csm";
 
     THE OLD JUSTIFICATION HERE WAS FALSE AND IT COST THE WHOLE FEATURE. It read
     "nothing is lost by stopping early — an unchased waypoint is still overdue
-    on the next pass". That is true of a row that can still be chased. It was
-    NOT true of a row whose four rungs were already spent: it stayed overdue
-    forever, it sorted FIRST because it was oldest, and the SQL had no anti-join
-    against waypoint_nudges, so dead rows piled up at the front of the queue
-    until they held all 200 slots. The sweeper calls this with orgId=null, so
-    those 200 slots are ONE BUDGET FOR THE WHOLE PLATFORM. Measured on a scratch
-    database on 2026-09-06: 200 exhausted waypoints plus one freshly overdue
-    client produced "candidates: 200 includes the live one? false", and the live
-    client got nothing — on that pass and on every pass after it.
+    on the next pass". That is true of a row that can still be chased. It is not
+    true of a row that can NEVER be chased again: that row stays overdue for
+    ever, it sorts FIRST because it is oldest, and it holds a slot on every pass
+    from now on. The sweeper calls this with orgId=null, so those 200 slots are
+    ONE BUDGET FOR THE WHOLE PLATFORM — one client's dead rows starve every
+    other company on it.
 
-    Two things fix it and both are below. planNudges now excludes, IN SQL, any
-    waypoint whose currently-due rung is already spent, so an unchaseable row
-    cannot hold a slot. And runNudges reports `budget_exhausted` and
-    `not_reached` in the tally, so a full queue can never again read as a quiet
-    day. */
+    Three things fix it and all three are below.
+
+      1. PERMANENT_STOPS_SQL — every permanent refusal is applied INSIDE the
+         query, before the LIMIT. That is the actual fix and it is the one round
+         two missed: round two only anti-joined the currently-due rung against
+         waypoint_nudges, which catches a waypoint that has already been written
+         to and misses every waypoint that never writes a row at all. A client
+         who is opted out, escalated, cancelled, complete or has already replied
+         is refused by blockersFor AFTER the LIMIT and deliverNudge writes
+         nothing, so there is no row to anti-join against. Opt-out is the most
+         common permanent stop in any messaging product; measured on a scratch
+         Postgres on 2026-09-06, 200 opted-out clients starved a live one to
+         zero messages on every pass.
+      2. The rung anti-join from round two, kept.
+      3. runNudges reports `budget_exhausted` and `not_reached`, so a full queue
+         can never again read as a quiet day. Kept — it is how this was found. */
 export const DEFAULT_LIMIT = 200;
 
 /** idempotencyKeyFor — the stable name for one rung of one waypoint's ladder.
@@ -138,20 +146,154 @@ const DUE_STEP_SQL = (() => {
   return `CASE ${cases}\n             ELSE NULL END`;
 })();
 
+/* A SQL list literal from a JavaScript Set, so neither list is typed twice.
+   Only ever called on the frozen constant Sets in ./exits.mjs — every member is
+   a bare lowercase identifier from a CHECK constraint — but the quotes are
+   doubled anyway so this cannot become an injection point if that changes. */
+const sqlList = (set) => [...set].map((s) => `'${String(s).replace(/'/g, "''")}'`).join(", ");
+
+/* ═════════════════════════════════════════════════════════════════════════
+   PERMANENT STOPS, APPLIED BEFORE THE LIMIT — THE ROUND-THREE FIX
+   ═════════════════════════════════════════════════════════════════════════
+
+   THE DEFECT. blockersFor() is the gate, and it runs in JavaScript in
+   deliverNudge — which is AFTER the LIMIT has already chosen which 200 rows
+   this pass will look at. When it refuses, deliverNudge returns "skipped" and
+   writes NOTHING. So the waypoint stays not_started, stays overdue, stays the
+   oldest, sorts FIRST on the next pass, and holds a slot for ever. The sweeper
+   calls runNudges with orgId = null, so those 200 slots are ONE BUDGET FOR THE
+   WHOLE PLATFORM.
+
+   Measured on a scratch Postgres 16.14 on 2026-09-06, in this worktree:
+
+     200 clients whose programs are CANCELLED, plus one freshly overdue client
+       pass 1: candidates 200, live included? false, queued 0, budget_exhausted
+       true, messages to the live client 0 — and the same on the next day.
+
+     200 clients who had texted STOP, plus one freshly overdue client
+       identical: 200 candidates, live included? false, 0 messages, for ever.
+
+   Round two added an anti-join on (waypoint_id, step) and a `budget_exhausted`
+   warning. Neither touches this: the row never writes a waypoint_nudges row at
+   all, so there is nothing to anti-join against, and making a silent failure
+   loud is not making it stop.
+
+   THE RULE. A WAYPOINT THAT CAN NO LONGER BE CHASED MUST NOT HOLD A SLOT.
+
+   WHICH STOPS ARE PERMANENT AND WHICH ARE NOT. Every branch of blockersFor()
+   is classified below. "Permanent" here means: while it is true, no amount of
+   waiting makes this waypoint sendable, so leaving it in the queue can only
+   starve somebody else. It does NOT mean irreversible — every clause is
+   re-evaluated from scratch on every pass, so a client who opts back in, or a
+   'blocked' row a member of staff unblocks, is a candidate again on the very
+   next pass. Nothing here is a tombstone.
+
+     PERMANENT — excluded below, before the LIMIT
+       waypoint_missing         the row is gone; it cannot be selected at all
+       owner_is_fundhub         owner_kind <> 'client'
+       waypoint_complete        state done/skipped, or completed_at set
+       waypoint_blocked         state outside CHASEABLE_STATES
+       ladder_exhausted         a row at the final rung
+       paid_alternative_bought  paid_service_requests in BOUGHT_STATUSES
+       client_replied           an inbound message after our first nudge on it
+       opted_out                opt_outs, either channel, not opted back in
+       escalation               a client_escalations row (368)
+       program_complete         repair_programs.status
+       program_cancelled        repair_programs.status
+
+     TEMPORARY — deliberately NOT excluded; these keep their place in the queue
+       not_overdue              tomorrow it is due. It is the query's own
+                                due_at filter, so it is not a candidate today
+                                and holds no slot either way.
+       payment_in_flight        a checkout link is out. It expires; then we
+                                chase again.
+       check_failed             a database error. Transient by definition, and
+                                excluding on "we could not tell" would turn one
+                                bad query into a permanent silence.
+       one-per-day / per-destination caps, and quiet hours — all in
+                                deliverNudge, all true only for today, all of
+                                them must still be reached tomorrow.
+
+   THIS IS NOT A SUBSTITUTE FOR THE GATE. Every clause below mirrors a branch of
+   blockersFor() exactly, so a row it removes is a row the gate would have
+   refused. deliverNudge still runs the whole gate against the live row before
+   anything is written — see the "stale plan" proof in ./run.pg.test.mjs — and
+   the test named "every waypoint the SQL removes is one the gate would have
+   refused" in that file fails if these two ever disagree.
+
+   ONE HONEST GAP. `escalation` is excluded by the presence of a
+   client_escalations row, and that row is written by the detector the first
+   time it runs for that client. A client who has threatened us but has never
+   been scanned therefore still holds a slot for exactly one pass — the pass
+   that scans them, refuses them, and writes the row. From the next pass on they
+   are gone from the queue. Nothing is sent to them on that pass; the gate
+   refuses it. */
+const PERMANENT_STOPS_SQL = `
+        /* ladder_exhausted — the final rung is spent, for good. */
+        AND NOT EXISTS (
+              SELECT 1 FROM waypoint_nudges nx
+               WHERE nx.waypoint_id = d.id AND nx.step = ${FINAL_STEP}
+            )
+        /* paid_alternative_bought — they paid us to do this one. */
+        AND NOT EXISTS (
+              SELECT 1 FROM paid_service_requests p
+               WHERE p.waypoint_id = d.id
+                 AND p.status IN (${sqlList(BOUGHT_STATUSES)})
+            )
+        /* client_replied — an inbound message after our first nudge ON THIS
+           waypoint. min() is NULL when we have never nudged it, and
+           "created_at >= NULL" is NULL, so a never-nudged row is never
+           excluded here. That is the same scoping blockersFor uses. */
+        AND NOT EXISTS (
+              SELECT 1 FROM messages m
+               WHERE m.client_id = d.client_id
+                 AND m.direction = 'inbound'
+                 AND m.created_at >= (
+                       SELECT min(n2.created_at) FROM waypoint_nudges n2
+                        WHERE n2.waypoint_id = d.id)
+            )
+        /* opted_out — the existing opt_outs table, the same predicate
+           isOptedOut() uses. Either channel stops the whole ladder. */
+        AND NOT EXISTS (
+              SELECT 1 FROM opt_outs o
+               WHERE o.client_id = d.client_id
+                 AND o.channel IN ('sms', 'email')
+                 AND o.opted_in_at IS NULL
+            )
+        /* escalation — a lawyer, a threat, a complaint about us (368). */
+        AND NOT EXISTS (
+              SELECT 1 FROM client_escalations e
+               WHERE e.client_id = d.client_id
+            )
+        /* program_complete / program_cancelled. */
+        AND NOT EXISTS (
+              SELECT 1 FROM repair_programs rp
+               WHERE rp.client_id = d.client_id
+                 AND rp.status IN ('complete', 'cancelled')
+            )`;
+
+/* The `due` CTE. owner_kind, state and completed_at are the permanent stops
+   that live on the waypoint row itself, so they belong here rather than in the
+   outer WHERE — narrowing before the CASE is evaluated. */
+const DUE_CTE_WHERE = `w.owner_kind = 'client'
+          AND w.state IN (${sqlList(CHASEABLE_STATES)})
+          AND w.completed_at IS NULL
+          AND w.due_at IS NOT NULL`;
+
 /**
- * planNudges — phase 1. Every overdue, client-owned waypoint whose highest
- * reached rung has not been spent yet.
+ * planNudges — phase 1. Every overdue, client-owned waypoint that can still be
+ * chased: its due rung is unspent AND no permanent stop applies to it.
  *
- * "HAS NOT BEEN SPENT YET" IS NOW DONE IN SQL, AND THAT IS THE FIX. It used to
- * fetch the 200 oldest overdue rows and let deliverNudge discover, one at a
- * time, that they were all finished — so a waypoint whose ladder was over held
- * a slot in the budget forever, and being the oldest it held it at the front.
- * Filtering after the LIMIT moves the bug; filtering inside it removes it.
+ * EVERY PERMANENT REFUSAL IS APPLIED INSIDE THE QUERY, BEFORE THE LIMIT, AND
+ * THAT IS THE FIX. Filtering after the LIMIT moves the bug; filtering inside it
+ * removes it. See PERMANENT_STOPS_SQL above for the full classification of
+ * which of blockersFor()'s reasons are permanent and which are temporary, and
+ * why a temporary one must keep its place in the queue.
  *
  * This is still a SUGGESTION and nothing more. Every candidate it returns is
  * put through the full exit gate again by deliverNudge before anything happens,
- * so a stale plan is safe by construction. The anti-join is an optimisation of
- * the queue, never a substitute for the gate.
+ * so a stale plan is safe by construction. The exclusions are an optimisation
+ * of the queue, never a substitute for the gate.
  */
 export async function planNudges(db, { orgId = null, now = new Date(), limit = DEFAULT_LIMIT } = {}) {
   const at = now instanceof Date ? now : new Date(now);
@@ -172,9 +314,7 @@ export async function planNudges(db, { orgId = null, now = new Date(), limit = D
        SELECT w.id, w.org_id, w.client_id, w.key, w.title, w.detail, w.due_at, w.state,
               ${DUE_STEP_SQL} AS step
          FROM client_waypoints w
-        WHERE w.owner_kind = 'client'
-          AND w.state IN ('not_started', 'in_progress')
-          AND w.due_at IS NOT NULL
+        WHERE ${DUE_CTE_WHERE}
           AND w.due_at <= $1::timestamptz${orgClause}
      )
      SELECT d.id, d.org_id, d.client_id, d.key, d.title, d.detail, d.due_at, d.state, d.step
@@ -183,7 +323,7 @@ export async function planNudges(db, { orgId = null, now = new Date(), limit = D
         AND NOT EXISTS (
               SELECT 1 FROM waypoint_nudges n
                WHERE n.waypoint_id = d.id AND n.step = d.step
-            )
+            )${PERMANENT_STOPS_SQL}
       ORDER BY d.due_at ASC
       LIMIT $${params.length}`,
     params
@@ -236,11 +376,9 @@ export async function countEligible(db, { orgId = null, now = new Date() } = {})
   try {
     const { rows } = await db.query(
       `WITH due AS (
-         SELECT w.id, w.due_at, ${DUE_STEP_SQL} AS step
+         SELECT w.id, w.client_id, w.due_at, ${DUE_STEP_SQL} AS step
            FROM client_waypoints w
-          WHERE w.owner_kind = 'client'
-            AND w.state IN ('not_started', 'in_progress')
-            AND w.due_at IS NOT NULL
+          WHERE ${DUE_CTE_WHERE}
             AND w.due_at <= $1::timestamptz${orgClause}
        )
        SELECT count(*)::int AS n
@@ -249,7 +387,7 @@ export async function countEligible(db, { orgId = null, now = new Date() } = {})
           AND NOT EXISTS (
                 SELECT 1 FROM waypoint_nudges n
                  WHERE n.waypoint_id = d.id AND n.step = d.step
-              )`,
+              )${PERMANENT_STOPS_SQL}`,
       params
     );
     return Number(rows[0]?.n ?? 0);
