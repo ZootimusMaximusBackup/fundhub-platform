@@ -865,3 +865,71 @@ words. That is roughly two days, and none of it is new surface.
 
 **COMPLIANCE REVIEW REQUIRED** when the offer-type fix is built. It decides which rule
 set an ad is screened under, so it is not a cosmetic form field.
+
+---
+
+# Scope, as Chris described it 2026-09-06
+
+## The full chain he is building toward
+
+Generate the copy → push it to Meta → read Meta back → know which angle belongs to which
+ad → see the metrics → track a person from the ad all the way down the funnel → then do
+conversion-rate work on what that shows.
+
+**Agreed, and the order is right.** Copy first is correct because every later step needs
+something to measure. There is no point wiring performance data to a library with nothing
+in it.
+
+**One correction to the premise.** Chris said "you already know the ads that are working."
+Not yet. The repo knows five ads are filmed and running and that the *set* books calls at
+$32-36. Nothing records per-ad performance, so which of the five carries that number is
+unknown. That is exactly what connecting Meta answers, and it is why his ordering is
+right rather than wrong.
+
+**The architecture already anticipates this.** The generator takes its rules and its voice
+pairs as input rather than reading files. Later it takes rules, voice, **and what is
+winning**. Same shape, one more input.
+
+## Three ad types, not one
+
+New requirement, and it changes `RULES.md` from one format to three sections.
+
+1. **Direct-response cold ads.** The main lane. The 48 concepts and the five running ads.
+   Highest volume, most rewriting, most split-testing.
+2. **VSLs.** Long form. `docs/ads/CONTROLS.md` holds the founder VSL as the one worked
+   example, and `docs/flywheel/partner/` holds 24 finished long pieces. Chris named this
+   as something the system has to do well, not as an afterthought.
+3. **Backend-selling ads.** Content-first, in the Jeremy Haynes sense. Chris: "really
+   simple, but you don't have to do a lot of those. Maybe just swap out variations every
+   now and then. Those ads are really going to be evergreen forever." So: low volume,
+   long life, variations rather than new concepts. The rules for these are about
+   consistency, not novelty.
+
+The audience for all three is service-based businesses.
+
+## The SOP framing, which is the right one
+
+Chris: **"We really just have to get our SOPs down for creating ads. And then we'll refine
+the SOPs as we find what works."**
+
+That is exactly what `docs/ads/RULES.md` and `docs/ads/VOICE.md` are. The rules file is
+the SOP. The voice file is the refinement, captured automatically from Chris's own edits
+instead of being written up after the fact. Nothing extra needs inventing; he described
+the same design in his own words.
+
+## Honest correction on the estimate
+
+The earlier note said two days. **That was calendar padding, not work.** The actual build
+is roughly four to six hours of agent time:
+
+| Piece | Real effort |
+|---|---|
+| Unhide the Marketing menu (three places) | 15 min |
+| Company picker on the screen | 1 h |
+| Send the offer type from the form | 45 min, plus the test that currently hides it |
+| A column for the generated words, and the migration | 1 h |
+| `RULES.md` with all three ad types | 1.5 h |
+| `VOICE.md` seeded from the five running ads | 30 min |
+| The generator, reading both as input | 1.5 h |
+
+Two days was the safe thing to say. Four to six hours is the true thing.
