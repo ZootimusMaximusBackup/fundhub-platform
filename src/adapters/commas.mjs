@@ -19,8 +19,8 @@
 // resolveInboxClientId().
 //
 // This is the port of the live underwrite-iq-lite `commas-payment.js` handler.
-// The DIFFERENCE: the live handler does GHL/Airtable side effects inline; here the
-// adapter only translates money-in → canonical events. The GHL/Airtable/CRS effects
+// The DIFFERENCE: the live handler does the old CRM and spreadsheet side effects inline; here the
+// adapter only translates money-in → canonical events. The CRM, spreadsheet and CRS effects
 // become handlers on those events (so the same payment can drive many reactions,
 // and replay() re-drives them). Routing stays STRICTLY on product NAME, never amount
 // (Chris 2026-07-17: deposit + package prices vary per client).

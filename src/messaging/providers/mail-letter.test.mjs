@@ -120,3 +120,67 @@ test("parseMailDeliveryEvent ignores non-delivery events", () => {
   assert.equal(parsed.delivered, false);
   assert.equal(parsed.deliveredAt, null);
 });
+
+// ── preTransmission: the fact a caller needs before it retries a letter ──────
+//
+// src/repair/send.mjs decides whether to release its send claim from this. It
+// used to decide from the error text, and a fence hold — which says outright
+// that nothing was transmitted — was not on the list, so the letter was marked
+// mailed, refused for ever, and so was every regenerated replacement.
+
+const ADDRESSED = {
+  to: { company_name: "Experian", address_line1: "P.O. Box 4500", address_city: "Allen", address_state: "TX", address_zip: "75013" },
+  from: { first_name: "Pat", last_name: "Client", address_line1: "12 Oak St", address_city: "Dallas", address_state: "TX", address_zip: "75201" },
+  html: "<html>x</html>"
+};
+
+test("every refusal above the network says preTransmission:true", async () => {
+  const noKey = await sendLetter({ ...ADDRESSED, env: {} });
+  assert.equal(noKey.ok, false);
+  assert.equal(noKey.preTransmission, true);
+
+  const noTo = await sendLetter({ ...ADDRESSED, to: null, bureau: null, env: { POSTGRID_API_KEY: "k" } });
+  assert.equal(noTo.preTransmission, true);
+  assert.equal(noTo.error, "bureau_mail_address_missing");
+
+  const noFrom = await sendLetter({ ...ADDRESSED, from: null, env: { POSTGRID_API_KEY: "k" } });
+  assert.equal(noFrom.preTransmission, true);
+
+  const noBody = await sendLetter({ ...ADDRESSED, html: undefined, env: { POSTGRID_API_KEY: "k" } });
+  assert.equal(noBody.preTransmission, true);
+  assert.equal(noBody.error, "pdf_or_html_required");
+});
+
+test("a fence hold says preTransmission:true and never reaches the transport", async () => {
+  let calls = 0;
+  // MESSAGING_DRY_RUN absent = fence UP. The transport throws if reached.
+  const held = await sendLetter({
+    ...ADDRESSED,
+    env: { POSTGRID_API_KEY: "k" },
+    fetchImpl: () => { calls += 1; throw new Error("the fence leaked"); }
+  });
+  assert.equal(calls, 0, "nothing left the process");
+  assert.equal(held.ok, false);
+  assert.equal(held.preTransmission, true, "so the letter must stay sendable");
+});
+
+test("an HTTP failure says preTransmission:FALSE — the letter may be in the post", async () => {
+  const failed = await sendLetter({
+    ...ADDRESSED,
+    env: { POSTGRID_API_KEY: "k", MESSAGING_DRY_RUN: "0" },
+    fetchImpl: async () => new Response("upstream exploded", { status: 502 })
+  });
+  assert.equal(failed.ok, false);
+  assert.equal(failed.preTransmission, false,
+    "a 502 went out; retrying it is what puts two envelopes in somebody's post");
+});
+
+test("a dropped connection says preTransmission:FALSE", async () => {
+  const dropped = await sendLetter({
+    ...ADDRESSED,
+    env: { POSTGRID_API_KEY: "k", MESSAGING_DRY_RUN: "0" },
+    fetchImpl: async () => { throw new Error("socket hang up"); }
+  });
+  assert.equal(dropped.ok, false);
+  assert.equal(dropped.preTransmission, false, "the call was made; nobody knows what PostGrid did with it");
+});

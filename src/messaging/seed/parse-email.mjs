@@ -1,5 +1,5 @@
 // Parser for fundhub-docs/sources/EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md (162 emails
-// extracted from the GHL builder, plus owner-supplied DRAFT fill-ins).
+// extracted from the CRM builder, plus owner-supplied DRAFT fill-ins).
 //
 // Each template is fenced:
 //
@@ -14,9 +14,9 @@
 // The header is `KEY`, then the human name, then `[folder: X]`, separated by runs
 // of 2+ spaces (single spaces occur inside the name, so a plain split on " "
 // would shred it). KEY is used as template_key verbatim — these are the existing
-// GHL IDs and the workflows reference them by that name.
+// CRM IDs and the workflows reference them by that name.
 //
-// Body copy is VERBATIM, including the GHL export's leading space on each line
+// Body copy is VERBATIM, including the CRM export's leading space on each line
 // and its footer/Unsubscribe lines. The only whitespace touched is wholly-blank
 // leading/trailing lines, which are document structure rather than copy.
 

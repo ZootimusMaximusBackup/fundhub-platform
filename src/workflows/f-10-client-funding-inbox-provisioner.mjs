@@ -1,12 +1,12 @@
 // F-10 — Client Funding Inbox Provisioner.
-// Source: GHL workflow b76f38d2-057f-481b-a0e4-13d88fe8ab19 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow b76f38d2-057f-481b-a0e4-13d88fe8ab19 (the CRM source-of-truth export).
 // Ports the live [AGENT DRAFT] definition.
 //
 // Original action #1 was "Send Webhook -> provision_client_funding_inbox" — an
 // external inbox-provisioning system with no adapter in this codebase and no
 // documented API contract anywhere read for this port. Rather than invent a new
 // adapter/endpoint, this computes the deterministic forwarding address (pure string
-// formatting, no external call — same monitor+{{contact.id}}@ pattern GHL used) and
+// formatting, no external call — same monitor+{{contact.id}}@ pattern the CRM used) and
 // creates an ops task for the actual provisioning + confirmation call, same as the
 // "assign pod roles" fallback already used elsewhere. Logged in
 // workflow-migration-table.md. F-10R (the inbound webhook confirming provisioning)

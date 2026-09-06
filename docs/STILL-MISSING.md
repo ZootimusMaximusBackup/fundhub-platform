@@ -17,7 +17,7 @@ No new secrets were written to Netlify or `.env` this session.
 | Vendor | Result | Why |
 |---|---|---|
 | Oxylabs | skipped | `dashboard.oxylabs.io` → login page |
-| GoHighLevel | skipped | `app.gohighlevel.com` → login page (existing Netlify key still returns contacts 403 — needs a Private Integration with Contacts read/write when you can log in) |
+| The CRM | skipped | vendor console → login page (the old Netlify key still returns contacts 403; the account is cancelled, so nothing here is being restored) |
 | Commas / FanBasis | skipped | `commas.app` shows **Website Expired**; `app.commas.com` / `dashboard.commas.com` DNS NXDOMAIN; `commas.com` marketing + `/login` require auth. FanBasis URLs redirect to Commas. |
 | Meta | skipped | developers / business Facebook → login |
 | LinkedIn | skipped | developer portal → login |
@@ -38,7 +38,7 @@ Confirmed present this session (values not printed):
 | `GHL_API_KEY` / `GHL_RELAY_API_KEY` | Present — **contacts probe previously returned 403**; regenerate with Contacts read/write |
 | `DATABASE_URL` / `MIGRATION_DATABASE_URL` / enc keys | Present (DB URL masked via CLI) |
 
-Local `.env` currently holds the Mailgun + Anthropic + GHL names from an earlier
+Local `.env` currently holds the Mailgun + Anthropic + CRM names from an earlier
 session. It does **not** hold Oxylabs / Commas / Meta / LinkedIn / OpenAI /
 Drive / Hubstaff.
 
@@ -47,7 +47,7 @@ Drive / Hubstaff.
 | Env / credential | Blocks | How to get it |
 |---|---|---|
 | `OXYLABS_USERNAME` / `OXYLABS_PASSWORD` | Residential Apply (`POST /api/proxy/launch` → 503). Username **without** `customer-` prefix. | Oxylabs → Residential Proxies → user credentials. Verify with adapter `verify()` → `ip.oxylabs.io/location`. |
-| GHL contacts-scoped `GHL_API_KEY` | `ghl_contact_id` backfill / find-or-create (403 today) | GHL → Private Integration with **Contacts Read + Write**; replace Netlify + `.env` |
+| The CRM contacts-scoped `GHL_API_KEY` | `ghl_contact_id` backfill / find-or-create (403 today) | The CRM → Private Integration with **Contacts Read + Write**; replace Netlify + `.env` |
 | `COMMAS_WEBHOOK_SECRET` | Payment webhook verify | Commas dashboard → webhook subscription `secret_key` (login at `commas.com/login` once account is live) |
 | `COMMAS_CHECKOUT_BASE_URL` | Payment-link send (503 until set) | See Commas notes below — URL-query checkout is **unverified** against live Commas |
 | `META_APP_ID` / `META_APP_SECRET` | Social OAuth + token refresh | Meta Developer app → Settings → Basic |
@@ -101,7 +101,7 @@ builder to API session create.
 ## Lender + inquiry ops data (unchanged)
 
 Tables from migrations `138`–`140` still ship empty on purpose. Import from
-Airtable when ready — do not invent lender names or bureau paths.
+The lender tables when ready — do not invent lender names or bureau paths.
 
 ## Closed earlier (platform wired; credentials separate)
 

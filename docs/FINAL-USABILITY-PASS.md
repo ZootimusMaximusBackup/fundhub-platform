@@ -21,10 +21,10 @@ that screen and also in `docs/STILL-MISSING.md`.
 | `messaging.html` | fully usable | Inbox + compose; outbound needs provider keys |
 | `documents.html` | fully usable | Live document library |
 | `contracts.html` | usable with gaps | Send/sign work; esign vendor credentials if used in prod |
-| `client-control-panel.html` | usable with gaps | Live client; Oxylabs Apply disabled until `OXYLABS_*` set; GHL link disabled until `ghl_contact_id` |
+| `client-control-panel.html` | usable with gaps | Live client; Oxylabs Apply disabled until `OXYLABS_*` set; the CRM link disabled until `ghl_contact_id` |
 | `closer-dashboard.html` | usable with gaps | Tradelines/lender matches live with `?client_id=`. Day stats + pipeline empty until closer-day endpoint. Deal-math panel marked SAMPLE (no endpoint) |
 | `social-studio.html` | usable with gaps | OAuth + schedule/publish wired; list panes empty until list API. Needs `META_APP_*` / `LINKEDIN_*` (+ LinkedIn org URN) |
-| `inquiry-remover.html` | usable with gaps | Cases live after import; empty until Airtable/CSV load |
+| `inquiry-remover.html` | usable with gaps | Cases live after import; empty until spreadsheet/CSV load |
 | `lenders.html` | usable with gaps | CRUD + AI bureau config wired; tables ship empty on purpose (owner imports) |
 | `finance-os.html` | fully usable | Simulated client loader for demos |
 | `subscriptions.html` | fully usable | Finance OS sibling |
@@ -73,7 +73,7 @@ that screen and also in `docs/STILL-MISSING.md`.
 - ClickFunnels `CF_CAPTURE_MODE=1` → `webhook_captures`
 - Booking lifecycle: `booking.rescheduled` / `cancelled` / `noshow` + Cal.com + S-05a
 - Calendar Join Call / His file / coverage roster
-- GHL contact id on create + `scripts/backfill-ghl-contact-ids.mjs`
+- The CRM contact id on create + `scripts/backfill-crm-contact-ids.mjs`
 - Meta + LinkedIn social OAuth + LinkedIn publish adapter
 - Command Center + Ops Admin KPIs from money chain / events / ad metrics
 - Playwright coverage for the new round + mobile smoke

@@ -22,7 +22,7 @@ function fakeDb({ existingTasks = [] } = {}) {
     tasks,
     async query(sql, params) {
       if (/FROM clients WHERE org_id/.test(sql)) {
-        return { rows: [{ id: "client-1", ghl_contact_id: "ghl-1" }] };
+        return { rows: [{ id: "client-1", ghl_contact_id: "crm-1" }] };
       }
       if (/SELECT id FROM tasks/.test(sql)) {
         const [clientId, workflow, key] = params;

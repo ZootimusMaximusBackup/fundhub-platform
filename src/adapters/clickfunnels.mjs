@@ -1,8 +1,8 @@
 // ClickFunnels webhook adapter — lead capture, survey submission, appointments.
 //
 // ClickFunnels is the funnel front-end. This adapter translates opt-in / form
-// submissions into canonical bus events so downstream handlers (GHL contact
-// creation, Airtable, email journey triggers) react without coupling to CF.
+// submissions into canonical bus events so downstream handlers (the CRM contact
+// creation, the spreadsheet, email journey triggers) react without coupling to CF.
 //
 // ┌────────────────────────────────────────────────────────────────────────────┐
 // │ ⚠️ CONFIRM payload paths against a real ClickFunnels webhook.               │

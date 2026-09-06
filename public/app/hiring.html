@@ -712,9 +712,20 @@ var DECISION_VALUES = ['advance','reject','offer','offer_accepted','offer_declin
 var DECISION_UNREACHABLE = ['offer_accepted','offer_declined','withdraw','hold'];
 
 /* hiring_roles — three seeded rows. scorecard/comp shapes are 052 §E verbatim:
-   every target and every figure is null by design. */
+   every target and every figure is null by design.
+
+   HIRING MANAGERS ARE null HERE, AND MUST STAY null.
+   This fixture is the offline fallback: renderStats reads "BENCH_ROWS ||
+   benchRows()", so whenever /api/hiring/bench fails to load, the bench table is
+   drawn from these rows instead. Until 2026-09-05 the closer row said
+   'Sarah Whitfield' and the setter row said 'Chris Stanbridge'. Neither name is
+   in the database — the seed at 051:148 never sets hiring_manager_staff_id, and
+   sarah@fundhub.ai is on the do-not-create list in src/auth/seed-staff.mjs:37.
+   So the screen showed the owner a staffed, routed hiring desk that did not
+   exist, and he reasonably believed role ownership was already wired.
+   A fixture may show the SHAPE of a row. It may not invent a person. */
 var ROLES = [
-  {key:'closer', name:'Closer', bench_target:4, hiring_manager:'Sarah Whitfield',
+  {key:'closer', name:'Closer', bench_target:4, hiring_manager:null,
    scorecard:{
      model:'outcomes (lagging) + leading indicators, per doc 7 / the book Who',
      source_note:'Structure from doc 7; metric names from the tracker set in the same folder. TARGETS ARE NULL — doc 7 links to an external Closer Scorecard doc that was not in the folder. Fill targets before using this in an offer.',

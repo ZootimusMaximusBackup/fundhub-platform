@@ -54,7 +54,7 @@ const MG_ENV = {
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>"
 };
-const GHL_ENV = { ...LIVE, GHL_RELAY_API_KEY: "ghl-secret-token-value" };
+const GHL_ENV = { ...LIVE, GHL_RELAY_API_KEY: "crm-secret-token-value" };
 
 const emailMsg = {
   id: "m1", orgId: "o1", clientId: "c1", channel: "email",
@@ -63,7 +63,7 @@ const emailMsg = {
 };
 const smsMsg = {
   id: "m2", orgId: "o1", clientId: "c1", channel: "sms",
-  to: "ghlContact123", subject: null, body: "Your documents were received.",
+  to: "crmContact123", subject: null, body: "Your documents were received.",
   providerRef: "workflow:T:evt2"
 };
 
@@ -333,7 +333,7 @@ describe("mailgun provider", () => {
 });
 
 // ---------------------------------------------------------------------------
-// GHL relay
+// CRM relay
 // ---------------------------------------------------------------------------
 
 describe("ghl relay provider", () => {
@@ -552,9 +552,9 @@ describe("twilio provider", () => {
     assert.doesNotMatch(f.calls[0].init.body, /workflow%3AT%3Aevt2|providerRef/i);
   });
 
-  test("refuses a GHL contact id where a phone number belongs", async () => {
+  test("refuses a CRM contact id where a phone number belongs", async () => {
     const f = fakeFetch({ status: 201, body: { sid: "SM1" } });
-    const r = await twilio.send({ ...twMsg, to: "ghlContact123" }, { fetchImpl: f, env: TW_ENV });
+    const r = await twilio.send({ ...twMsg, to: "crmContact123" }, { fetchImpl: f, env: TW_ENV });
     assert.strictEqual(r.status, "rejected");
     assert.strictEqual(f.calls.length, 0, "nothing may reach twilio");
   });
@@ -705,7 +705,7 @@ describe("provider contract, structurally", () => {
   });
 
   test("transmitting providers reach the network through the shared helper", () => {
-    // GHL is a no-op stub (owner 2026-08-14) — it must NOT call the network.
+    // CRM is a no-op stub (owner 2026-08-14) — it must NOT call the network.
     for (const f of ["mailgun.mjs", "resend.mjs", "twilio.mjs"]) {
       const code = codeOf(f);
       assert.ok(!/\bfetch\s*\(/.test(code), `${f} must call postJson, not fetch directly`);

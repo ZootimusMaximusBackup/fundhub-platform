@@ -493,7 +493,7 @@ function agentFromRow(real){
     chan: channelLabel(real.channel),
     cls: real.agent_class === 'ops' ? 'Ops' : 'Client-facing',
     owner: real.owner_label || '',
-    /* 'retired' used to fall through to 'draft', so the eight GoHighLevel
+    /* 'retired' used to fall through to 'draft', so the eight CRM
        agents cancelled on 2026-08-15 painted as editable drafts and were
        counted as drafts in the header. api/agents.mjs:191-196 answers 409 for
        every one of them, so the screen was offering an edit the server always
@@ -657,7 +657,7 @@ function renderGate(){
   if(retired){
     sub='Retired. It cannot be edited, promoted or run. Kept as a record of what it used to say.';
   }else if(cur.runtime==='ghl'){
-    sub='GoHighLevel was cancelled on 15 August 2026. This agent cannot run.';
+    sub='The CRM was cancelled on 15 August 2026. This agent cannot run.';
   }else if(cur.runtime==='bland'){
     sub=live
       ? 'Live on the phone. It only speaks when someone starts a call for it — it never answers texts or email.'
@@ -741,7 +741,7 @@ function select(id){
   document.getElementById('a_code').value=cur.id;
   var rt=document.getElementById('a_runtime');
   if(rt){
-    var RT={bland:'Bland (phone)',ghl:'GoHighLevel — cancelled',internal:'Fundhub itself',
+    var RT={bland:'Bland (phone)',ghl:'The CRM — cancelled',internal:'Fundhub itself',
             vercel:'Vercel',inngest:'Inngest',netlify:'Netlify'};
     rt.value=cur.runtime
       ? (RT[cur.runtime]||cur.runtime)+(cur.runtimeRef?' · '+cur.runtimeRef:'')

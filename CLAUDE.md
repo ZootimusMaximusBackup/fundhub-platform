@@ -140,7 +140,7 @@ A standalone `.mermaid` file will not render. Always `.md`.
 
 ### Journeys tracked
 
-`client`, `role-owner`, `role-sales-manager`, `role-closer`, `role-funding-advisor`, `role-inquiry-remover`, `affiliate`, `white-label`
+`client`, `role-owner`, `role-sales-manager`, `role-closer`, `role-funding-advisor`, `role-inquiry-remover`, `role-csm`, `affiliate`, `white-label`
 
 ### Rules
 

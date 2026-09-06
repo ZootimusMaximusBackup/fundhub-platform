@@ -1,16 +1,16 @@
 // N-01 — Long-Term Cold Nurture.
-// Source: GHL workflow c1172aa2-9a44-4eef-a439-8347457f60bd (ghl-crm-source-of-truth.md).
-// Filed in GHL under the "DECOMMISSIONED WORKFLOWS" folder alongside its own true
+// Source: the CRM workflow c1172aa2-9a44-4eef-a439-8347457f60bd (the CRM source-of-truth export).
+// Filed in the CRM under the "DECOMMISSIONED WORKFLOWS" folder alongside its own true
 // DECOM duplicate — the folder name is misleading (see workflow-migration-table.md);
 // this ports the live definition, not the [AGENT DRAFT] copy (excluded per instructions).
 //
-// Original GHL trigger was "Tag Added: nurture:cold", assigned by an undocumented
+// Original the CRM trigger was "Tag Added: nurture:cold", assigned by an undocumented
 // side-automation. Replaced with funnel-depth classification (Darwin's call, flagged
 // for Chris in workflow-migration-table.md) — see src/config/lead-temperature.mjs.
 // Only entry.captured can newly put a lead into "cold" (survey.submitted only ever
 // moves a lead OUT of cold), so that's the only trigger needed.
 //
-// SMS copy is confirmed missing in GHL (Chris's own tracking note, session-notes.md).
+// SMS copy is confirmed missing in the CRM (Chris's own tracking note, session-notes.md).
 // The SMS step is wired but gated on a template existing — never invented here.
 
 import { inngest } from "./client.mjs";

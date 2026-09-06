@@ -14,6 +14,8 @@ import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
 import { contractChaser } from './contract-chaser.mjs';
 import { dailyPulse } from './daily-pulse.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
+import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
+import { hiringOutreachCadence } from './hiring-outreach-cadence.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { partnerProductionFloorReview } from './partner-production-floor.mjs';
@@ -40,7 +42,7 @@ import { f08PostFundingMonitoring } from './f-08-post-funding-monitoring.mjs';
 import { f09FundingDeclinedNoPath } from './f-09-funding-declined-no-path.mjs';
 import { f10ClientFundingInboxProvisioner } from './f-10-client-funding-inbox-provisioner.mjs';
 import { f11BankEmailEventRouter } from './f-11-bank-email-event-router.mjs';
-import { ghlDocDocumentCheck } from './ghl-doc-document-check.mjs';
+import { docCheck } from './doc-check.mjs';
 import { inquiryCallSweeper } from './inquiry-call-sweeper.mjs';
 import { n01ColdNurture } from './n-01-cold-nurture.mjs';
 import { n02WarmNurture } from './n-02-warm-nurture.mjs';
@@ -109,6 +111,42 @@ export const functions = [
 
      The file's own header carries the full reasoning for what moved. */
   messageDispatchSweeper,
+
+  /* THE ONLY THING THAT ASKS "SHOULD WE BE HIRING" WITHOUT BEING ASKED FIRST.
+     Registered 2026-09-05. src/hiring/bench.mjs has argued since 051 that
+     recruiting has to be always-on — you notice the bench is thin when somebody
+     quits, and then you hire needy — and nothing had ever run it. Its only door
+     was GET /api/hiring/bench, a read-only screen docs/WIRING-AUDIT.md records
+     as never called by any front end. So the always-on pipeline was on-demand.
+
+     REGISTERING IT WRITES TASKS AND NOTHING ELSE. No candidate is contacted,
+     advanced, ranked or rejected (051 forbids a software rejection outright), no
+     job is posted, nothing is emailed or texted. Each alert routes through
+     src/hiring/owner.mjs assigneeFor, so it lands with the sales manager or the
+     owner per the rule in migration 294 rather than in one shared queue. The task
+     dedupe key carries the date, so the ceiling is one task per role per day
+     whatever the schedule says.
+
+     NOT SCHEDULED, DELIBERATELY: src/ops/hire-closer.mjs actOnPacked — the
+     packed-calendar rule. It is closer-only, it routes past the resolver, and
+     every run posts to LinkedIn, which has no partner access. It stays behind
+     POST /api/ops/hire-closer where a human presses it. The sweeper's header
+     carries the full reasoning. */
+  hiringBenchSweeper,
+
+  /* Candidate follow-up, every 30 minutes. Registered 2026-09-05, the same day
+     the public apply door opened — an applicant who hears nothing is the whole
+     reason a bench goes cold, and until now nothing in this platform ever
+     contacted a candidate at all.
+
+     REGISTERING IT IS NOT THE SEND SWITCH. sendTemplated only writes a
+     'queued' row; src/messaging/dispatch.mjs hands those to a provider, and it
+     is governed by messaging_settings.outbound_enabled per company plus the
+     MESSAGING_DRY_RUN fence, both of which sit underneath this and neither of
+     which this changes. The cadence also stops itself on a reply, on a booking
+     and on an opt-out — a follow-up sequence with no exit is a complaint
+     generator, so the exits are tested rather than assumed. */
+  hiringOutreachCadence,
   meetTranscriptSweeper,
 
   /* THE RECURRING BILLING RAIL. Registered 2026-08-31. Until it, nothing in
@@ -171,7 +209,7 @@ export const functions = [
   f09FundingDeclinedNoPath,
   f10ClientFundingInboxProvisioner,
   f11BankEmailEventRouter,
-  ghlDocDocumentCheck,
+  docCheck,
   /* Bureau dispute calls, every 15 minutes. Its own header said "not registered
      until owner enables the schedule" — that gate was implemented as "leave it
      out of this array", which made it invisible on the Automations screen and

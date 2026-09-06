@@ -31,7 +31,11 @@ const EMPLOYEE_ROLES = new Set([
   // db/migrations/112_sales_manager_role.sql widens the matching CHECK on
   // tasks.assignee_role — this set and that constraint must stay in step, or a
   // task passes here and is rejected by the database.
-  "sales_manager"
+  "sales_manager",
+  // Owns the client after the sale — the mid check-in, the results interview,
+  // and the human end of the AR ladder. db/migrations/290_csm_role.sql widens
+  // tasks_assignee_role_ck to match; same standing rule as sales_manager above.
+  "csm"
 ]);
 
 export const TASK_ROLES = EMPLOYEE_ROLES;

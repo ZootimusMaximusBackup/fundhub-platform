@@ -1,4 +1,4 @@
-// The SMS provider that replaces the GHL relay once A2P 10DLC clears.
+// The SMS provider that replaces the CRM relay once A2P 10DLC clears.
 //
 // WHY THIS EXISTS BEFORE ANYTHING ROUTES TO IT. A2P 10DLC registration clears on
 // a schedule nobody here controls. Writing this provider on the day it clears
@@ -46,9 +46,9 @@ export const CHANNELS = new Set(["sms"]);
 /** Twilio addresses an E.164 phone number; clients.phone (001_init.sql:53). */
 export const ADDRESS_FIELD = "phone";
 
-/** True: owner 2026-08-14 — GHL out, SMS = Twilio (migration 164).
+/** True: owner 2026-08-14 — the CRM out, SMS = Twilio (migration 164).
     Prove on device Monday when A2P / number clears; until then sends fail
-    with a clear Twilio error rather than calling GHL.
+    with a clear Twilio error rather than calling the CRM.
     A declaration of the shipped default, not an enforcement point — see header. */
 export const ENABLED = true;
 
@@ -129,7 +129,7 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
 
   // The mirror of the guard in ghl-relay.mjs, for the mirror-image bug. These
   // two providers carry the same channel and take different addresses, so a
-  // dispatcher wired to the wrong ADDRESS_FIELD would hand a GHL contact id to
+  // dispatcher wired to the wrong ADDRESS_FIELD would hand a CRM contact id to
   // Twilio. Naming it here makes that a readable rejection rather than an opaque
   // Twilio 400 that looks like a bad phone number.
   if (!/^\+[1-9]\d{7,14}$/.test(to)) {

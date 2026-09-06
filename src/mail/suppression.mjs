@@ -56,7 +56,7 @@
 //
 //   opt_out          — the matched client has a live row in `opt_outs`. That
 //                      table is the authoritative opt-out store (008_opt_out.sql:
-//                      "dnd_sms on clients is a GHL mirror field; this table is
+//                      "dnd_sms on clients is a CRM mirror field; this table is
 //                      the authoritative opt-out record"), it is what
 //                      src/handlers/comms.mjs writes on a TCPA STOP keyword, and
 //                      it is read here through the same sanctioned helper —

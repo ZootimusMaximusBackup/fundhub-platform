@@ -187,7 +187,15 @@ async function loadExistingRoundLetters(db, { orgId, clientId, round }) {
        JOIN dispute_cases dc ON dc.id = dl.case_id
       WHERE dl.org_id = $1::uuid AND dl.client_id = $2::uuid
         AND dc.round = $3
-        AND dl.status IN ('generated', 'ready', 'queued', 'sent')
+        -- 'sending' and 'delivered' belong here as much as 'sent' does. A row in
+        -- either state already holds the one send claim that
+        -- (org, case, bureau, round, target) gets — uq_dispute_letters_one_send_claim,
+        -- db/migrations/333 — so leaving them out did not re-stage the round, it
+        -- wrote a SECOND letter row that the index then refused at send time.
+        -- Seeing them means the re-stage reports already_generated and hands
+        -- back the existing letter, which is the row a human clears if its send
+        -- claim is stuck (clearStuckSendClaim, src/repair/send.mjs).
+        AND dl.status IN ('generated', 'ready', 'queued', 'sending', 'sent', 'delivered')
       ORDER BY dl.bureau`,
     [orgId, clientId, round]
   );

@@ -51,7 +51,7 @@
 //
 // A backlog that drains on a clock handles all three with one mechanism. This is
 // the one place in this repo where polling is the right answer rather than the
-// lazy one: n-06's header explains why a nightly scan is the wrong port of a GHL
+// lazy one: n-06's header explains why a nightly scan is the wrong port of a CRM
 // workflow trigger, and that reasoning is about business rules firing on a
 // timer, not about a delivery queue draining.
 //

@@ -83,7 +83,7 @@ export function blankToNull(v) {
 
 /* pill — status text → the pill class the screen renders.
    Mapped ONLY where the wording is unambiguous. inquiry_log.status is free text
-   written by several producers (the external Airtable runtime among them), so an
+   written by several producers (the external spreadsheet runtime among them), so an
    unrecognised value keeps its real text on a neutral pill and is counted into
    the banner as unmapped. A complete mapping would be an invention, and 055
    deliberately declined to constrain the column for the same reason. */
@@ -587,7 +587,7 @@ const BUREAU_NAMES = Object.freeze({ EX: "Experian", EQ: "Equifax", TU: "TransUn
    straight onto inquiry_log.bureau, and inquiry_log.bureau is plain `text` with
    no CHECK (db/schema/001_init.sql:173). Today's writers put the two-letter code
    there — EX / EQ / TU, per the ai_bureau_config seed in migration 155 — while
-   rows that arrived from the old Airtable runtime hold the full name.
+   rows that arrived from the old spreadsheet runtime hold the full name.
 
    The screen's three bureau chips compared against the full name only. Against
    code rows every chip read 0 and "none in queue" while the queue was full, and

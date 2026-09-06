@@ -18,7 +18,7 @@ exists yet.
 | **Agent editor** | Save, promote, demote, and new-agent now call `POST /api/agents` via `FHData.write`. Edits persist instead of dying in memory. Topbar clears the shell chip so “+ New agent” is clickable (was landing on Sign out). |
 | **Pipeline board** | Card drag and MOVE menu call `POST /api/pipeline-cards` so stage changes stick. Sample cards without a real card id stay local-only. MOVE menu lives under `.board-wrap` (not inside `.board`) so live paint cannot delete it. |
 | **Products & commissions** | Product save/create calls `POST /api/products`. Rails column stays empty (`[]`) — nothing in the products table records funnel membership. Topbar clears the shell chip so “+ Add product” is clickable. |
-| **Client control panel** | The five ↗ link buttons open Finance OS, closer dashboard, documents, and raw report when a client id is present. GHL Contact stays disabled until a contact URL exists on the client. |
+| **Client control panel** | The five ↗ link buttons open Finance OS, closer dashboard, documents, and raw report when a client id is present. The CRM Contact stays disabled until a contact URL exists on the client. |
 | **Calendar** | Join Call and His file are wired but stay disabled when the task has no `meeting_url` or linked client. Buttons enable when live task data supplies those fields. |
 | **Command Center** | KPI tiles, holds strip, pipeline rail counts/dollars, and live feed no longer show invented numbers — all show `—` or an empty-state message until a read endpoint exists. Agent badge wiring from `/api/read/agents` is unchanged. |
 | **Ops & Admin** | Money KPI tiles and period picker no longer swap fake dollar amounts. AR table, affiliate summary, and staff comp “This Week” column show empty states. Outbound mail and DLQ tiles still read live (`/api/messages-outbound`, failed events). Topbar clears the shell chip so the period picker is clickable. |
@@ -37,7 +37,7 @@ exists yet.
 | **Staff clock & consent columns** | `staff` table has no clock or consent fields | `/api/shifts` (or shift columns on staff) for clock; consent capture table (same as `/api/consent/capture`) for monitoring consent |
 | **Products rails column** | Product-to-rail mapping not stored | Junction table or column linking product codes to pipeline keys — none exists today |
 | **Calendar meeting_url / coverage roster** | Tasks from task queue may lack call links and assignee roster | Task read must include `meeting_url`; coverage roster needs a staff-on-shift or calendar-assignments read |
-| **GHL contact URL on client** | No GHL id/url on client record | External id column on `clients` (or partner CRM link table) exposed on client read |
+| **The CRM contact URL on client** | No CRM id/url on client record | External id column on `clients` (or partner CRM link table) exposed on client read |
 
 ---
 
@@ -402,7 +402,7 @@ No controls. Redirect stub via `shell.js`. —
 | Notes `#notes` | **STUB** | Fake “saved” timeout |
 | Staff upload (with `?id=`) | **WORKS** | `/api/documents-upload` |
 | Pull TU/EX/EQ, Issue Removal, Generate Apps | **STUB** | `setTimeout` simulation |
-| **533–537** Open Funding Matrix / Credit Snapshot / Bank Inbox / GHL / Raw Report | **DEAD** | `.link-btn` — no listeners |
+| **533–537** Open Funding Matrix / Credit Snapshot / Bank Inbox / CRM / Raw Report | **DEAD** | `.link-btn` — no listeners |
 | Client field paint | **WORKS** | `FHData.client(id)` when live |
 
 ### `client-portal.html` (no staff sidebar)
@@ -445,7 +445,7 @@ No controls. Redirect stub via `shell.js`. —
 | client-control-panel.html | 533 | Open Funding Matrix ↗ | No listener |
 | client-control-panel.html | 534 | Open Credit Snapshot ↗ | No listener |
 | client-control-panel.html | 535 | Open Bank Inbox ↗ | No listener |
-| client-control-panel.html | 536 | GHL Contact ↗ | No listener |
+| client-control-panel.html | 536 | The CRM Contact ↗ | No listener |
 | client-control-panel.html | 537 | Raw Report ↗ | No listener |
 | client-portal.html | 413,417,421 | Download ↓ | No listener |
 | client-portal.html | 561–562 | Text / Call | No listener |

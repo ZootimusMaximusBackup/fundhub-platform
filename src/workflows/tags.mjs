@@ -1,4 +1,4 @@
-// Shared clients.tags helpers — GHL's "Add tag" / "Remove tag" steps, ported as
+// Shared clients.tags helpers — the CRM's "Add tag" / "Remove tag" steps, ported as
 // idempotent array operations (safe to run twice: union / except are naturally
 // idempotent, no guard-select needed).
 

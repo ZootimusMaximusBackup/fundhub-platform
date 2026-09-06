@@ -86,7 +86,7 @@ export function resolve(name) {
 }
 
 /** The address field a provider needs off the client record — 'email' for
-    Mailgun, 'ghl_contact_id' for the GHL relay. The dispatcher uses this rather
+    Mailgun, 'ghl_contact_id' for the CRM relay. The dispatcher uses this rather
     than branching on the provider name, so adding a provider does not mean
     editing the dispatcher. */
 export function addressFieldFor(name) {

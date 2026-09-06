@@ -63,7 +63,7 @@ test("branch: template not yet seeded — send is a safe no-op, never invents co
 // End-to-end merge-tag proof through a real workflow. The unit-level coverage lives in
 // messaging.test.mjs and render-template.test.mjs; this asserts the whole path a live
 // send actually takes — workflow → sendTemplated → client record → renderTemplate →
-// messages.rendered_body — because that is where the bug was visible: real GHL copy is
+// messages.rendered_body — because that is where the bug was visible: real the CRM copy is
 // written in `{{contact.*}}` tags and every outbound body carried them literally.
 //
 // The shared pgFake has no branch for sendTemplated's client-context query, so it's

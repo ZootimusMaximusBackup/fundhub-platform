@@ -108,7 +108,7 @@ test.describe("client control panel open buttons", () => {
     await expect(page).toHaveURL(new RegExp(`finance-os\\.html\\?client_id=${CLIENT_ID}`));
   });
 
-  test("GHL Contact stays disabled with no contact URL", async ({ page }) => {
+  test("The CRM Contact stays disabled with no contact URL", async ({ page }) => {
     await openScreen(page, `/app/client-control-panel.html?id=${CLIENT_ID}`, OWNER);
     await expect(page.locator('[data-open="ghl"]')).toBeDisabled();
   });

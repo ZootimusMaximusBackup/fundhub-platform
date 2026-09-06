@@ -12,6 +12,66 @@ text exists for them. Academy and Blueprint are safe.
 
 ### Yours, in the order they unblock things
 
+0a. **PUSH THE STRANDED WORK. Six branches, nineteen commits, zero pull requests.**
+   Another session found this on 2026-09-05 and it was right about the shape even where it was
+   wrong about the cause. The round-2 batch and wave 1 DID ship and are live — the SMS root fix,
+   the reminder timing, the deliverables, the security header, the mail guard are all in main and
+   deployed. But six branches carry work with no PR against them, and CLAUDE.md section 8 says an
+   unmerged branch with no pull request is not in progress, it is lost.
+
+   Agents in this environment cannot push — `git push` is refused by the permission layer, so
+   `gh pr create` is closed too. It has to be you.
+
+   **Safe to push now, documentation only, zero risk:**
+   ```
+   git push origin handoff/wave3:main
+   ```
+   That carries the portal plan, the JSON contract, the accountability spec, the handoff and this
+   list. Until it lands, every other session is working blind.
+
+   **Held on purpose, each with a real blocker a verifier found. Do NOT merge these yet:**
+   * `fix/r2-w10-deliverables` (7 commits) — a client document still prints a made-up number for
+     a card with no credit limit, and one committed proof file does not match the code.
+   * `fix/r2-w8b-repair-floor` (6 commits) — on rounds 2 to 6 a letter says "this is correct" and
+     then demands the bureau prove it. Rounds 1 is fixed; 2 to 6 are not.
+   * `feat/letters-all-rounds` (1 commit) — the mixed letter, the common real-client case, still
+     asserts things its own items do not support.
+   * `fix/r2-w11-notifications` (1 commit) — this is the HELD SMS COPY, deliberately. It is the
+     rewritten wording waiting for you to read, in `docs/ads/sms-copy-2026-09.md`.
+
+   **Dead, safe to delete:** `fix/r2-w8b-fulfillment` — a rejected first attempt, fully superseded.
+
+0b. **Read the rewritten text messages.** `docs/ads/sms-copy-2026-09.md`. Nine texts plus one
+   email subject. They are written and deliberately not seeded, because you said you would read
+   the wording before it reaches a real phone. Everything else from that batch shipped without
+   them.
+
+0c. **Decide the UnderwriteIQ six-month strategy** — see item 0 below. It blocks the accountability
+   layer, because a checklist cannot chase tasks nobody has decided we do.
+
+
+0. **Finalise the UnderwriteIQ strategy. It is not finalised and it is going out to
+   clients right now.** The Credit Optimization Roadmap prints a six-month plan
+   generated per client — a paydown table with real balances and targets, the dispute
+   rounds, file the LLC, take the personal loan early, and then Month 5: get an EIN,
+   register with Dun & Bradstreet for a DUNS number, open net-30 vendor accounts with
+   Uline, Quill and Grainger, and build Paydex.
+
+   Chris on 2026-09-05: **"we dont do DUNS"**, and the strategy itself is not settled.
+
+   Nothing in the platform backs the Month 5 half. Searched: no vendor list, no Paydex
+   field, no business-credit tracking, no record of whether a client opened anything.
+   The Before & After table nonetheless promises "Business Credit Profile: None →
+   Active (Paydex building)", which no part of the system can observe or deliver.
+   It is prose in `scripts/black-reports/fundhub_gen.py` (lines 1333, 1483, 1524, 1554)
+   and in `vendor/underwriteiq-full/api/lite/crs/summary-doc-generator.js:392`.
+
+   Two decisions, both yours: which tasks stay in the plan, and for the ones that stay,
+   whether the platform tracks them or they remain advice. Until that is settled the
+   accountability layer (`docs/workflows/portal-accountability-spec.md`) cannot chase
+   Month 5 at all, because nothing knows those tasks exist.
+
+
 1. **Two contract texts.** FUNDING-AGREEMENT ($3,000 deposit) and
    CREDIT-REPAIR-AGREEMENT ($1,000). Neither is in the packet you supplied —
    Academy, Blueprint and White Label are, and those are handled. Drop them in

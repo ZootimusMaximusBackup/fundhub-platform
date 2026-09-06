@@ -1,5 +1,5 @@
 // N-04 — Post-Funding Nurture.
-// Source: GHL workflow e7607d09-4882-470a-ac56-8ed216c573a8 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow e7607d09-4882-470a-ac56-8ed216c573a8 (the CRM source-of-truth export).
 // Spec 4.9 (2026-08-22): fires on staff engagement closeout (`round.closeout`
 // with stage closed), not on round.funded (that instant still belongs to F-07).
 // Money-chain also emits round.closeout per funded round — those payloads have

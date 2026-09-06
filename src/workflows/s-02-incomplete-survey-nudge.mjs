@@ -1,5 +1,5 @@
 // S-02 — Incomplete App (Survey).
-// Source: GHL-System-Map.md SALES WORKFLOWS section.
+// Source: the CRM system map SALES WORKFLOWS section.
 // Audit fix applied (workflow-coherence-audit.md: "S-02 — 2-min wait before
 // survey-complete check; too short. Bump to 15-30 min") — 20 min picked (midpoint
 // of the given range, a timing choice not a business one).

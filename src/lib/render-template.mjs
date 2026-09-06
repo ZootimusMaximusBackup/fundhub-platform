@@ -2,7 +2,7 @@
 // from context. Unknown tokens → empty string + console.warn so missing data is visible
 // in logs.
 //
-// Dotted paths are the whole point: the ported GHL copy is written against
+// Dotted paths are the whole point: the ported the CRM copy is written against
 // `{{contact.first_name}}`, `{{contact.analyzer_prequal_amount}}`, `{{user.name}}`,
 // `{{appointment.meeting_location}}`. `\w` excludes `.`, so the original pattern matched
 // none of them and every dotted tag survived into the outbound SMS/email body literally,

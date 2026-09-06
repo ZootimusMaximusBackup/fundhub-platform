@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import {
-  handle, EMAIL_AR_01, SMS_AR_01, EMAIL_AR_02, SMS_AR_02, EMAIL_AR_03, SMS_AR_03
+  handle, EMAIL_AR_01, SMS_AR_01, EMAIL_AR_02, SMS_AR_02, EMAIL_AR_03, SMS_AR_03,
+  AR_04_TASK_TITLE, AR_04_SOURCE_WORKFLOW
 } from "./ar-collections.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
@@ -251,4 +252,47 @@ test("AR: DIY invoice is ignored", async () => {
   assert.equal(res.done, false);
   assert.equal(res.reason, "not_success_fee");
   assert.equal(db.messages.length, 0);
+});
+
+
+/* AR-04 used to end in a tag nobody read. These two pin the thing that changed:
+   the ladder now ends with a named person, and it ends with exactly one. */
+
+test("AR: the handoff opens a CSM task, not just a tag", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: templates(),
+    invoices: [openInvoice()]
+  });
+  const res = await handle({
+    event: ev("invoice.sent", { invoiceId: "inv-1", source: "funding_success_fee" }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+
+  assert.equal(res.handoff.skipped, false);
+  assert.equal(res.handoff.taskCreated, true, "AR-04 must hand the client to a person");
+
+  const tasks = (db.tasks || []).filter((t) => t.source_workflow === AR_04_SOURCE_WORKFLOW);
+  assert.equal(tasks.length, 1, "exactly one handoff task");
+  assert.equal(tasks[0].assignee_role, "csm");
+  assert.equal(tasks[0].title, AR_04_TASK_TITLE);
+  assert.match(tasks[0].body, /Balance due/);
+});
+
+test("AR: replaying the run does not stack a second handoff task", async () => {
+  const seed = () => ({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: templates(),
+    invoices: [openInvoice()]
+  });
+  const db = pgFake(seed());
+  const event = ev("invoice.sent", { invoiceId: "inv-1", source: "funding_success_fee" }, { clientId: "cl-1" });
+
+  await handle({ event, db, step: fakeStep() });
+  // Same event id, same invoice — an Inngest replay, which is normal, not an error.
+  db.invoices[0].status = "sent";
+  await handle({ event, db, step: fakeStep() });
+
+  const tasks = (db.tasks || []).filter((t) => t.source_workflow === AR_04_SOURCE_WORKFLOW);
+  assert.equal(tasks.length, 1, "a replay must find the existing task, not open a second");
 });
