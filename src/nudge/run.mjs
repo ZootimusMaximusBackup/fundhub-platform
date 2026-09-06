@@ -41,19 +41,29 @@
 //
 //
 // ═══════════════════════════════════════════════════════════════════════════
-// THE TWO CAPS, AND WHO ENFORCES THEM
+// THE THREE CAPS, AND WHO ENFORCES THEM
 //
-// Neither is enforced here. Both are enforced by 365's unique constraints, and
-// this file only reads the result:
+// None of them is enforced here. All three are unique constraints in the
+// database, and this file only reads the result:
 //
 //   FOUR MESSAGES PER WAYPOINT, EVER — UNIQUE (waypoint_id, step) with
-//   CHECK (step BETWEEN 1 AND 4). A fifth row is unwritable.
+//   CHECK (step BETWEEN 1 AND 4), db/migrations/365. A fifth row is unwritable.
 //
 //   ONE CLIENT-FACING MESSAGE PER CLIENT PER DAY, ACROSS EVERY WAYPOINT —
-//   the partial UNIQUE (client_id, client_local_date). Three overdue items
+//   the partial UNIQUE (client_id, client_local_date), 365. Three overdue items
 //   produce one text because the second and third inserts conflict, not
 //   because a counter in JavaScript said so. A SELECT-then-INSERT here would
 //   be the same check-then-write race `transactions` already has.
+//
+//   ONE CLIENT-FACING MESSAGE PER DESTINATION PER DAY —
+//   the partial UNIQUE (org_id, destination_key, client_local_date),
+//   db/migrations/369. The cap above counts RECORDS, and a person with two
+//   client rows on the same phone is two records, so they got two texts in a
+//   day. This one counts the phone number the text actually reaches. Both are
+//   in force; the effective rule is the stricter of the two.
+//
+// ON CONFLICT DO NOTHING absorbs whichever one bites, which is why the caller
+// has to ask afterwards which it was (whyClaimFailed).
 
 import { db as defaultDb } from "../db.mjs";
 import { emit } from "../events/bus.mjs";
@@ -61,6 +71,7 @@ import { createTask } from "../lib/create-task.mjs";
 import { sendTemplated as defaultSend } from "../workflows/messaging.mjs";
 import { STEPS, dueStep, stepFor } from "./ladder.mjs";
 import { blockersFor, contactFor } from "./exits.mjs";
+import { destinationKey } from "./destination.mjs";
 import { zoneForClient, isDaytime, localDate } from "./clock.mjs";
 
 export const SOURCE_WORKFLOW = "waypoint-nudge";
@@ -73,8 +84,25 @@ export const STAFF_TASK_ROLE = "csm";
 
 /** How many candidates one pass will consider. Bounded for the same reason
     message-dispatch-sweeper.mjs bounds its batch: an unbounded pass holds a
-    function open for as long as the backlog is long, and nothing is lost by
-    stopping early — an unchased waypoint is still overdue on the next pass. */
+    function open for as long as the backlog is long.
+
+    THE OLD JUSTIFICATION HERE WAS FALSE AND IT COST THE WHOLE FEATURE. It read
+    "nothing is lost by stopping early — an unchased waypoint is still overdue
+    on the next pass". That is true of a row that can still be chased. It was
+    NOT true of a row whose four rungs were already spent: it stayed overdue
+    forever, it sorted FIRST because it was oldest, and the SQL had no anti-join
+    against waypoint_nudges, so dead rows piled up at the front of the queue
+    until they held all 200 slots. The sweeper calls this with orgId=null, so
+    those 200 slots are ONE BUDGET FOR THE WHOLE PLATFORM. Measured on a scratch
+    database on 2026-09-06: 200 exhausted waypoints plus one freshly overdue
+    client produced "candidates: 200 includes the live one? false", and the live
+    client got nothing — on that pass and on every pass after it.
+
+    Two things fix it and both are below. planNudges now excludes, IN SQL, any
+    waypoint whose currently-due rung is already spent, so an unchaseable row
+    cannot hold a slot. And runNudges reports `budget_exhausted` and
+    `not_reached` in the tally, so a full queue can never again read as a quiet
+    day. */
 export const DEFAULT_LIMIT = 200;
 
 /** idempotencyKeyFor — the stable name for one rung of one waypoint's ladder.
@@ -88,13 +116,42 @@ export function idempotencyKeyFor(waypointId, step) {
   return `waypoint-nudge:${waypointId}:${step}`;
 }
 
+/* dueStepSql — the ladder's own thresholds, as a SQL CASE, DERIVED FROM STEPS.
+
+   Written from ./ladder.mjs rather than typed out, so moving a rung's
+   daysOverdue moves both the JavaScript and the SQL at once. Two hand-kept
+   copies of a cadence is precisely the drift that produces a message nobody
+   intended.
+
+   `interval '<n> hours'` and not `interval '<n> days'`: an hour interval on a
+   timestamptz is an exact duration, a day interval is calendar arithmetic that
+   moves across a daylight-saving boundary. dueStep() in ladder.mjs compares
+   milliseconds, so hours is the one that agrees with it.
+
+   Highest reached rung wins, which is why the cases are emitted longest-overdue
+   first — the same order dueStep() resolves in. */
+const DUE_STEP_SQL = (() => {
+  const cases = [...STEPS]
+    .sort((a, b) => b.daysOverdue - a.daysOverdue)
+    .map((s) => `WHEN w.due_at <= $1::timestamptz - interval '${s.daysOverdue * 24} hours' THEN ${s.step}`)
+    .join("\n             ");
+  return `CASE ${cases}\n             ELSE NULL END`;
+})();
+
 /**
  * planNudges — phase 1. Every overdue, client-owned waypoint whose highest
  * reached rung has not been spent yet.
  *
- * This is a SUGGESTION and nothing more. Every candidate it returns is put
- * through the full exit gate again by deliverNudge before anything happens, so
- * a stale plan is safe by construction.
+ * "HAS NOT BEEN SPENT YET" IS NOW DONE IN SQL, AND THAT IS THE FIX. It used to
+ * fetch the 200 oldest overdue rows and let deliverNudge discover, one at a
+ * time, that they were all finished — so a waypoint whose ladder was over held
+ * a slot in the budget forever, and being the oldest it held it at the front.
+ * Filtering after the LIMIT moves the bug; filtering inside it removes it.
+ *
+ * This is still a SUGGESTION and nothing more. Every candidate it returns is
+ * put through the full exit gate again by deliverNudge before anything happens,
+ * so a stale plan is safe by construction. The anti-join is an optimisation of
+ * the queue, never a substitute for the gate.
  */
 export async function planNudges(db, { orgId = null, now = new Date(), limit = DEFAULT_LIMIT } = {}) {
   const at = now instanceof Date ? now : new Date(now);
@@ -111,19 +168,33 @@ export async function planNudges(db, { orgId = null, now = new Date(), limit = D
      is the fastest way to lose them; ours slipping is a staff alert and belongs
      to a different piece of work entirely. */
   const { rows } = await db.query(
-    `SELECT w.id, w.org_id, w.client_id, w.key, w.title, w.detail, w.due_at, w.state
-       FROM client_waypoints w
-      WHERE w.owner_kind = 'client'
-        AND w.state IN ('not_started', 'in_progress')
-        AND w.due_at IS NOT NULL
-        AND w.due_at <= $1::timestamptz${orgClause}
-      ORDER BY w.due_at ASC
+    `WITH due AS (
+       SELECT w.id, w.org_id, w.client_id, w.key, w.title, w.detail, w.due_at, w.state,
+              ${DUE_STEP_SQL} AS step
+         FROM client_waypoints w
+        WHERE w.owner_kind = 'client'
+          AND w.state IN ('not_started', 'in_progress')
+          AND w.due_at IS NOT NULL
+          AND w.due_at <= $1::timestamptz${orgClause}
+     )
+     SELECT d.id, d.org_id, d.client_id, d.key, d.title, d.detail, d.due_at, d.state, d.step
+       FROM due d
+      WHERE d.step IS NOT NULL
+        AND NOT EXISTS (
+              SELECT 1 FROM waypoint_nudges n
+               WHERE n.waypoint_id = d.id AND n.step = d.step
+            )
+      ORDER BY d.due_at ASC
       LIMIT $${params.length}`,
     params
   );
 
   const candidates = [];
   for (const w of rows) {
+    /* dueStep() is still the authority on which rung this is. The SQL computed
+       the same number to do the anti-join; this recomputes it from the same
+       ladder and takes the JavaScript answer, so the two can never silently
+       disagree about which rung is being delivered. */
     const rung = dueStep(w.due_at, at);
     if (!rung) continue;
     candidates.push({
@@ -143,6 +214,51 @@ export async function planNudges(db, { orgId = null, now = new Date(), limit = D
   return candidates;
 }
 
+/**
+ * countEligible — how many candidates the pass WOULD have had, with no budget.
+ *
+ * Only called when a pass fills its budget, and only so the tally can say how
+ * many rows it could not reach. A silent full queue is what let the starvation
+ * run: the tally read "considered 200 / queued 0 / skipped 200" and nothing in
+ * it said the queue was full, so the pass looked like a quiet day.
+ *
+ * Returns null on any error rather than throwing. This is reporting; it must
+ * never be the reason a sweep fails.
+ */
+export async function countEligible(db, { orgId = null, now = new Date() } = {}) {
+  const at = now instanceof Date ? now : new Date(now);
+  const params = [at.toISOString()];
+  let orgClause = "";
+  if (orgId) {
+    params.push(orgId);
+    orgClause = ` AND w.org_id = $${params.length}`;
+  }
+  try {
+    const { rows } = await db.query(
+      `WITH due AS (
+         SELECT w.id, w.due_at, ${DUE_STEP_SQL} AS step
+           FROM client_waypoints w
+          WHERE w.owner_kind = 'client'
+            AND w.state IN ('not_started', 'in_progress')
+            AND w.due_at IS NOT NULL
+            AND w.due_at <= $1::timestamptz${orgClause}
+       )
+       SELECT count(*)::int AS n
+         FROM due d
+        WHERE d.step IS NOT NULL
+          AND NOT EXISTS (
+                SELECT 1 FROM waypoint_nudges n
+                 WHERE n.waypoint_id = d.id AND n.step = d.step
+              )`,
+      params
+    );
+    return Number(rows[0]?.n ?? 0);
+  } catch (err) {
+    console.warn(`[nudge/run] eligible count failed: ${String(err?.message || err)}`);
+    return null;
+  }
+}
+
 /* claim — the one statement that is both the decision and the record.
 
    Returns the new row's id, or null when somebody else already owns this rung
@@ -150,23 +266,30 @@ export async function planNudges(db, { orgId = null, now = new Date(), limit = D
    DO NOTHING absorbs BOTH unique constraints, which is why the caller has to
    ask afterwards which one it hit. */
 async function claim(db, { orgId, clientId, waypointId, step, kind, channel, templateKey,
-                           idempotencyKey, localDay, zone, outcome, detail }) {
+                           idempotencyKey, localDay, zone, outcome, detail, destination = null }) {
   const { rows } = await db.query(
     `INSERT INTO waypoint_nudges
        (org_id, client_id, waypoint_id, step, kind, channel, template_key,
-        outcome, detail, idempotency_key, client_local_date, client_time_zone)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::date,$12)
+        outcome, detail, idempotency_key, client_local_date, client_time_zone,
+        destination_key)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::date,$12,$13)
      ON CONFLICT DO NOTHING
      RETURNING id`,
     [orgId, clientId, waypointId, step, kind, channel, templateKey,
-     outcome, detail, idempotencyKey, localDay, zone]
+     outcome, detail, idempotencyKey, localDay, zone, destination]
   );
   return rows[0]?.id || null;
 }
 
-/* whyClaimFailed — which of the two caps stopped us. Reporting only; the stop
-   has already happened either way. */
-async function whyClaimFailed(db, { waypointId, step, clientId, localDay }) {
+/* whyClaimFailed — which of the three caps stopped us. Reporting only; the stop
+   has already happened either way.
+
+   `daily_cap_destination` is separate from `daily_cap` on purpose. They are
+   different problems: one says this client already had their message today, the
+   other says this PHONE already had one — a second client row on the same
+   number. Folding them together would hide the duplicate-record case, which is
+   the one nobody knows about until somebody gets two texts. */
+async function whyClaimFailed(db, { waypointId, step, clientId, localDay, orgId, destination }) {
   const taken = (await db.query(
     `SELECT 1 FROM waypoint_nudges WHERE waypoint_id = $1 AND step = $2 LIMIT 1`,
     [waypointId, step]
@@ -178,6 +301,14 @@ async function whyClaimFailed(db, { waypointId, step, clientId, localDay }) {
       [clientId, localDay]
     )).rows.length > 0;
     if (capped) return "daily_cap";
+    if (destination) {
+      const destCapped = (await db.query(
+        `SELECT 1 FROM waypoint_nudges
+          WHERE org_id = $1 AND destination_key = $2 AND client_local_date = $3::date LIMIT 1`,
+        [orgId, destination, localDay]
+      )).rows.length > 0;
+      if (destCapped) return "daily_cap_destination";
+    }
   }
   return "claim_lost";
 }
@@ -286,20 +417,49 @@ export async function deliverNudge(db, candidate, { now = new Date(), send = def
   }
 
   /* ── PHASE 3: CLAIM, WITH THE CLIENT'S OWN CALENDAR DAY ─────────────────
-     This is where the global one-per-client-per-day cap actually bites. */
+     This is where the two daily caps actually bite: one per client per day
+     (365) and one per DESTINATION per day (369). The second exists because the
+     first counts records — a person with two client rows on one phone was two
+     records and got two texts. `destination` is the normalised address, so
+     '+1 (555) 000-4000' and '+15550004000' are one key.
+
+     THE OUTCOME WRITTEN HERE IS 'claimed', NOT 'queued', AND THAT IS THE POINT.
+     Nothing has been queued yet — sendTemplated has not been called. The
+     previous version wrote 'queued' here, so a pass that died between the claim
+     and the send left a row that read exactly like a delivered nudge, and 365's
+     own header said the opposite. A 'claimed' row still holds the client's day,
+     because we do not know whether that message went out and the conservative
+     answer to not knowing is not to send another one. */
   const localDay = localDate(at, zone);
+  const destination = destinationKey(step.channel, address);
+  if (!destination) {
+    /* Unreachable today: destinationKey() and contactFor() apply the same floor
+       — ten digits for a phone, the same shape test for an email — so an
+       address that passed one passes the other. Kept as a REFUSAL rather than
+       deleted, because the alternative if they ever diverge is a message queued
+       against a destination the daily cap cannot see, which is the exact defect
+       369 exists to close. Nothing is claimed, so the rung is not spent and the
+       next pass tries again. */
+    return {
+      waypointId, step: step.step, action: "skipped",
+      reasons: ["destination_unknown"], zone
+    };
+  }
   const claimId = await claim(db, {
     orgId: candidate.orgId, clientId: candidate.clientId, waypointId,
     step: step.step, kind: "client_message", channel: step.channel,
     templateKey: step.templateKey, idempotencyKey,
-    localDay, zone, outcome: "queued", detail: null
+    localDay, zone, outcome: "claimed", detail: null, destination
   });
   if (!claimId) {
-    const why = await whyClaimFailed(db, { waypointId, step: step.step, clientId: candidate.clientId, localDay });
+    const why = await whyClaimFailed(db, {
+      waypointId, step: step.step, clientId: candidate.clientId, localDay,
+      orgId: candidate.orgId, destination
+    });
     return { waypointId, step: step.step, action: "skipped", reasons: [why], localDay, zone };
   }
 
-  await recordEvent(db, { candidate, step, idempotencyKey, outcome: "queued" });
+  await recordEvent(db, { candidate, step, idempotencyKey, outcome: "claimed" });
 
   /* ── PHASE 4: QUEUE ─────────────────────────────────────────────────────
      sendTemplated writes one `messages` row with status='queued' and returns.
@@ -324,6 +484,11 @@ export async function deliverNudge(db, candidate, { now = new Date(), send = def
   }
 
   if (result?.sent) {
+    /* THE CLAIM RESOLVES HERE, and only here. Until this statement runs the row
+       says 'claimed', which means "we do not know". A process that dies before
+       this point leaves an honestly unresolved row rather than one that reads
+       as a delivered message. It is still never retried — a step is spent
+       once. */
     await db.query(
       `UPDATE waypoint_nudges SET outcome = 'queued', message_id = $2 WHERE id = $1`,
       [claimId, result.messageId || null]
@@ -410,6 +575,26 @@ export async function runNudges(db = defaultDb, { orgId = null, now = new Date()
     at: at.toISOString(),
     considered: 0, queued: 0, staff_tasks: 0, skipped: 0,
     no_contact: 0, template_pending: 0, refused: 0, failed: 0,
+
+    /* ── THE THREE NUMBERS THAT MAKE A BAD PASS UNREADABLE AS A GOOD ONE ──
+       A starved queue used to report "considered 200 / queued 0 / skipped 200"
+       and nothing in that says the budget was full, so the pass that reached no
+       live client at all looked like a quiet day. */
+    limit,
+    /** true when the pass used every slot it had. */
+    budget_exhausted: false,
+    /** How many eligible rows the budget could NOT reach. 0 when the budget was
+        not filled. NULL means the count itself failed — unknown, never zero
+        (CLAUDE.md §12). */
+    not_reached: 0,
+
+    /* ── AND THE ONE THAT NAMES THE MISSING COPY ──
+       An org created after db/seed/025 ran has none of the three nudge
+       templates, so every rung resolves as template_pending. The COUNT was
+       always reported; WHICH key is missing was not, so the fix was a hunt.
+       Distinct template keys, in the order first seen. */
+    template_pending_keys: [],
+
     results: []
   };
 
@@ -422,6 +607,17 @@ export async function runNudges(db = defaultDb, { orgId = null, now = new Date()
     return tally;
   }
   tally.considered = candidates.length;
+
+  if (candidates.length >= limit) {
+    tally.budget_exhausted = true;
+    const eligible = await countEligible(db, { orgId, now: at });
+    tally.not_reached = eligible == null ? null : Math.max(0, eligible - candidates.length);
+    console.warn(
+      `[nudge/run] budget full: ${candidates.length} of ${limit} slots used, ` +
+      `${tally.not_reached == null ? "an unknown number of" : tally.not_reached} eligible ` +
+      `waypoint(s) not reached this pass`
+    );
+  }
 
   for (const candidate of candidates) {
     let res;
@@ -438,8 +634,20 @@ export async function runNudges(db = defaultDb, { orgId = null, now = new Date()
     if (res.action === "queued") tally.queued += 1;
     else if (res.action === "staff_task") tally.staff_tasks += 1;
     else if (res.action === "no_contact") tally.no_contact += 1;
-    else if (res.action === "template_pending") tally.template_pending += 1;
-    else if (res.action === "refused") tally.refused += 1;
+    else if (res.action === "template_pending") {
+      tally.template_pending += 1;
+      /* NAME THE MISSING COPY. Without this the tally says "one rung resolved
+         as template_pending" and somebody has to go and find out which of the
+         three keys the org is short of. */
+      const key = candidate.templateKey;
+      if (key && !tally.template_pending_keys.includes(key)) {
+        tally.template_pending_keys.push(key);
+      }
+      console.warn(
+        `[nudge/run] no approved template for ${key || "an unnamed key"} in org ` +
+        `${candidate.orgId} — the rung is spent and nothing was queued`
+      );
+    } else if (res.action === "refused") tally.refused += 1;
     else tally.skipped += 1;
     tally.results.push(res);
   }

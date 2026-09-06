@@ -4,7 +4,10 @@
 
 import { test } from "node:test";
 import assert from "node:assert";
-import { looksLikeEscalation, contactFor, CHASEABLE_STATES, BOUGHT_STATUSES } from "./exits.mjs";
+import {
+  looksLikeEscalation, matchedEscalationPattern, contactFor,
+  ESCALATION_PATTERNS, ESCALATION_PRESCAN, CHASEABLE_STATES, BOUGHT_STATUSES
+} from "./exits.mjs";
 
 test("language aimed at us stops the chase", () => {
   for (const said of [
@@ -83,4 +86,60 @@ test("a quote nobody accepted does not count as having bought the paid alternati
   assert.equal(BOUGHT_STATUSES.has("awaiting_payment"), false);
   assert.equal(BOUGHT_STATUSES.has("paid"), true);
   assert.equal(BOUGHT_STATUSES.has("fulfilled"), true);
+});
+
+/* ── the SQL pre-filter, pinned in the only direction that matters ────────── */
+
+test("escalation-prefilter: the SQL pattern matches everything the JS patterns do", () => {
+  /* db/migrations/368 lets the escalation scan advance a read watermark past
+     rows the pre-filter did not return. That is safe ONLY while the pre-filter
+     is a superset of the JavaScript rules — a row it skips has to be a row no
+     rule could have matched. This test is what keeps that true.
+
+     Every phrase below is one this repo's own rules treat as aimed at us. */
+  const prescan = new RegExp(ESCALATION_PRESCAN, "i");
+  for (const said of [
+    "I'm getting a lawyer",
+    "my attorney will be in touch",
+    "I will sue you",
+    "they are suing us already",
+    "he sued the last company",
+    "this is going to be a lawsuit",
+    "law suit incoming",
+    "starting litigation",
+    "I'm taking legal action",
+    "see you in small claims",
+    "I will take you to court",
+    "I will take fundhub to court",
+    "stop harassing me",
+    "this is harassment",
+    "you harassed me",
+    "I'm filing a complaint against Fundhub",
+    "this is a scam"
+  ]) {
+    assert.equal(looksLikeEscalation(said), true, `the JS rules should match: ${said}`);
+    assert.equal(prescan.test(said), true,
+      `the SQL pre-filter must not be narrower than the JS rules: ${said}`);
+  }
+});
+
+test("escalation-prefilter: it is derived from the pattern list, not typed out", () => {
+  /* Two hand-kept copies of a keyword list is the drift that produces a message
+     nobody intended. Each pattern's own source, minus the two pieces of syntax
+     that can only ever NARROW a match, has to appear in the pre-filter. */
+  for (const re of ESCALATION_PATTERNS) {
+    const widened = re.source.replace(/\\b/g, "").replace(/\(\?[!=][^)]*\)/g, "");
+    assert.ok(ESCALATION_PRESCAN.includes(widened),
+      `${re.source} is not represented in the pre-filter`);
+  }
+});
+
+test("matchedEscalationPattern names OUR rule, never the client's sentence", () => {
+  const said = "my attorney will be in touch";
+  const hit = matchedEscalationPattern(said);
+  assert.ok(hit, "a match should name a pattern");
+  assert.equal(hit, ESCALATION_PATTERNS.find((r) => r.test(said)).source);
+  assert.equal(hit.includes(said), false, "the stored value must not be the client's words");
+  assert.equal(matchedEscalationPattern("all good thanks"), null);
+  assert.equal(matchedEscalationPattern(null), null);
 });

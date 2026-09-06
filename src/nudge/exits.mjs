@@ -4,8 +4,17 @@
 //
 // COMPLIANCE REVIEW REQUIRED (CLAUDE.md §7). Client-facing messaging on a
 // consumer-finance file. NOTHING IN THIS FILE SENDS ANYTHING: it imports no
-// provider, no dispatcher and no template, it only ever reads, and every
-// function in it can do exactly one thing — say no.
+// provider, no dispatcher and no template, and every function in it can do
+// exactly one thing — say no.
+//
+// IT WRITES IN EXACTLY ONE PLACE, AND ONLY EVER TO ADD A STOP.
+// scanForEscalation() records the durable client_escalations row (368) the
+// first time a client's legal or complaint language is seen, and the scan
+// watermark beside it. Both are ON CONFLICT-guarded and neither has an update
+// or delete path here, so this file can add a permanent stop and can never
+// lift one. It used to re-derive that answer from the client's most recent 200
+// messages on every pass, which meant a legal threat EXPIRED once they had sent
+// 200 more — see the comment above PRESCAN_SOURCE.
 //
 //
 // ═══════════════════════════════════════════════════════════════════════════
@@ -119,6 +128,178 @@ export function looksLikeEscalation(text) {
   if (text == null) return false;
   const s = String(text);
   return ESCALATION_PATTERNS.some((re) => re.test(s));
+}
+
+/** matchedEscalationPattern(text) → the source of the FIRST pattern that
+    matched, or null. Stored on client_escalations.matched_pattern so a human
+    reading the row can see which of our rules fired. It is OUR regex, never the
+    client's sentence — 368 stores no client words. */
+export function matchedEscalationPattern(text) {
+  if (text == null) return null;
+  const s = String(text);
+  const hit = ESCALATION_PATTERNS.find((re) => re.test(s));
+  return hit ? hit.source : null;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The SQL pre-filter — DERIVED, never hand-maintained
+   ─────────────────────────────────────────────────────────────────────────
+
+   The escalation scan used to pull the client's most recent 200 inbound rows
+   into JavaScript and regex them there. 200 was a horizon, and a horizon on a
+   permanent stop is a bug: the portal chat writes one inbound row per client
+   turn (api/chat/portal-message.mjs:48-52), so "my lawyer will be in touch"
+   aged out of the window while the row sat untouched in the table. Measured on
+   a scratch database on 2026-09-06 — the lawyer message plus 210 ordinary rows,
+   and blockersFor returned [].
+
+   The horizon is gone. To keep an unbounded scan cheap, Postgres narrows first
+   and JavaScript still decides. That is only safe if the SQL pattern can never
+   be NARROWER than the JavaScript one, so it is not written by hand — it is
+   built from ESCALATION_PATTERNS by deleting the two pieces of syntax that can
+   only ever make a JavaScript regex match LESS:
+
+     \b   a word boundary. Removing it widens.
+     (?!) a negative lookahead. Removing it widens.
+
+   Nothing else is touched, so a new pattern added above appears here
+   automatically and there is no second list to forget. escalation-prefilter
+   in ./exits.test.mjs asserts the widening direction against every pattern. */
+const PRESCAN_SOURCE = ESCALATION_PATTERNS
+  .map((re) => re.source
+    .replace(/\\b/g, "")
+    .replace(/\(\?[!=][^)]*\)/g, ""))
+  .join("|");
+
+/** The pattern handed to Postgres `~*`. Exported so a test can prove it is a
+    superset of every JavaScript pattern rather than taking it on trust. */
+export const ESCALATION_PRESCAN = PRESCAN_SOURCE;
+
+/**
+ * recordEscalation — write the durable fact, once, and never again.
+ *
+ * ON CONFLICT DO NOTHING against 368's UNIQUE (client_id): the FIRST sighting
+ * wins. Nothing that happens afterwards — more messages, a longer history, a
+ * changed keyword list, a later pass that fails to match — can take it back,
+ * because there is no update path here and `fundhub_app` holds no DELETE on
+ * that table.
+ *
+ * Never throws. A failed write must not turn a detected escalation into a
+ * permitted send: the caller blocks on the detection, not on the write, and
+ * the next pass tries the write again.
+ */
+export async function recordEscalation(db, { orgId, clientId, messageId = null,
+                                             saidAt = null, pattern = null } = {}) {
+  if (!orgId || !clientId) return false;
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO client_escalations (org_id, client_id, said_at, message_id, matched_pattern)
+       VALUES ($1,$2,$3::timestamptz,$4,$5)
+       ON CONFLICT (client_id) DO NOTHING
+       RETURNING id`,
+      [orgId, clientId, saidAt ? new Date(saidAt).toISOString() : null,
+       messageId, pattern ? String(pattern).slice(0, 200) : null]
+    );
+    return rows.length > 0;
+  } catch (err) {
+    console.warn(`[nudge/exits] escalation not recorded for client ${clientId}: ${String(err?.message || err)}`);
+    return false;
+  }
+}
+
+/** hasEscalation — the durable read. One indexed lookup, no scan. */
+export async function hasEscalation(db, clientId) {
+  const { rows } = await db.query(
+    `SELECT 1 FROM client_escalations WHERE client_id = $1 LIMIT 1`,
+    [clientId]
+  );
+  return rows.length > 0;
+}
+
+/**
+ * scanForEscalation — the detector. Reads only what it has not read before.
+ *
+ * Returns true when this client has ever aimed legal or complaint language at
+ * us, and writes the durable row the first time it says so.
+ *
+ * OLDEST FIRST, from the watermark. Two properties follow, and both are the
+ * reason the watermark cannot cause a missed stop:
+ *
+ *   * nothing between the old mark and the new one is skipped, because the scan
+ *     reads forward through that whole span;
+ *   * the mark is written only after the scan finishes, so a scan that throws
+ *     leaves it where it was and the whole span is read again next time.
+ *
+ * The watermark is advanced to the newest row the PRE-FILTER returned, not to
+ * the newest inbound row that exists. A message that arrives mid-scan is
+ * therefore read on the next pass rather than skipped.
+ */
+export async function scanForEscalation(db, { orgId, clientId } = {}) {
+  if (!clientId) return false;
+
+  if (await hasEscalation(db, clientId)) return true;
+
+  const mark = (await db.query(
+    `SELECT scanned_through FROM client_escalation_scans WHERE client_id = $1 LIMIT 1`,
+    [clientId]
+  )).rows[0]?.scanned_through || null;
+
+  /* No LIMIT, on purpose — a limit is a horizon and a horizon is the defect.
+     The pre-filter and the watermark are what keep it cheap: a client's whole
+     history is read once, and every pass after that reads only what is new. */
+  const { rows } = await db.query(
+    `SELECT id, rendered_body, created_at FROM messages
+      WHERE client_id = $1
+        AND direction = 'inbound'
+        AND rendered_body IS NOT NULL
+        AND rendered_body ~* $2
+        ${mark ? "AND created_at > $3::timestamptz" : ""}
+      ORDER BY created_at ASC`,
+    mark ? [clientId, ESCALATION_PRESCAN, mark] : [clientId, ESCALATION_PRESCAN]
+  );
+
+  for (const m of rows) {
+    const pattern = matchedEscalationPattern(m.rendered_body);
+    if (!pattern) continue;
+    await recordEscalation(db, {
+      orgId, clientId, messageId: m.id, saidAt: m.created_at, pattern
+    });
+    /* Deliberately NOT advancing the watermark here. The durable row is the
+       memory from now on and hasEscalation() short-circuits above it, so the
+       mark has no further job for this client. */
+    return true;
+  }
+
+  /* Nothing found. Move the mark forward over the whole span just examined.
+     Advancing past rows the pre-filter did not return is safe ONLY because the
+     pre-filter is a proven superset of every JavaScript pattern — a row it did
+     not return cannot match one. If that stops being true the mark becomes
+     unsafe, which is why escalation-prefilter in ./exits.test.mjs pins it. */
+  const newest = (await db.query(
+    `SELECT max(created_at) AS newest FROM messages
+      WHERE client_id = $1 AND direction = 'inbound'
+        ${mark ? "AND created_at > $2::timestamptz" : ""}`,
+    mark ? [clientId, mark] : [clientId]
+  )).rows[0]?.newest || null;
+  if (newest && orgId) {
+    try {
+      await db.query(
+        `INSERT INTO client_escalation_scans (client_id, org_id, scanned_through)
+         VALUES ($1,$2,$3::timestamptz)
+         ON CONFLICT (client_id) DO UPDATE
+           SET scanned_through = GREATEST(
+                 client_escalation_scans.scanned_through,
+                 EXCLUDED.scanned_through),
+               org_id = EXCLUDED.org_id,
+               updated_at = now()`,
+        [clientId, orgId, new Date(newest).toISOString()]
+      );
+    } catch (err) {
+      /* A watermark that did not save costs a re-read, nothing more. */
+      console.warn(`[nudge/exits] scan mark not saved for client ${clientId}: ${String(err?.message || err)}`);
+    }
+  }
+  return false;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -292,14 +473,19 @@ export async function blockersFor(db, { waypointId, now = new Date() } = {}) {
 
     /* EXIT 6, second half — a complaint, or a lawyer. Any inbound message the
        client has ever sent, not just one on this thread, because a threat is
-       about the relationship and not about one checklist row. */
-    const inbound = (await db.query(
-      `SELECT rendered_body FROM messages
-        WHERE client_id = $1 AND direction = 'inbound' AND rendered_body IS NOT NULL
-        ORDER BY created_at DESC LIMIT 200`,
-      [wp.client_id]
-    )).rows;
-    if (inbound.some((m) => looksLikeEscalation(m.rendered_body))) reasons.push("escalation");
+       about the relationship and not about one checklist row.
+
+       THIS IS THE ONE PLACE THIS FILE WRITES. The header above says every check
+       only reads, and this is the stated exception: scanForEscalation records
+       the durable client_escalations row (368) the first time the words are
+       seen. It has to be a write, because the previous version re-derived the
+       answer from the client's most recent 200 messages every time and a legal
+       threat therefore EXPIRED once they had sent 200 more. The write is
+       ON CONFLICT DO NOTHING, so it can only ever add a permanent stop and
+       never lift one. */
+    if (await scanForEscalation(db, { orgId: wp.org_id, clientId: wp.client_id })) {
+      reasons.push("escalation");
+    }
 
     return reasons;
   } catch (err) {
@@ -311,4 +497,8 @@ export async function blockersFor(db, { waypointId, now = new Date() } = {}) {
   }
 }
 
-export default { blockersFor, contactFor, looksLikeEscalation, CHASEABLE_STATES, BOUGHT_STATUSES };
+export default {
+  blockersFor, contactFor, looksLikeEscalation, matchedEscalationPattern,
+  recordEscalation, hasEscalation, scanForEscalation, ESCALATION_PRESCAN,
+  CHASEABLE_STATES, BOUGHT_STATUSES
+};

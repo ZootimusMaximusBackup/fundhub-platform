@@ -197,3 +197,108 @@ test("answering about a complaint that does not exist changes nothing", { skip: 
   assert.equal(res.changed, false);
   assert.equal(res.reason, "no_complaint");
 });
+
+/* ── the INSERT hole, and the honest edge of what is enforced ─────────────── */
+
+test("a complaint CANNOT be born already filed", { skip: !HAS_DB }, async () => {
+  /* THE HOLE THIS CLOSES. 366's forward-only trigger was BEFORE UPDATE OF state,
+     so an INSERT never fired it. A single statement landing straight on 'filed'
+     satisfied every CHECK and skipped both rungs. Measured on a scratch database
+     on 2026-09-06 before db/migrations/367: ACCEPTED. */
+  await assert.rejects(
+    db.query(
+      `INSERT INTO regulator_complaints (org_id, client_id, kind, state, sent_at, filed_at, filed_source)
+       VALUES ($1,$2,'cfpb','filed',now(),now(),$3)`,
+      [orgId, clientId, FILED_SOURCE]
+    ),
+    /cannot be created already filed/
+  );
+  assert.deepEqual(await complaintsFor(db, clientId), [],
+    "and no row was left behind");
+});
+
+test("a complaint may still be born prepared, or born sent", { skip: !HAS_DB }, async () => {
+  /* The guard refuses ONE starting state. Closing the other two would break
+     prepareComplaint and any path that records a pack going out in one
+     statement, and neither of those is a claim about a regulator. */
+  await db.query(
+    `INSERT INTO regulator_complaints (org_id, client_id, kind, state)
+     VALUES ($1,$2,'cfpb','prepared')`, [orgId, clientId]);
+  await db.query(
+    `INSERT INTO regulator_complaints (org_id, client_id, kind, state, sent_at)
+     VALUES ($1,$2,'state_ag','sent',now())`, [orgId, clientId]);
+  const states = (await complaintsFor(db, clientId)).map((c) => c.state).sort();
+  assert.deepEqual(states, ["prepared", "sent"]);
+});
+
+test("KNOWN LIMIT: raw SQL claiming the client said so is accepted, and cannot be refused here",
+  { skip: !HAS_DB }, async () => {
+    /* THIS TEST PINS A GAP, NOT A GUARANTEE, and it exists because the journey
+       page used to claim the opposite — "no staff member, no workflow and no
+       hand-written SQL can put a complaint in that state".
+
+       filed_source='client_reported' IS the assertion "the client told us". A
+       database can refuse a row that does not carry the assertion; it cannot
+       tell a true assertion from a false one. So a hand-written UPDATE on a row
+       already at 'sent', carrying the source, is accepted — and if this test
+       ever starts failing because somebody closed it, that is good news and the
+       journey page should be widened again to match.
+
+       What IS enforced is proved by the three tests above and this one's own
+       second half: no filed row without filed_at AND filed_source, no
+       prepared→filed, no INSERT at filed, no move backwards. */
+    const { id } = await prepareComplaint(db, { orgId, clientId, kind: "cfpb" });
+    await markComplaintSent(db, { clientId, kind: "cfpb" });
+    await db.query(
+      `UPDATE regulator_complaints SET state='filed', filed_at=now(), filed_source=$2 WHERE id=$1`,
+      [id, FILED_SOURCE]
+    );
+    const [row] = await complaintsFor(db, clientId);
+    assert.equal(row.state, "filed");
+    assert.equal(row.filed_source, FILED_SOURCE,
+      "so a page rendering it must print WHO said so, because that is all we have");
+
+    // The half that IS enforced: it cannot be filed without saying who said so.
+    await db.query(`DELETE FROM regulator_complaints WHERE id = $1`, [id]);
+    const second = await prepareComplaint(db, { orgId, clientId, kind: "cfpb" });
+    await markComplaintSent(db, { clientId, kind: "cfpb" });
+    await assert.rejects(
+      db.query(
+        `UPDATE regulator_complaints SET state='filed', filed_at=now() WHERE id=$1`,
+        [second.id]
+      ),
+      /regulator_complaints_filed_ck/
+    );
+  });
+
+test("the client-facing letter still refuses to say a complaint was filed",
+  { skip: !HAS_DB }, async () => {
+    /* The product rule is unchanged and owner-set: nothing in this system knows
+       whether a CFPB or state AG complaint was actually submitted, so a client
+       must never see rounds 4 or 5 rendered as filed on our say-so.
+
+       src/metro2/ belongs to another lane and is NOT edited here — this reads
+       it, to prove that recording a filing has not quietly switched the letter
+       copy on. Round 6 reuses the Round 3 final notice and its own label says
+       why it does not stand on the complaints. */
+    const { roundLadderEntry, LADDER_ROUNDS } = await import("../metro2/letters/catalog.mjs");
+    const rungs = LADDER_ROUNDS.map((r) => roundLadderEntry(r));
+
+    /* Exactly one rung's copy is allowed to contain the word "filed", and only
+       because it is the sentence saying we do NOT claim it. Written this way
+       rather than as a keyword ban, because a keyword ban would fail on the
+       disclaimer itself and would then be deleted by the next person. */
+    const mentions = rungs.filter((x) => /\bfiled\b/i.test(`${x.title} ${x.sendWhen}`));
+    assert.deepEqual(mentions.map((x) => x.round), ["R6"],
+      `only R6 may mention a filing, and only to disclaim it: ${JSON.stringify(mentions)}`);
+    assert.match(mentions[0].sendWhen, /does not claim either complaint was filed/,
+      "R6 says out loud that it makes no claim about a filing");
+
+    /* And rounds 4 and 5 — the two complaints themselves — say only when they
+       go out, never that they arrived anywhere. */
+    for (const round of ["R4", "R5"]) {
+      const rung = rungs.find((x) => x.round === round);
+      assert.equal(/\bfiled\b/i.test(`${rung.title} ${rung.sendWhen}`), false,
+        `${round} must not claim a filing: ${JSON.stringify(rung)}`);
+    }
+  });

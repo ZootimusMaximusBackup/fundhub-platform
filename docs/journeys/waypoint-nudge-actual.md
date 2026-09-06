@@ -54,10 +54,66 @@ flowchart TD
 
     CLAIM -->|somebody already has this rung| STOP4[Nothing]
     CLAIM -->|this client already had a message today| STOP5[Nothing. One a day, across ALL rows.]
+    CLAIM -->|this PHONE or EMAIL already had one today| STOP6[Nothing. One a day per person,<br/>even across two client records.]
     CLAIM -->|won it| QUEUE[sendTemplated writes ONE message row, status = queued]
 
     QUEUE --> DISPATCH([The dispatcher sends it later,<br/>on its own clock, behind the<br/>outbound switch and the compliance gate])
 ```
+
+### The pass cannot quietly starve, and it cannot quietly fill up
+
+Two things were wrong here until 2026-09-06 and both are worth stating, because the second one
+is what hid the first.
+
+**Finished rows used to block live ones.** The search took the 200 oldest late rows and only
+then asked whether each one still had a rung left. A row whose four rungs were all used stayed
+late for ever, and being the oldest it came first — so finished rows piled up at the front until
+they filled all 200 places and no live one was ever reached. The sweeper searches the *whole
+platform* at once, so those 200 places are one budget for every client there is. Measured on a
+scratch database: 200 finished rows plus one newly late client produced 200 candidates, none of
+them the live one, and that client got nothing.
+
+The search now asks "does this row still have a rung left?" **inside** the search, so a row that
+can no longer be chased cannot take a place. Proved by
+`200 finished waypoints do NOT hold the budget against one live client`.
+
+**And a full queue used to look like a quiet day.** The tally said "considered 200, queued 0,
+skipped 200" and nothing in it said the budget was full. It now reports `budget_exhausted` and
+`not_reached` — how many late rows the pass could not get to — and writes a warning line.
+`not_reached` is `null`, never `0`, if the count itself fails: unknown is not zero.
+
+### A message in flight is not a message sent
+
+The ladder row is written **before** anything is queued, and it says `claimed` until the send
+comes back. If the process dies in between, the row reads `claimed` — honestly unresolved —
+rather than reading exactly like a delivered message, which is what it used to do. The rung is
+still used up and it is **not** retried: a step is spent once, and one missed nudge is cheaper
+than a second text.
+
+A `claimed` row still holds the client's day. Not knowing whether a message went out is not a
+reason to send another one.
+
+### One a day means one *person* a day
+
+There are two caps, and both are unique indexes in the database rather than a counter in code:
+
+* one client-facing message per **client record** per day (`db/migrations/365`)
+* one client-facing message per **destination** per day (`db/migrations/369`) — the phone number
+  or email address the message actually reaches, normalised so `+1 (555) 000-4000` and
+  `+15550004000` are the same person
+
+The second exists because the first counts records. A person with two client rows on one phone
+was two records, so they got two texts in a day. Both caps are in force and the effective rule is
+the stricter of the two — adding the destination cap could only ever reduce the number of
+messages, never increase it.
+
+The destination cap is scoped to one company. Two white-label partners genuinely sharing an end
+customer could still each send that person one message in a day; letting one partner's send
+silence another's would be one company reaching into another's data, which is worse.
+
+The phone rule is North American: an eleven-digit number starting `1` loses the `1`. A non-US
+number written two ways will not be recognised as one person. That is a known gap, and it fails
+toward one extra message rather than toward a missed stop.
 
 ## Every reason it stops
 
@@ -95,9 +151,37 @@ Where each one lives in the code:
 | rung 4 used | a `waypoint_nudges` row at step 4 — stored, never remembered |
 | the client replied | an inbound `messages` row after our first nudge on that row |
 | STOP or opt-out | `isOptedOut()` — the existing `opt_outs` table, no second store |
-| a lawyer or a complaint about us | a keyword screen over the client's own inbound messages |
+| a lawyer or a complaint about us | a keyword screen over the client's inbound messages, **and a permanent row in `client_escalations`** — see below |
 | program complete / cancelled | `repair_programs.status` |
 | no address | `clients.phone` / `clients.email`, plus that channel's do-not-disturb flag |
+
+### A legal threat does not expire
+
+Until 2026-09-06 the "have they threatened us?" check read the client's **most recent 200**
+inbound messages and looked for the words in those. The message never went anywhere — the window
+moved past it. The client portal's chat writes one inbound row every time the client types, so an
+ordinary chatty client buries a threat in about a week. Measured on a scratch database: "my
+lawyer will be in touch", then 210 ordinary messages, then a new late checklist row — and the
+system queued them a text.
+
+A search is a detector, not a memory. The memory is now a row in `client_escalations`
+(`db/migrations/368`): **one per client, written the first time the words are seen, never
+updated, never removed and never expired.** There is no code that lifts it and the application's
+database user is not granted permission to delete from that table. Once it exists, every chase
+ladder that client has is over.
+
+Two supporting details, because they are the parts that could go wrong:
+
+* **The 200-message window is gone entirely.** The search reads a client's whole history the
+  first time and only what is new after that, using a read mark in `client_escalation_scans`.
+  The mark moves only over messages actually read, oldest first, and only after a search
+  finishes — so it can make a stop *late*, never make one *missed*.
+* **The words list is not written twice.** The database narrows the search using a pattern built
+  automatically from the same list the code checks, widened rather than copied. A test fails if
+  the database pattern is ever narrower than the code's.
+
+The row stores no client words. It stores which of *our* rules matched. It is not a finding
+against the client and it is never shown to them.
 
 **On hold is not one of them, and that is a gap, not an omission.** `repair_programs.status`
 permits only `active`, `complete`, `upsell_pending` and `cancelled`, and nothing in this
@@ -118,13 +202,45 @@ stateDiagram-v2
     filed --> [*]
 ```
 
-`prepared → filed` is refused by a database trigger: a form that never left us cannot have been
-filed. `filed` is refused without `filed_source = 'client_reported'`, so no staff member, no
-workflow and no hand-written SQL can put a complaint in that state. If the client hands over a
-CFPB case number with their yes, it is stored; a blank one is dropped rather than kept, because
-`NULL` means we do not know and an empty string looks like an answer.
+If the client hands over a CFPB case number with their yes, it is stored; a blank one is dropped
+rather than kept, because `NULL` means we do not know and an empty string looks like an answer.
 
-A page renders `sent` as sent. It renders `filed` as filed only because the client said so.
+### What the database actually enforces
+
+This page used to say "no staff member, no workflow and no hand-written SQL can put a complaint
+in that state". **That was wrong, and it was proved wrong twice on 2026-09-06.** A direct
+`INSERT` landed straight on `filed`, because the forward-only trigger was written
+`BEFORE UPDATE OF state` and an `INSERT` never fires it. And a hand-written `UPDATE` from `sent`
+to `filed`, carrying `filed_source = 'client_reported'`, was accepted.
+
+The `INSERT` hole is closed (`db/migrations/367`). The second one cannot be closed here, and the
+honest list is now this:
+
+| Enforced, in the database | Not enforced, and cannot be |
+|---|---|
+| `filed` needs `filed_at` **and** `filed_source = 'client_reported'` | that whoever wrote `client_reported` was telling the truth |
+| a row cannot be **created** already `filed` | |
+| `prepared → filed` is refused — a form that never left us cannot have been filed | |
+| nothing moves backwards | |
+| a case number cannot exist on any state but `filed` | |
+
+`filed_source = 'client_reported'` **is** the sentence "the client told us". A database can
+refuse a row that does not carry that sentence. It cannot tell a true sentence from a false one.
+So a person with direct database access can write it, and that is a gap in who can reach the
+database, not a gap this table can close.
+
+`src/nudge/regulator.pg.test.mjs` pins every row of both columns, including the gap — the test
+named `KNOWN LIMIT` fails if somebody ever closes it, which is the signal to widen this page
+again.
+
+A page renders `sent` as sent. It renders `filed` as filed **only alongside who said so**, and
+`filed_source` exists to be printed rather than hidden.
+
+**The client-facing letters still claim nothing.** Rounds 4 and 5 say only when the complaint
+goes out. Round 6 reuses the Round 3 final notice and its own label says it "does not claim
+either complaint was filed, because nothing records that"
+(`src/metro2/letters/catalog.mjs`). Recording a filing here did not switch that on, and a test
+in this lane fails if it ever does.
 
 ## What this does NOT do
 
@@ -136,10 +252,17 @@ A page renders `sent` as sent. It renders `filed` as filed only because the clie
 * It writes no client-facing copy of its own. The three template keys are stable; the words
   behind them are placeholders in `db/seed/025_waypoint_nudge_templates.sql`, changeable in the
   template editor without a code change.
+* **It does not give a new company its templates.** `db/seed/025` writes them for the companies
+  that exist when it runs. A company created afterwards has none, and every rung resolves as
+  `template_pending` — the rung is used up and nothing goes out. That is not fixed here. What is
+  fixed is the silence: the tally now names the missing key in `template_pending_keys` and writes
+  a warning line, so it takes a glance rather than a hunt.
 
 ## Proved by running it
 
-`src/nudge/run.pg.test.mjs`, 25 tests, against a real Postgres:
+`src/nudge/run.pg.test.mjs` (37 tests) and `src/nudge/regulator.pg.test.mjs` (17 tests) against a
+real Postgres 16 — 54 tests, 54 passing, 0 failing, 0 skipped, exit code 0, run twice against the
+same database on 2026-09-06.
 
 * a row completed between planning and sending — nothing sent, no rung used
 * sixteen duplicate triggers, sequential and concurrent — one message row each time
@@ -149,3 +272,17 @@ A page renders `sent` as sent. It renders `filed` as filed only because the clie
 * rung 4 — one task, no client message, and none for the following month
 * a client with no phone — the text rung is used up once, the email rung still runs
 * 05:00 where the client is — not queued; queued when their morning comes
+* **200 finished rows plus one live client — the live client gets their message**
+* **a full budget reports itself, with the number it could not reach**
+* **a lawyer message plus 210 later messages — still stopped, and stopped for good even after
+  the message itself is deleted**
+* **a client who filed the CFPB form because we asked them to — still chased**
+* **two client records on one phone — one text**
+* **one client with a phone and an email — one message, not one of each**
+* **the row says `claimed` while the send is in flight, and a `claimed` row is never retried**
+* **the exact body of the queued text, character for character, for the fixture copy and for the
+  shipped `db/seed/025` copy — including that no merge field is left unresolved and the opt-out
+  line survives**
+* **a complaint cannot be created already `filed`; the one hole that remains is pinned by a test
+  named `KNOWN LIMIT`**
+* **rounds 4, 5 and 6 of the letter ladder still claim no filing**

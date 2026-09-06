@@ -13,6 +13,7 @@ import { test, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { planNudges, deliverNudge, runNudges, idempotencyKeyFor, STAFF_TASK_ROLE } from "./run.mjs";
+import { blockersFor } from "./exits.mjs";
 import { recordOptOut } from "../lib/opt-out.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -41,6 +42,12 @@ async function wipe() {
   if (!orgId) return;
   const ids = `(SELECT id FROM clients WHERE org_id = '${orgId}')`;
   await db.query(`DELETE FROM waypoint_nudges WHERE org_id = $1`, [orgId]);
+  /* Explicit rather than left to the cascade off `clients`, because these two
+     are the durable half of the escalation stop (368) and a leftover row would
+     silently block the next test's client. Run this file twice against one
+     database and a missed cleanup here is what fails on the second run. */
+  await db.query(`DELETE FROM client_escalations WHERE org_id = $1`, [orgId]);
+  await db.query(`DELETE FROM client_escalation_scans WHERE org_id = $1`, [orgId]);
   await db.query(`DELETE FROM regulator_complaints WHERE org_id = $1`, [orgId]);
   await db.query(`DELETE FROM paid_service_requests WHERE org_id = $1`, [orgId]);
   await db.query(`DELETE FROM client_waypoints WHERE org_id = $1`, [orgId]);
@@ -86,8 +93,19 @@ after(async () => {
 /* ── fixtures ─────────────────────────────────────────────────────────────── */
 
 let seq = 0;
-async function makeClient({ phone = "+15555550123", email = null, tz = "America/Phoenix" } = {}) {
+/* A DISTINCT PHONE PER CLIENT, and the reason is a finding rather than tidiness.
+   This fixture used to hand every client the same number, '+15555550123'. From
+   2026-09-06 the daily cap is keyed on the destination as well as on the client
+   record (db/migrations/369), because a person with two client rows on one phone
+   was getting two texts a day. With a shared fixture number every client in this
+   suite IS that person, so the quiet-hours proof below — two clients, two
+   timezones, one instant — silently became a test of the new cap instead. The
+   numbers are now unique, which is what the scenario always meant.
+   The one place a shared number is the POINT has its own explicit phone: see
+   "two client rows on one phone number" further down. */
+async function makeClient({ phone = undefined, email = null, tz = "America/Phoenix" } = {}) {
   seq += 1;
+  if (phone === undefined) phone = `+1555555${String(1000 + seq).slice(-4)}`;
   const addr = email === null ? `nudge${seq}${EMAIL_TAG}` : email;
   return (await db.query(
     `INSERT INTO clients (org_id, first_name, last_name, email, phone, custom_fields)
@@ -120,6 +138,17 @@ async function makeClientAccount(clientId) {
      RETURNING id`,
     [orgId, `acct${seq}${EMAIL_TAG}`, clientId]
   )).rows[0].id;
+}
+
+/* One inbound row, dated. `at` matters for the escalation proofs: the defect
+   was a 200-row horizon, so the whole point is putting the threat far enough
+   back that ordinary later traffic buries it. */
+async function inboundMessage(clientId, body, at = NOON) {
+  await db.query(
+    `INSERT INTO messages (org_id, client_id, direction, channel, rendered_body, status, created_at)
+     VALUES ($1,$2,'inbound','sms',$3,'received',$4::timestamptz)`,
+    [orgId, clientId, body, (at instanceof Date ? at : new Date(at)).toISOString()]
+  );
 }
 
 const countMessages = async (clientId) =>
@@ -614,6 +643,378 @@ test("the queued message names the actual waypoint, not a generic reminder",
     assert.match(body.rendered_body, /Link your business bank account/);
     assert.equal(body.status, "queued", "queued — this lane never sends");
     assert.equal(body.channel, "sms");
+  });
+
+/* ── the copy itself, pinned character for character ──────────────────────── */
+
+test("the queued body is EXACTLY the template, rendered — no silent extra text",
+  { skip: !HAS_DB }, async () => {
+    /* A regex match on the waypoint title was all this suite asserted, so the
+       rest of the message was unpinned: a footer, a link, a second sentence or
+       a changed opt-out line could all have been added or removed without a
+       single test noticing. On a consumer-finance file the whole string is the
+       thing under review, not the part that names the task.
+
+       The body below is the TEST FIXTURE template at the top of this file, not
+       the shipped copy. The shipped copy is pinned by the next test. */
+    const clientId = await makeClient();
+    await makeWaypoint(clientId, { title: "Link your business bank account" });
+    await runNudges(db, { orgId, now: NOON });
+    const row = (await db.query(
+      `SELECT rendered_body, subject, channel, status, direction
+         FROM messages WHERE client_id = $1`,
+      [clientId]
+    )).rows[0];
+
+    assert.equal(
+      row.rendered_body,
+      "Due today: Link your business bank account. Reply STOP to opt out."
+    );
+    assert.equal(row.subject, null, "an SMS carries no subject");
+    assert.equal(row.channel, "sms");
+    assert.equal(row.direction, "outbound");
+    assert.equal(row.status, "queued", "queued — this lane never sends");
+  });
+
+test("the SHIPPED copy from db/seed/025 renders with no placeholder left behind",
+  { skip: !HAS_DB }, async () => {
+    /* What a real client on a seeded org actually receives. Pinned here because
+       the fixture above is a placeholder and pinning only the placeholder
+       proves nothing about the words that go out.
+
+       Three things this asserts and one it does not. It asserts: the merge
+       fields all resolve, the opt-out line survives, and nothing in the body
+       claims an outcome. It does NOT assert Chris's final wording — he edits
+       these in the template editor without touching code, which is the whole
+       point of the template keys being the contract. If he changes the copy,
+       this test is expected to be updated with it. */
+    const clientId = await makeClient();
+    await makeWaypoint(clientId, { title: "Link your business bank account" });
+    const fixture = (await db.query(
+      `SELECT body FROM message_templates WHERE org_id = $1 AND template_key = 'SMS-WAYPOINT-DUE'`,
+      [orgId]
+    )).rows[0].body;
+    const shipped = "Hi {{contact.first_name}}, it's Fundhub. This is due today on your file: "
+      + "{{waypoint.title}}. You can take care of it in your portal. Reply here if you are "
+      + "stuck. Reply STOP to opt out.";
+    try {
+      await db.query(
+        `UPDATE message_templates SET body = $2
+          WHERE org_id = $1 AND template_key = 'SMS-WAYPOINT-DUE'`,
+        [orgId, shipped]
+      );
+      await runNudges(db, { orgId, now: NOON });
+      const body = (await db.query(
+        `SELECT rendered_body FROM messages WHERE client_id = $1`, [clientId]
+      )).rows[0].rendered_body;
+
+      assert.equal(
+        body,
+        "Hi Nudge, it's Fundhub. This is due today on your file: Link your business bank "
+        + "account. You can take care of it in your portal. Reply here if you are stuck. "
+        + "Reply STOP to opt out."
+      );
+      assert.equal(/\{\{|\}\}/.test(body), false, `an unresolved merge field shipped: ${body}`);
+      assert.ok(body.endsWith("Reply STOP to opt out."), "the opt-out line has to survive");
+      /* No claim about a credit outcome, and none of the words the owner has
+         banned from client-facing copy. */
+      for (const banned of [/credit repair/i, /score/i, /guarantee/i, /approved/i, /delete[ds]?\b/i]) {
+        assert.equal(banned.test(body), false, `${banned} must not appear: ${body}`);
+      }
+    } finally {
+      await db.query(
+        `UPDATE message_templates SET body = $2
+          WHERE org_id = $1 AND template_key = 'SMS-WAYPOINT-DUE'`,
+        [orgId, fixture]
+      );
+    }
+  });
+
+/* ── BLOCKER: the chase must not be able to starve ────────────────────────── */
+
+test("200 finished waypoints do NOT hold the budget against one live client",
+  { skip: !HAS_DB }, async () => {
+    /* THE FAILURE THIS PINS. planNudges took the 200 oldest overdue rows with no
+       anti-join against waypoint_nudges, and the sweeper calls it with
+       orgId=null so those 200 slots are one budget for the whole platform. A
+       waypoint whose four rungs were spent stayed not_started and overdue for
+       ever, and being oldest it sorted FIRST — so dead rows accumulated at the
+       front of the queue until they held every slot and no live overdue row was
+       ever reached again. Measured on a scratch database on 2026-09-06:
+       "candidates: 200 includes the live one? false", 200 considered, 0 queued,
+       0 messages to the live client.
+
+       200 exactly, because that is DEFAULT_LIMIT. */
+    const dead = [];
+    for (let i = 0; i < 200; i += 1) {
+      const c = await makeClient();
+      const w = await makeWaypoint(c, { dueDaysAgo: 100 + i, title: `Finished ${i}` });
+      for (const step of [1, 2, 3, 4]) {
+        await db.query(
+          `INSERT INTO waypoint_nudges (org_id, client_id, waypoint_id, step, kind, channel,
+             template_key, outcome, idempotency_key)
+           VALUES ($1,$2,$3,$4,$5,$6,NULL,$7,$8)`,
+          [orgId, c, w, step,
+           step === 4 ? "staff_task" : "client_message",
+           step === 4 ? null : (step === 2 ? "email" : "sms"),
+           step === 4 ? "staff_task" : "no_contact",
+           idempotencyKeyFor(w, step)]
+        );
+      }
+      dead.push(w);
+    }
+
+    const live = await makeClient();
+    const liveWp = await makeWaypoint(live, { dueDaysAgo: 0, title: "Link your business bank account" });
+
+    const plan = await planNudges(db, { orgId: null, now: NOON });
+    assert.ok(plan.some((c) => c.waypointId === liveWp),
+      `the live waypoint must be a candidate; got ${plan.length} candidates`);
+    assert.equal(plan.some((c) => dead.includes(c.waypointId)), false,
+      "a waypoint with every rung spent may not occupy a slot");
+
+    const tally = await runNudges(db, { orgId: null, now: NOON });
+    assert.equal(await countMessages(live), 1, "the live client gets their message");
+    assert.equal(tally.queued, 1);
+  });
+
+test("a pass that fills its budget says so, with a number",
+  { skip: !HAS_DB }, async () => {
+    /* Starvation was silent. The tally read "considered 200 / queued 0 /
+       skipped 200" and nothing in it said the queue was full, so the worst pass
+       the system can have looked like a quiet day. */
+    for (let i = 0; i < 5; i += 1) {
+      const c = await makeClient();
+      await makeWaypoint(c, { dueDaysAgo: 1 });
+    }
+    const tally = await runNudges(db, { orgId, now: NOON, limit: 2 });
+    assert.equal(tally.limit, 2);
+    assert.equal(tally.budget_exhausted, true, "the budget was filled and must say so");
+    assert.equal(tally.not_reached, 3, "three eligible rows were not reached");
+
+    const roomy = await runNudges(db, { orgId, now: NOON, limit: 100 });
+    assert.equal(roomy.budget_exhausted, false, "a pass with room to spare is not exhausted");
+    assert.equal(roomy.not_reached, 0);
+  });
+
+/* ── HIGH: a legal threat may not expire ──────────────────────────────────── */
+
+test("a lawyer message survives 210 later messages, and stays permanent",
+  { skip: !HAS_DB }, async () => {
+    /* THE FAILURE THIS PINS. The escalation check read the client's most recent
+       200 inbound messages and regexed them in JavaScript. 200 is a horizon,
+       and the portal chat writes one inbound row per client turn, so an
+       ordinary talkative client pushed "my lawyer will be in touch" out of the
+       window while the row sat untouched in the table. Measured on a scratch
+       database on 2026-09-06: blockersFor returned [] and deliverNudge queued a
+       text. "Messages the permanently stopped client just got: 1." */
+    const clientId = await makeClient();
+    await inboundMessage(clientId, "my lawyer will be in touch", new Date(NOON.getTime() - 60 * DAY));
+    for (let i = 0; i < 210; i += 1) {
+      await inboundMessage(clientId, `ordinary chatter ${i}`,
+        new Date(NOON.getTime() - (59 - i * 0.2) * DAY));
+    }
+
+    const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 0 });
+    const blockers = await blockersFor(db, { waypointId, now: NOON });
+    assert.ok(blockers.includes("escalation"), JSON.stringify(blockers));
+
+    const tally = await runNudges(db, { orgId, now: NOON });
+    assert.equal(await countMessages(clientId), 0,
+      "a client who threatened us gets nothing, however much they have said since");
+    assert.equal(tally.queued, 0);
+  });
+
+test("the escalation is recorded once and cannot be erased by deleting the message",
+  { skip: !HAS_DB }, async () => {
+    /* A scan is a detector, not a memory. The durable row in client_escalations
+       (368) is the memory, and it has to outlive the evidence: no code path in
+       src/nudge/ removes it, and fundhub_app holds no DELETE on that table. */
+    const clientId = await makeClient();
+    await inboundMessage(clientId, "this is a scam", new Date(NOON.getTime() - DAY));
+    const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 0 });
+
+    assert.ok((await blockersFor(db, { waypointId, now: NOON })).includes("escalation"));
+
+    const rows = (await db.query(
+      `SELECT client_id, said_at, message_id, matched_pattern
+         FROM client_escalations WHERE client_id = $1`, [clientId]
+    )).rows;
+    assert.equal(rows.length, 1, "exactly one durable row");
+    assert.ok(rows[0].matched_pattern, "which of OUR rules fired is recorded");
+    assert.equal(rows[0].matched_pattern.includes("this is a scam"), false,
+      "the client's own words are NOT stored");
+    assert.ok(rows[0].said_at, "when they said it, not just when we noticed");
+
+    // A second pass writes no second row.
+    await blockersFor(db, { waypointId, now: NOON });
+    assert.equal(Number((await db.query(
+      `SELECT count(*)::int AS n FROM client_escalations WHERE client_id = $1`, [clientId]
+    )).rows[0].n), 1, "first sighting wins; nothing writes a second");
+
+    // The evidence goes. The stop does not.
+    await db.query(`DELETE FROM messages WHERE client_id = $1`, [clientId]);
+    assert.ok((await blockersFor(db, { waypointId, now: NOON })).includes("escalation"),
+      "the stop outlives the message it was found in");
+    assert.equal(Number((await db.query(
+      `SELECT count(*)::int AS n FROM client_escalations WHERE client_id = $1`, [clientId]
+    )).rows[0].n), 1);
+    assert.equal(await countMessages(clientId), 0);
+  });
+
+test("an ordinary client who never threatened us is still chased",
+  { skip: !HAS_DB }, async () => {
+    /* The other half of the escalation change, and the one that matters for the
+       feature existing at all: the scan must not become a blanket stop. A
+       client doing exactly what our own product told them to do — file the CFPB
+       form — is not a threat. */
+    const clientId = await makeClient();
+    for (const said of [
+      "I filed the CFPB complaint like you said",
+      "should I send the attorney general form too?",
+      "there is a fraud alert on my file",
+      "when is my next call"
+    ]) {
+      await inboundMessage(clientId, said, new Date(NOON.getTime() - 30 * DAY));
+    }
+    const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 0 });
+    const blockers = await blockersFor(db, { waypointId, now: NOON });
+    assert.equal(blockers.includes("escalation"), false, JSON.stringify(blockers));
+    assert.equal(Number((await db.query(
+      `SELECT count(*)::int AS n FROM client_escalations WHERE client_id = $1`, [clientId]
+    )).rows[0].n), 0, "no durable stop was written for a healthy conversation");
+  });
+
+/* ── MEDIUM: one person, one message a day ────────────────────────────────── */
+
+test("two client rows on one phone number get ONE text a day, not two",
+  { skip: !HAS_DB }, async () => {
+    /* The daily cap in 365 counts RECORDS: UNIQUE (client_id, client_local_date).
+       A person with two client rows on the same phone is two records, which is
+       ordinary in any CRM and is the shape behind the incident where one phone
+       received 51 messages. Measured on a scratch database on 2026-09-06 before
+       the fix: two rows, one pass, two outbound messages.
+
+       The two spellings differ on purpose — normalisation is the thing being
+       proved, not just the constraint. */
+    const twinA = await makeClient({ phone: "+15550004000" });
+    const twinB = await makeClient({ phone: "+1 (555) 000-4000" });
+    await makeWaypoint(twinA, { title: "Upload your ID" });
+    await makeWaypoint(twinB, { title: "Upload your ID" });
+
+    const tally = await runNudges(db, { orgId, now: NOON });
+    const total = (await countMessages(twinA)) + (await countMessages(twinB));
+    assert.equal(total, 1, "one person, one message");
+    assert.ok(
+      tally.results.some((r) => (r.reasons || []).includes("daily_cap_destination")),
+      `the destination cap should be the named reason: ${JSON.stringify(tally.results.map((r) => r.reasons))}`
+    );
+  });
+
+test("one client with a phone and an email still gets ONE message a day",
+  { skip: !HAS_DB }, async () => {
+    /* The destination cap is added to the client cap, never instead of it.
+       Replacing it would newly allow one person a text AND an email in a day,
+       which is more messages — the wrong direction. Step 1 is SMS and step 2 is
+       email, so two waypoints at different overdue ages reach for both. */
+    const clientId = await makeClient();
+    await makeWaypoint(clientId, { key: "upload_id", title: "Upload your ID", dueDaysAgo: 0 });
+    await makeWaypoint(clientId, { key: "sign_agreement", title: "Sign the agreement", dueDaysAgo: 3 });
+    await runNudges(db, { orgId, now: NOON });
+    assert.equal(await countMessages(clientId), 1,
+      "one message, whichever two channels were reached for");
+  });
+
+/* ── MEDIUM: a crash mid-send must read as unresolved ─────────────────────── */
+
+test("the row says 'claimed' until the send resolves, never 'queued'",
+  { skip: !HAS_DB }, async () => {
+    /* 365's header describes claim-then-queue with outcome='claimed' meaning
+       the send has not resolved. The code INSERTed 'queued' before sendTemplated
+       was called, so a pass that died between the two left a row reading exactly
+       like a delivered nudge. Measured on a scratch database on 2026-09-06 by
+       reading the row from inside the send callback: it read "queued". */
+    const clientId = await makeClient();
+    const waypointId = await makeWaypoint(clientId);
+    const [candidate] = await planNudges(db, { orgId, now: NOON });
+
+    let seenMidSend = null;
+    const res = await deliverNudge(db, candidate, {
+      now: NOON,
+      send: async () => {
+        seenMidSend = (await db.query(
+          `SELECT outcome, client_local_date, destination_key
+             FROM waypoint_nudges WHERE waypoint_id = $1 AND step = 1`,
+          [waypointId]
+        )).rows[0];
+        return { sent: true, messageId: null };
+      }
+    });
+
+    assert.equal(seenMidSend.outcome, "claimed",
+      "in flight, the row must not claim a message went out");
+    assert.ok(seenMidSend.client_local_date,
+      "it still holds the client's day — not knowing is not a reason to send a second one");
+    assert.ok(seenMidSend.destination_key, "and the destination it was aimed at");
+    assert.equal(res.action, "queued");
+    assert.equal((await nudgeRows(waypointId))[0].outcome, "queued",
+      "once the send returns, the claim resolves");
+  });
+
+test("a claim left in flight is never retried, and holds the day",
+  { skip: !HAS_DB }, async () => {
+    /* The honest cost of claim-before-queue, pinned rather than described. A
+       process that dies mid-send leaves 'claimed'; the step is spent and the
+       client does not get a second attempt. Simulated by claiming through a
+       send that throws a non-Error and then re-running the whole pass. */
+    const clientId = await makeClient();
+    const waypointId = await makeWaypoint(clientId);
+    await db.query(
+      `INSERT INTO waypoint_nudges (org_id, client_id, waypoint_id, step, kind, channel,
+         template_key, outcome, idempotency_key, client_local_date, destination_key)
+       VALUES ($1,$2,$3,1,'client_message','sms','SMS-WAYPOINT-DUE','claimed',$4,
+               '2026-09-10'::date,'5555551000')`,
+      [orgId, clientId, waypointId, idempotencyKeyFor(waypointId, 1)]
+    );
+    const tally = await runNudges(db, { orgId, now: NOON });
+    assert.equal(await countMessages(clientId), 0, "the spent rung is not retried");
+    assert.equal(tally.queued, 0);
+    const rows = await nudgeRows(waypointId);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].outcome, "claimed", "it stays unresolved rather than becoming 'queued'");
+  });
+
+/* ── LOW: a missing template must be loud, and must name itself ───────────── */
+
+test("a missing template names the key it is missing, not just a count",
+  { skip: !HAS_DB }, async () => {
+    /* db/seed/025 writes the three nudge templates for every org that exists
+       when it runs, so an org created afterwards has none and every rung
+       resolves as template_pending. The COUNT was already in the tally; WHICH
+       key was missing was not, so finding it was a hunt. */
+    const clientId = await makeClient();
+    await makeWaypoint(clientId);
+    const saved = (await db.query(
+      `SELECT body FROM message_templates WHERE org_id = $1 AND template_key = 'SMS-WAYPOINT-DUE'`,
+      [orgId]
+    )).rows[0].body;
+    try {
+      await db.query(
+        `UPDATE message_templates SET compliance_passed = false
+          WHERE org_id = $1 AND template_key = 'SMS-WAYPOINT-DUE'`,
+        [orgId]
+      );
+      const tally = await runNudges(db, { orgId, now: NOON });
+      assert.equal(tally.template_pending, 1);
+      assert.deepEqual(tally.template_pending_keys, ["SMS-WAYPOINT-DUE"]);
+      assert.equal(await countMessages(clientId), 0);
+    } finally {
+      await db.query(
+        `UPDATE message_templates SET compliance_passed = true, body = $2
+          WHERE org_id = $1 AND template_key = 'SMS-WAYPOINT-DUE'`,
+        [orgId, saved]
+      );
+    }
   });
 
 test("a pass over an empty org does nothing and does not throw",

@@ -40,6 +40,16 @@
 --       The date is the client's OWN local calendar day, not ours — see
 --       client_time_zone below.
 --
+--       IT COUNTS RECORDS, AND THAT IS NOT THE SAME AS COUNTING PEOPLE. A
+--       person with two client rows on one phone number is two records, so
+--       this constraint let them have two texts in a day. Measured on a
+--       scratch database on 2026-09-06: two rows, '+15550004000' and
+--       '+1 (555) 000-4000', one pass, two outbound messages.
+--       db/migrations/369 adds a SECOND cap keyed on the normalised
+--       destination. This one is kept as well as, not replaced by, that one —
+--       replacing it would newly allow one client an SMS and an email on the
+--       same day. The effective rule is the stricter of the two.
+--
 -- Both are enforced by the database rather than by a SELECT-then-INSERT in
 -- JavaScript. That distinction is the point. `transactions` in this repo
 -- dedupes by check-then-write and is racy under two writers; the pattern
@@ -62,6 +72,21 @@
 --   claimed           the claim exists and the send has not resolved yet. A row
 --                     left in this state means a pass died mid-flight. It is
 --                     NOT retried — a step is spent once. Fewer messages.
+--                     THE CODE NOW ACTUALLY DOES THIS. Until 2026-09-06 the
+--                     client-message path INSERTed outcome='queued' before
+--                     sendTemplated was called, so a pass that died between the
+--                     two left a row reading exactly like a delivered nudge and
+--                     this header described something the code did not do.
+--                     src/nudge/run.mjs writes 'claimed' and resolves it after
+--                     the send returns. A 'claimed' row still holds the
+--                     client's day, because not knowing whether a message went
+--                     out is not a reason to send a second one — which needed
+--                     waypoint_nudges_day_outcome_ck relaxed to permit a local
+--                     date beside 'claimed'. That relaxation is in
+--                     db/migrations/369, NOT edited into the CHECK below: this
+--                     file is already applied wherever it is applied, and
+--                     migrate.mjs keys schema_migrations on <dir>/<file>, so an
+--                     edit here would never re-run (CLAUDE.md §12).
 --   queued            a messages row was written with status='queued'. The
 --                     dispatcher (src/messaging/dispatch.mjs) sends it, on its
 --                     own clock, through its own compliance gate. This table
