@@ -352,9 +352,17 @@ export async function requestRound(db, {
        failed and CLOSED (resolved_at), not left open: an open row would trip
        the in-flight guard and lock the client out of ever retrying. Nothing has
        been charged — no card has been touched at any point. */
+    /* THE PROCESSOR'S OWN WORDS NEVER GO IN state_reason. api/paid-services.mjs
+       returns that column verbatim to a client principal, and the processor's
+       reason has been observed carrying an API key fragment, an internal
+       hostname and a request id. So the column gets a fixed code and the
+       detail goes to the operator log instead. */
+    console.error(
+      `[paid-services] checkout mint failed for request ${row.id}: ${String(minted.reason || "unknown").slice(0, 400)}`
+    );
     const closed = await closeFailed(db, {
       requestId: row.id,
-      reason: `checkout_unavailable: ${String(minted.reason || "unknown").slice(0, 180)}`
+      reason: "checkout_unavailable"
     });
     const r = refuse(REFUSAL.PAYMENT_FAILED, minted.reason);
     r.request = closed || row;
@@ -681,9 +689,14 @@ export async function stageRound(db, {
       idempotencyKey: `paid_round_pull:${requestId}`
     });
   } catch (err) {
+    /* Same rule as the mint failure above: state_reason reaches the client, so
+       it carries a code and the exception text goes to the operator log. */
+    console.error(
+      `[paid-services] credit pull refused for request ${requestId}: ${String(err?.message || err).slice(0, 400)}`
+    );
     const failed = await closeFailed(db, {
       requestId,
-      reason: `pull_refused: ${String(err?.message || err).slice(0, 180)}`
+      reason: "pull_refused"
     });
     const r = refuse(REFUSAL.PULL_FAILED, err?.message);
     r.request = failed || current;
