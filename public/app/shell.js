@@ -519,8 +519,29 @@
        to recognise a screen in it, and silently carried nothing. The bounce-home
        path is exactly where losing the client hurts most: you were sent
        somewhere you did not ask to go, and arriving with nobody open makes it
-       look like the app forgot what you were doing. No markup in public/app uses
-       an absolute href today, so nothing else changes shape. */
+       look like the app forgot what you were doing. */
+    /* AN ABSOLUTE HREF THAT IS NOT UNDER /app/ IS NOT AN APP SCREEN, and that
+       correction is why the progress page can be reached at all.
+
+       public/ holds the pages a CUSTOMER opens at the site root —
+       contract.html, portal-login.html, progress.html. They do not load this
+       file, they are not in ALL, and they are in no role's tab list, so before
+       this line every one of them looked to the gate like a screen nobody may
+       open. Both gates then fired on the single link to one:
+
+         * gateLinks() hid the whole card the link sat in, and
+         * the capture-phase click interceptor called preventDefault(), so an
+           ordinary left click did nothing at all.
+
+       Measured in Chromium on 2026-09-05: the address bar did not change.
+       Adding progress.html to a role's tab list would have been the wrong fix —
+       it is not a tab, it has no sidebar row, and its own endpoint does the real
+       gating. What was wrong was calling a root page an /app/ screen.
+
+       The redirect targets this file builds are still recognised: they are
+       "/app/" + homeFor(...), which passes the /app/ test above. A bare or
+       relative href ("pipeline.html", "./pipeline.html") is untouched. */
+    if (h.charAt(0) === "/" && h.lastIndexOf("/app/", 0) !== 0) return "";
     h = h.slice(h.lastIndexOf("/") + 1);
     return /^[a-z0-9-]+\.html$/i.test(h) ? h : "";
   }
