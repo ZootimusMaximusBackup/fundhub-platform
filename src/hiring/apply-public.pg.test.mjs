@@ -167,38 +167,6 @@ describe("careers intake — parsing and spam handling", () => {
       assert.equal(parseApplyBody(body).error, "invalid_json");
     }
   });
-
-  test("the in-memory burst limiter counts refused attempts, not just accepted ones", () => {
-    resetAttempts();
-    const ip = "203.0.113.44";
-    for (let i = 0; i < APPLY_LIMITS.maxPerIpShortWindow; i++) {
-      assert.equal(checkIpRate(ip).limited, false, `attempt ${i + 1} should be allowed`);
-      recordAttempt(ip);
-    }
-    assert.equal(checkIpRate(ip).limited, true, "the burst limit trips");
-    assert.equal(checkIpRate("198.51.100.9").limited, false, "and only for that source");
-    resetAttempts();
-  });
-
-  test("the burst window expires, so a limiter cannot lock somebody out forever", () => {
-    resetAttempts();
-    const ip = "203.0.113.45";
-    const t0 = Date.now();
-    for (let i = 0; i < APPLY_LIMITS.maxPerIpShortWindow; i++) recordAttempt(ip, { now: t0 });
-    assert.equal(checkIpRate(ip, { now: t0 }).limited, true);
-    const later = t0 + (APPLY_LIMITS.ipShortWindowMinutes + 1) * 60_000;
-    assert.equal(checkIpRate(ip, { now: later }).limited, false);
-    resetAttempts();
-  });
-
-  test("no request without a source address is limited into oblivion", () => {
-    // clientIp() returns null when nothing resolves. That must not be a shared
-    // bucket every applicant falls into.
-    resetAttempts();
-    for (let i = 0; i < 50; i++) recordAttempt(null);
-    assert.equal(checkIpRate(null).limited, false);
-    resetAttempts();
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -211,9 +179,40 @@ describe("careers intake — against the database", { skip: !HAVE_DB ? "no DATAB
   before(async () => {
     org = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0].id;
     await cleanup();
-    resetAttempts();
+    await resetAttempts(db, { orgId: org });
   });
-  after(async () => { await cleanup(); resetAttempts(); await close(); });
+  after(async () => { await cleanup(); await resetAttempts(db, { orgId: org }); await close(); });
+
+  test("the durable burst limiter counts refused attempts, not just accepted ones", async () => {
+    const ip = "203.0.113.44";
+    await resetAttempts(db, { orgId: org, ip });
+    for (let i = 0; i < APPLY_LIMITS.maxPerIpShortWindow; i++) {
+      assert.equal((await checkIpRate(db, { orgId: org, ip })).limited, false,
+        `attempt ${i + 1} should be allowed`);
+      await recordAttempt(db, { orgId: org, ip });
+    }
+    assert.equal((await checkIpRate(db, { orgId: org, ip })).limited, true, "the burst limit trips");
+    assert.equal((await checkIpRate(db, { orgId: org, ip: "198.51.100.9" })).limited, false,
+      "and only for that source");
+    await resetAttempts(db, { orgId: org, ip });
+  });
+
+  test("the burst window expires, so a limiter cannot lock somebody out forever", async () => {
+    const ip = "203.0.113.45";
+    await resetAttempts(db, { orgId: org, ip });
+    const t0 = new Date();
+    for (let i = 0; i < APPLY_LIMITS.maxPerIpShortWindow; i++) {
+      await recordAttempt(db, { orgId: org, ip, now: t0 });
+    }
+    assert.equal((await checkIpRate(db, { orgId: org, ip, now: t0 })).limited, true);
+    const later = new Date(t0.getTime() + (APPLY_LIMITS.ipShortWindowMinutes + 1) * 60_000);
+    assert.equal((await checkIpRate(db, { orgId: org, ip, now: later })).limited, false);
+    await resetAttempts(db, { orgId: org, ip });
+  });
+
+  test("no request without a source address is limited into oblivion", async () => {
+    assert.equal((await checkIpRate(db, { orgId: org, ip: null })).limited, false);
+  });
 
   test("the open roles list carries the three public columns and nothing else", async () => {
     const roles = await listOpenRoles(db, { orgId: org });
@@ -350,7 +349,7 @@ describe("careers intake — against the database", { skip: !HAVE_DB ? "no DATAB
   });
 
   test("the durable per-address limit trips on the row count, not on a counter", async () => {
-    resetAttempts();
+    await resetAttempts(db, { orgId: org });
     const email = `${TAG}-dana@example.test`;
     const loose = await checkApplyRate(db, { orgId: org, email, ip: null });
     assert.equal(loose.limited, false, "two applications is not a flood");
@@ -386,7 +385,7 @@ describe("careers intake — against the database", { skip: !HAVE_DB ? "no DATAB
   });
 
   test("POST answers a new address, a known address and a bot IDENTICALLY", async () => {
-    resetAttempts();
+    await resetAttempts(db, { orgId: org });
     const fresh = await call({ method: "POST", body: {
       role: "closer", name: `${TAG} Fresh`, email: `${TAG}-fresh@example.test` } });
     const known = await call({ method: "POST", body: {
@@ -401,18 +400,18 @@ describe("careers intake — against the database", { skip: !HAVE_DB ? "no DATAB
     assert.deepStrictEqual(bot.body, fresh.body, "a bot must not learn it was caught");
     assert.equal(known.statusCode, fresh.statusCode);
     assert.equal(bot.statusCode, fresh.statusCode);
-    resetAttempts();
+    await resetAttempts(db, { orgId: org });
   });
 
   test("POST refuses a protected field with a 400 and writes nothing", async () => {
-    resetAttempts();
+    await resetAttempts(db, { orgId: org });
     const before = await countApplications();
     const res = await call({ method: "POST", body: {
       role: "closer", name: `${TAG} P`, email: `${TAG}-p@example.test`, date_of_birth: "1980-01-01" } });
     assert.equal(res.statusCode, 400);
     assert.equal(res.body.error, "protected_field_refused");
     assert.equal(await countApplications(), before);
-    resetAttempts();
+    await resetAttempts(db, { orgId: org });
   });
 
   test("POST admits exactly the burst limit, then answers 429 with a Retry-After", async () => {
@@ -420,7 +419,7 @@ describe("careers intake — against the database", { skip: !HAVE_DB ? "no DATAB
        originally recorded the attempt BEFORE asking the limiter, so the request
        competed with itself and a limit of five let four through — the constant
        said one thing and the endpoint did another. */
-    resetAttempts();
+    await resetAttempts(db, { orgId: org, ip: "203.0.113.77" });
     const ip = "203.0.113.77";
     const codes = [];
     for (let i = 0; i < APPLY_LIMITS.maxPerIpShortWindow + 1; i++) {
@@ -439,7 +438,7 @@ describe("careers intake — against the database", { skip: !HAVE_DB ? "no DATAB
     assert.equal(admitted, APPLY_LIMITS.maxPerIpShortWindow,
       `the limit says ${APPLY_LIMITS.maxPerIpShortWindow} per window; ${admitted} got through`);
     assert.equal(codes[codes.length - 1], 429);
-    resetAttempts();
+    await resetAttempts(db, { orgId: org, ip: "203.0.113.77" });
   });
 
   test("no verb other than GET and POST is answered", async () => {
@@ -450,7 +449,7 @@ describe("careers intake — against the database", { skip: !HAVE_DB ? "no DATAB
   });
 
   test("a role that closed between the page load and the submit is a 400, not a 500", async () => {
-    resetAttempts();
+    await resetAttempts(db, { orgId: org });
     await db.query(`UPDATE hiring_roles SET active = false WHERE org_id = $1 AND key = 'setter'`, [org]);
     try {
       const res = await call({ method: "POST", body: {
@@ -459,7 +458,7 @@ describe("careers intake — against the database", { skip: !HAVE_DB ? "no DATAB
       assert.equal(res.body.error, "role_unavailable");
     } finally {
       await db.query(`UPDATE hiring_roles SET active = true WHERE org_id = $1 AND key = 'setter'`, [org]);
-      resetAttempts();
+      await resetAttempts(db, { orgId: org });
     }
   });
 
@@ -504,4 +503,9 @@ async function cleanup() {
       USING candidates c
       WHERE c.id = a.candidate_id AND c.email LIKE $1`, [`${TAG}-%`]);
   await db.query(`DELETE FROM candidates WHERE email LIKE $1`, [`${TAG}-%`]);
+  await db.query(
+    `DELETE FROM hiring_apply_attempts a
+      USING orgs o
+      WHERE a.org_id = o.id AND o.is_default
+        AND (a.ip::text LIKE '203.0.113.%' OR a.ip::text LIKE '198.51.100.%')`);
 }

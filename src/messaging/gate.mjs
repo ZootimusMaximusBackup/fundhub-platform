@@ -83,6 +83,9 @@ export const PARTNER_WELCOME_KEYS = new Set(["AF1", "EMAIL-PARTNER-WELCOME"]);
     08:00 Arizona like everyone else's. */
 export const PARTNER_WELCOME_SMS_KEYS = new Set(["SMS-PARTNER-WELCOME"]);
 
+/** Voluntary EEO self-ID invite — candidate has no clients row (053_eeo_selfid.sql). */
+export const CANDIDATE_EEO_EMAIL_KEYS = new Set(["EMAIL-CANDIDATE-EEO-INVITE"]);
+
 /** A destination we could actually text. Deliberately stricter than the email
     branch's `includes("@")`: a partner text with no real number on the row
     falls back to recipient_unknown and is blocked, not sent into the dark. */
@@ -272,7 +275,9 @@ async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS
   const partnerWelcome =
     (channel === "email" && PARTNER_WELCOME_KEYS.has(welcomeKey) && welcomeTo.includes("@"))
     || (channel === "sms" && PARTNER_WELCOME_SMS_KEYS.has(welcomeKey) && E164.test(welcomeTo));
-  if (!clientId && !partnerWelcome) {
+  const candidateEeoWelcome =
+    channel === "email" && CANDIDATE_EEO_EMAIL_KEYS.has(welcomeKey) && welcomeTo.includes("@");
+  if (!clientId && !partnerWelcome && !candidateEeoWelcome) {
     reasons.push(r("recipient_unknown", "consent",
       "This message has no client attached, so we cannot check whether they asked us to stop. It was not sent."));
   } else if (clientId && await isOptedOut(db, clientId, channel)) {

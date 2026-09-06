@@ -364,3 +364,386 @@ branch `feat/flywheel-runner` until #321 merges.
 - [ ] Tell W4 whether the dispute-letter consent belongs on every client's portal or only repair clients (F35).
 - [ ] Turn off the Gmail "FS Auto" filter before the re-walk (F17).
 - [ ] Accountability upsell — Chris's idea 2026-09-03, note only. Revisit after the fix batch and fulfillment. See manual-walkthrough-2026-09-03.md.
+
+---
+
+## UI — Client Control Panel, owner-set 2026-09-06
+
+From Chris walking Walk1 Funding live.
+
+### 1. The headline slot is answering the wrong question — move it or cut it
+
+The biggest text on the page reads "Nothing waiting on this file. No bank yes on this
+file carries a dollar amount yet." Directly beneath it sits ACTIVE BLOCKERS 5.
+
+Both are true. They answer different questions. That slot is counting **bank answers
+that still need a dollar amount typed in** — a bookkeeping counter — while looking like
+the file's status. `public/app/client-control-panel.html:3031`.
+
+**Chris: "This English here needs to go."** Delete it from the headline. If the count is
+still wanted, it belongs beside the bank rows it describes, not at the top of the file.
+
+### 2. The caveat sentence is not English
+
+> "Counts bank answers we have been told about. Applications still out with a bank are
+> not recorded anywhere, so they cannot be counted here."
+
+`client-control-panel.html:680`. The comment above it (lines 674-679) explains why it
+exists: nothing records an application at the moment somebody applies, so the count can
+only cover answers already received. That reasoning is sound and the sentence is not how
+a person talks. Rewrite or delete with the headline.
+
+### 3. Three colours only, and they mean one thing each — owner-set
+
+Operations screens use **green, yellow, red**. Nothing else. Chris: "all this orange and
+yellow shit on the side of it needs to be green... hella confusing."
+
+| Colour | Meaning |
+|---|---|
+| **Green** | Go. Nothing stopping this. |
+| **Yellow** | A blocker. Somebody has to do something. |
+| **Red** | Hard stop. Something is wrong with the file itself — a negative item on the credit report, for example. |
+
+The five blocker cards currently carry orange/yellow left borders. Those are ordinary
+open tasks on a clean file, so they are **green**. Applies across every operations
+screen, not just this panel. `docs/UI-STANDARDS.md` is the home for the rule.
+
+### Also found on the same walk (not UI — data and wiring)
+
+- Next action says "Apply for Funding", the record says "Collect Documents". The screen
+  prints a paragraph explaining the disagreement instead of resolving it.
+- Open Inquiries reads **1**. The credit file has **4** (Capital One, SYNCB/PayPal,
+  Navy Federal, Citibank).
+- `inquiry_log` is **empty** for this client. The lender matcher builds its avoid-list
+  from that table, so bureau avoidance has nothing to work with.
+- **Income (Experian) $37,000/yr is not a bureau figure.** The stored credit file
+  contains no income data at all. It is an estimate labelled as an Experian fact.
+  `client-control-panel.html:1956-1958` reads `income_estimates`.
+- The lender list shows **no bureau and no ranking** and is still alphabetical, though
+  bureau data for 46 banks and rankings for 37 shipped on 2026-09-05 (PR #337).
+
+### 4. The Apply button cannot open a bank page — CHRIS ONLY
+
+Clicking Apply returns "Could not start Apply proxy. Oxylabs rejected the proxy login
+(407)." The bank page never opens, and the dialog correctly warns not to apply from a
+normal connection because the bank would see the wrong location.
+
+**The error's advice is wrong.** It says the username is "the account id without the
+customer- prefix". Checked 2026-09-06: the stored `OXYLABS_USERNAME` has no such prefix
+and is already in the documented shape. So the credential is dead or expired, not
+misformatted, and anyone following that hint will change nothing and conclude the code
+is broken.
+
+Two things:
+1. Chris logs into Oxylabs → Residential Proxies → user credentials, and the real
+   `OXYLABS_USERNAME` / `OXYLABS_PASSWORD` get set. Nobody else can reach that dashboard
+   (`docs/STILL-MISSING.md:19`).
+2. Rewrite that error so it reports what actually happened — the proxy refused the
+   login — instead of naming a formatting fix that does not apply.
+
+### Working correctly, do not re-test
+
+- **The lender match narrows properly.** "18 fit" for an Arizona client, down from 313.
+- The play dropdown on each bank row works: Card stacking first pull, In-branch visit,
+  Online only, Docs first.
+- All five tasks, the funding round, the sale and the payment are correct on screen.
+
+### 5. The bank list looks like a spreadsheet, not a product — owner-set 2026-09-06
+
+Chris walking Walk1 Funding: "There's no bank logo, the Apply button is massive, what's
+play name." The FUNDING · APPLY DOOR section of `public/app/client-control-panel.html`.
+
+**Confirmed hierarchy, for anyone touching this:** the Client Control Panel IS the main
+file. Repair and Inquiry are sub-desks reached from it. Chris's read was right.
+
+**a. The logos exist and this screen was never given them.** 244 PNG files sit in
+`public/assets/lenders/`, and 21 wrong ones were corrected on 2026-09-05. But
+`src/lenders/match.mjs` does not return `logo_path` in a match row, so the panel cannot
+draw one. One field on the match payload, then render it beside the bank name.
+
+**b. The Apply button is the widest thing on the row.** Bank name gets about 90 pixels
+and wraps onto two lines ("Bank of / America", "Comerica / Bank"); Apply stretches the
+remaining width. Invert it: the bank name and its logo lead, Apply is a normal button.
+
+**c. "Play name" means nothing to anyone.** It records which tactic was used — the
+dropdown offers Card stacking first pull, In-branch visit, Online only, Docs first.
+Call it what it is. "How did you apply?" or "Approach".
+
+**d. "No URL" is shown where an Apply button would be**, with no explanation. Those banks
+take applications in branch or by phone. Say that instead of showing an absence.
+
+### 6. The Specialist screen has no empty state
+
+`public/app/inquiry-remover.html`, Repair tab. With zero rows it spins on "reading the
+repair queue..." forever, every tile reading "—". Measured 2026-09-06: there are genuinely
+0 dispute cases, so the queue is correctly empty — but an empty queue is indistinguishable
+from a broken page, and Chris reasonably read it as broken.
+
+Say "Nothing in the repair queue" and stop the spinner.
+
+### 7. Delete the Generate Apps button — OWNER-SET 2026-09-06
+
+Chris: "I don't think we're gonna need a Generate Apps button. That doesn't make any
+fucking sense. Just delete that."
+
+It creates nothing. Pressing it re-reads the lender match list, redraws the same rows,
+and prints "apps ready — use Apply on each lender". An application record is only ever
+created when somebody presses Bank yes or Bank no on a single lender row
+(`src/applications/status.mjs`, `logBankDecision`). So the button promises an action it
+does not perform, which is exactly why it reads as nonsense.
+
+Remove the control from `public/app/client-control-panel.html`. The lender list already
+loads on page open. Nothing downstream depends on the button.
+
+This also closes the open question from the 2026-09-03 walk — "Should Generate Apps
+create application rows?" The answer is no, and the button goes.
+
+### 8. Open Inquiries shows the wrong number, and it changes on its own
+
+Same file, same session, 2026-09-06:
+
+| Time | Open Inquiries | Inquiry Removal |
+|---|---|---|
+| 3:39 AM | **1** | Blocked |
+| 3:51 AM | **0** | Queued |
+
+The credit file has **4**: Capital One (EX), SYNCB/PayPal (EX), Navy Federal (TU),
+Citibank (EQ). Neither 1 nor 0 is right, nothing was done to the file between those two
+readings, and the Inquiry Removal state moved from Blocked to Queued on its own.
+
+Two things to find: what that tile is actually counting, and what changed the case state
+with no human action.
+
+### 9. Three funding numbers, and the client-facing one is 3x too big
+
+Closer Dashboard for Walk1 Funding, 2026-09-06:
+
+| Label | Shows |
+|---|---|
+| Conservative | $110,000 |
+| Realistic · round 1 | **$636,000** |
+| Personal + business stacked | **$636,000** |
+
+The Client Control Panel shows **$212,000** for the same client, same moment.
+
+**$636,000 is $212,000 × 3.** There is a `PERSONAL_LOAN_MULTIPLIER = 3.0` in
+`vendor/underwriteiq-full/api/lite/crs/estimate-preapprovals.js`. The closer screen runs
+the card estimate through it and prints the result as the headline a closer reads aloud.
+Chris: "Nobody gets 600K in funding."
+
+The two right-hand columns are identical because business funding is correctly $0 — no
+company on file, so nothing stacks. Two labels, one number.
+
+**Owner-set replacement — three numbers, nothing else:**
+
+```
+Personal      what they get on their own credit
+Business      what the company adds ($0 with no company on file)
+Total         the two added together
+```
+
+One source feeding all three. No multiplier presented as a forecast, no "conservative /
+realistic" bands. Same numbers must appear on the Client Control Panel and the Closer
+Dashboard.
+
+Note this is the F15 defect returning in a new place — a client with no business was
+quoted ~$740,000 on 2026-09-03. `src/underwrite/business-funding.mjs` fixed the business
+half correctly; the personal half is now the one that is wrong.
+
+### 10. No business means no business credit cards — OWNER-SET 2026-09-06
+
+Chris: "When there's only personal funding qualified, they only get personal funding
+banks. No business, no business credit cards. Duh."
+
+Nothing in `src/lenders/match.mjs` checks this. Walk1 Funding has **no businesses on
+file** and matched **18 business credit cards**.
+
+Worse: all 313 rows in the book are business cards (`InBranchBizCC` 196, `OnlineBizCC`
+117). `PersonalCC`, `PersonalLoans`, `PersonalLOC`, `BizLOC_Stated` and
+`BizLOC_Documented` are **0 rows each**. So under this rule a personal-only client
+currently matches nothing at all.
+
+### 11. The personal card data is already in the repo and was filed under the wrong table
+
+Corrected 2026-09-06. These pages exist in `credentials/notion-scrape/output/`:
+
+```
+alec-s-favorite-personal-cards--26a2ec40
+high-limit-personal-cards--9cafa36e
+best-balance-transfer-cards--f9e698f9
+personal-loans--677b0a52
+balance-transfers--6aaef26e
+```
+
+`LENDERS-REVIEW.md` shows the extractor read them and merged them into **business** rows
+as hub enrichment — "High limit personal cards" and "Alec's favorite personal cards" are
+listed as sources that enriched American Express, Chase and Capital One's business
+entries. The personal cards became notes on business rows instead of `PersonalCC` rows.
+
+Re-extract those five pages into the correct `lender_table` values. The bureau data for
+them is already available: the inquiry database carries Navy Federal, Discover, Ally and
+hundreds of other personal creditors.
+
+### Not a bug — do not chase
+
+**SMS is off on purpose (owner-set 2026-09-06).** Three texts sit at `attempts=0` and
+will never send. Chris: "we turned off the text messages." Email delivers normally. The
+portal sign-in link is email, not text.
+
+### 12. Client portal copy — owner-set 2026-09-06
+
+**a. "SALES CONVERSATION" comes off.** Chris: "replace w something less aggressive."
+It labels the "Want more funding?" card on the client's own portal. The card itself is
+fine — 20 minutes on what a bigger approval would take. The label announces the pitch.
+
+Suggested: **"Talk it through"**, or drop the label and let the card speak. The body copy
+already says what it is.
+
+**b. "questions? text us anytime" is in the portal footer and texting is OFF.**
+Owner-set 2026-09-06: outbound SMS is disabled. Inbound is built and never replies — a
+text lands as an event and sits in Messaging until a human opens it. So the portal
+invites every client to text and nothing answers.
+
+Either cut the line, or build the inbound auto-reply (see below). Not both ways.
+
+**c. "YOUR FUNDING ADVISOR — Not assigned yet"** on every client. Nothing in the system
+writes an advisor assignment, so this never fills in. The copy underneath is honest about
+it, which is the right call for now, but the assignment itself does not exist.
+
+### 13. Inbound texts arrive and nobody answers
+
+`src/adapters/twilio.mjs` handles inbound SMS properly — signature verified, turned into
+a `message.inbound` event, threaded into the client's conversation, media URLs carried so
+photos come through. Then it sits until a human opens Messaging.
+
+There is no reply of any kind. A client who texts gets silence.
+
+**The fix does not touch the outbound queue Chris turned off.** Twilio accepts a reply in
+the webhook response itself and sends it directly. The same file already does this for
+voice calls (`VOICE_ANSWER_TWIML`), so it is the identical pattern one level down.
+
+Needs: a short acknowledgement pointing at the right place, plus STOP and HELP branches,
+which carriers require regardless. Wording is Chris's call.
+
+### 14. Assign advisors, and fill a pod to capacity
+
+Chris, 2026-09-06: "We need to assign advisors. We basically fill up a role to capacity,
+which we track through KPIs."
+
+**Nothing exists.** `pod_assigned` and `pod_name` are fields on the client record and
+nothing ever writes them. There is no capacity column anywhere — `src/hiring/booking.mjs:323`
+says so outright: *"NO SEAT LIMIT IS ENFORCED, and none is invented."* Every client sees
+"YOUR FUNDING ADVISOR — Not assigned yet" and always will.
+
+**The capacity rule is already locked** and does not need re-deciding. From
+`docs/workflows/archive/fundhub-conveyor-kpis-2026-08-23.md` §3, owner-set 2026-08-24:
+
+| Seat | Bar | Time-max if they do nothing else |
+|---|---|---|
+| Closer | **27 deposits / month per pod** | ~213 calls (160h) |
+| Funding advisor | **27 funded files / month per pod** | ~54 files; half a desk = 27 |
+| Inquiry remover | file clock only — healthy ~15 days, hard stop 30 | **no monthly count. Do not invent one.** |
+| Credit repair | same clock | **no monthly count. Do not invent one.** |
+
+**One pod = one closer + one funding advisor.** Company bar = 27 × complete pods.
+
+**So the rule for assignment:** a new funding client goes to the pod with room under 27
+funded files this month. No pod with room is the hire signal, and the same doc says which
+half to hire — uneven seats, hire the missing half; packed calendar, hire a full pod.
+
+Build order per CLAUDE.md §3a: pods and assignment in the schema first, a read endpoint
+that proves the count, then the screen. The client portal advisor line is the last thing
+to change, not the first.
+
+---
+
+## Walk findings, 30 agents, 2026-09-06
+
+Every item below was found by one agent and reproduced by a second before it was written
+down. Ordered by what costs the most.
+
+### THE CUSTOMER'S SCREEN IS THE WORST OF IT
+
+**15. "See exactly where your file stands" is a dead page.** The main link on the client
+portal opens three lines: the header, a back link, and *"We could not load your file just
+now. Please refresh in a moment."* Refreshing never helps. This is the customer's primary
+"where am I" link.
+
+**16. The customer never sees her $212,000.** Your screens show it. Hers shows no funding
+number anywhere — just "Your funding file is open." The number is in the page's own data
+and is never drawn.
+
+**17. The Activity tab tells the customer her history is broken.** *"We could not load
+your activity just now."* Permanent.
+
+**18. The portal tries to sell her a $32 credit pull she has already had** — and the card
+sits a few inches below the three scores that pull produced.
+
+**19. "Yours to keep, always downloadable" has nothing to download.** The Funding Snapshot
+reads "ask your advisor in chat for a copy". No link, no button, and the advisor line on
+the same page says nobody is assigned.
+
+**20. Two document requests went out and the portal never says which document is missing.**
+Two generic upload boxes and a dropdown of every possible type. The page has a slot built
+for naming the missing document and nothing fills it.
+
+### MONEY AND STATE DISAGREE ACROSS SCREENS
+
+**21. The Sales board never marks this client won.** $3,000 is paid and the sale is
+active. "Closed Won (deposit)" reads **0** and the card sits in "Decision Rendered".
+
+**22. Finance OS cannot open a client at all.** Clicking it in the sidebar always lands on
+a blank "Not connected" page. There is no dropdown, no search, no client list — zero
+clickable elements. The $3,000 sale, the paid link and the fee appear nowhere on it.
+
+**23. The $212,000 funding estimate is printed on the Inquiry Removal board** as the
+column and board total, as though it were inquiry-removal money. Every card on every board
+carries the same number.
+
+**24. Two screens count inquiries differently under the same label.** The closer screen
+says 4 — real bureau inquiries, correct. The Client Control Panel says 1 — it is counting
+something inside one removal case. Neither screen says which it means.
+
+**25. "Derogatories: —" on a clean file.** The system knows the answer is zero. The
+summary looks for a field named `derogatories` in the raw bureau data, does not find that
+exact name, and prints unknown. On a call where a clean file is the whole pitch, the
+screen refuses to say it is clean.
+
+### THE PIPELINE AND THE CALENDAR
+
+**26. The pipeline card shows no credit scores.** 771 / 778 / 766 are on the page's data
+and the panel prints "They said —" instead. It does print the invented $37,000 income.
+
+**27. The calendar can only ever show 2 of the 5 tasks.** The other three were created
+with no date, and this screen only draws dated work. They are permanently invisible here.
+
+**28. Nothing on the calendar can tick a task off or claim it.** All five tasks have
+nobody attached, every row says "unclaimed", and there is no control to change either.
+
+**29. "LEFT TODAY" is not today.** It shows whichever day you clicked. "NO-SHOW" and
+"SHOW RATE" are hardcoded dashes and take two of the five tiles in the best spot on the
+page.
+
+**30. "ON SHIFT · 370H 28M"** on the closer dashboard. That is 15 and a half days. It
+counts from 22 August and never resets.
+
+**31. The "Held only" filter wipes every board, every time**, while the summary directly
+above it says the held count is unknown.
+
+**32. "Up next" is not clickable.** The next booked call is plain text with no link, so
+between calls you have to navigate back through Pipeline.
+
+### THINGS THAT ARE INVISIBLE RATHER THAN BROKEN
+
+**33. Two Quick Launch buttons are hidden from everyone, owner included.** "Open Closer
+Deck" and "Open Credit Snapshot" are in the page with `display:none` written by the shared
+menu script, because `present.html` is not on the allowed-screens list for any role. The
+page itself loads fine if you type the address. Open Credit Snapshot is the button that
+would reach the credit detail missing everywhere else.
+
+**34. Every desk action reports its result under the wrong button.** Generate Apps, and
+all three Pull buttons, print their message underneath "Issue Inquiry Removal" — so
+pressing Generate Apps looks like the inquiry removal ran.
+
+**35. "NEED ACTION" lists the same client three times** and all three rows link back to
+the page you are already on.

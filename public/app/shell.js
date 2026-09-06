@@ -253,7 +253,19 @@
      company-brain.html came OFF this list 2026-08-27, owner-set, superseding
      the 2026-08-19 entry. The screen is live and answering, and the class
      quizzes (ramp-quizzes.js) are only reachable from it — with the row
-     hidden the only way in was typing the address, so nobody found either. */
+     hidden the only way in was typing the address, so nobody found either.
+
+     THE FOUR MARKETING ROWS CAME OFF THIS LIST 2026-09-06, owner-set, for the
+     same reason: Campaigns, Social Studio, Creative Factory and Content were
+     built and finished, and the only way to open one was to type its address.
+     Nobody types addresses. They are back on the menu.
+     Taking them off this list is only one third of the job — read the note on
+     the Marketing section in crm-sidebar.css before you touch any of this, or
+     you will "fix" it twice and see no change.
+     Who sees them is NOT decided here. OWNER_ADMIN_ONLY still keeps all four
+     off every staff rail, and ROLE_TABS.partner still hands a partner only
+     Social Studio and Creative Factory. This list only ever answered "does the
+     row paint at all", never "who may open it". */
   var NAV_HIDDEN = [
     "finance-os.html",
     "consent-capture.html",
@@ -263,13 +275,9 @@
     "automations.html",
     "journeys.html",
     "brand-studio.html",
-    "campaign-manager.html",
-    "social-studio.html",
-    "creative-factory.html",
     "hiring.html",
     "affiliate.html",
     "agent-editor.html",
-    "content-admin.html",
     /* partner-training.html — the $10,000 curriculum. It is a PARTNER screen and
        there is no sidebar row for it at all (see PRINCIPAL_ONLY), so it sits here
        for the same reason partner-galaxy.html does: an employee typing the

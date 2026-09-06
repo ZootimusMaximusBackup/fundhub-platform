@@ -225,7 +225,7 @@ describe("hiring read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
       }
       await tx.query(`DELETE FROM hiring_job_postings WHERE external_id = 'urn:li:job:1'`);
       await tx.query(
-        `DELETE FROM tasks WHERE source_workflow IN ('hiring-candidate-feedback','hiring-bench-monitor')`);
+        `DELETE FROM tasks WHERE source_workflow IN ('hiring-candidate-feedback','hiring-bench-monitor','hiring-new-application')`);
       await tx.query(`ALTER TABLE candidate_applications ENABLE TRIGGER trg_application_terminal`);
       for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
                               ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {

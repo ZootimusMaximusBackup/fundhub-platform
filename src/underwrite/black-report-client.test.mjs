@@ -201,3 +201,98 @@ test("does not invent a missing bureau score", () => {
   assert.equal(Object.prototype.hasOwnProperty.call(client.scores, "equifax"), false);
   assert.equal(hasBlackReportSource(partial), false);
 });
+
+/* F43. A tri-merge pull carries the same account once per bureau. Printing that
+   list as it arrives gave the client nine card rows for three cards, a credit
+   line three times the real one, and a paydown target to match. The percentage
+   was right — both halves were tripled — so nothing looked obviously wrong. */
+test("one row per account, not one per bureau copy — and the dollars are not tripled", () => {
+  const card = (source, extra = {}) => ({
+    source,
+    accountIdentifier: "SIM-CHASE-8814",
+    creditorName: "CHASE CARD SERVICES",
+    accountType: "revolving",
+    status: "open",
+    currentBalance: 1200,
+    effectiveLimit: 20000,
+    isDerogatory: false,
+    ...extra
+  });
+  const loan = (source) => ({
+    source,
+    accountIdentifier: "SIM-TOYO-4490",
+    creditorName: "TOYOTA MOTOR CREDIT",
+    accountType: "installment",
+    status: "open",
+    currentBalance: 11200,
+    isDerogatory: false
+  });
+  const engine = {
+    consumerSignals: {
+      scores: { median: 771, perBureau: { ex: 771, eq: 775, tu: 768 } },
+      // What the engine derives from the un-merged list: three times the truth.
+      utilization: { totalBalance: 3600, totalLimit: 60000, pct: 6 }
+    },
+    normalized: {
+      tradelines: [
+        card("experian"), card("equifax"), card("transunion"),
+        loan("experian"), loan("equifax"), loan("transunion")
+      ],
+      inquiries: [],
+      identity: {}
+    }
+  };
+  const client = buildBlackReportClient({ crsResult: engine, personal: FIXTURE_PERSONAL });
+
+  assert.equal(client.revolving.length, 1, "one card, one row");
+  assert.equal(client.installments.length, 1, "one car loan, one row");
+  assert.equal(client.revolving[0][1], "All 3 bureaus", "the merged row still says who reports it");
+  assert.equal(client.util_total_balance, 1200);
+  assert.equal(client.util_total_limit, 20000);
+  assert.equal(client.util_target_balance, 2000);
+  assert.equal(client.util_pct, "6%", "the percentage was always right and must not move");
+});
+
+/* Only accounts that carry an account number can be merged. Two rows with no
+   identifier might be two different cards, and deleting a real second account is
+   worse than printing a duplicate. */
+test("rows with no account number are never merged together", () => {
+  const engine = {
+    consumerSignals: { scores: { median: 700, perBureau: { ex: 700, eq: 700, tu: 700 } } },
+    normalized: {
+      tradelines: [
+        { source: "experian", creditorName: "SOME BANK", accountType: "revolving", status: "open", currentBalance: 100, effectiveLimit: 1000 },
+        { source: "equifax", creditorName: "SOME BANK", accountType: "revolving", status: "open", currentBalance: 100, effectiveLimit: 1000 }
+      ],
+      inquiries: [],
+      identity: {}
+    }
+  };
+  const client = buildBlackReportClient({ crsResult: engine, personal: FIXTURE_PERSONAL });
+  assert.equal(client.revolving.length, 2);
+});
+
+/* A stored credit file keeps open-or-closed in accountStatusType and puts the
+   PAYMENT status in `status`. Reading only `status` found no open cards at all,
+   which silently sent the totals back to the engine's tripled figures. */
+test("a stored file's open cards are found through accountStatusType", () => {
+  const stored = {
+    scores: { ex: 771, eq: 775, tu: 768 },
+    tradelines: [
+      {
+        bureau: "EX",
+        accountIdentifier: "SIM-AMEX-2007",
+        creditorName: "AMEX",
+        accountType: "Revolving",
+        accountStatusType: "Open",
+        paymentStatus: "Pays as agreed",
+        currentBalanceAmount: "850",
+        creditLimitAmount: "15000"
+      }
+    ]
+  };
+  const client = buildBlackReportClient({ crsResult: stored, personal: FIXTURE_PERSONAL });
+  assert.equal(client.util_total_balance, 850);
+  assert.equal(client.util_total_limit, 15000);
+  assert.equal(client.util_pct, "6%");
+});

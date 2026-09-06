@@ -159,7 +159,8 @@ const ALLOWED_RAW_FETCH = {
    embed.mjs stays — embeddings remain on OpenAI. */
 const INTERNAL_CALLERS = new Set([
   "src/company-brain/embed.mjs",
-  "src/company-brain/transcribe.mjs"
+  "src/company-brain/transcribe.mjs",
+  "src/hiring/calendar-freebusy.mjs"
 ]);
 
 function walk(dir, out = []) {

@@ -306,3 +306,61 @@ placeholder-free forever.
 3. Lender matcher reads the credit file (§3.1).
 4. The three remaining letter surfaces (§3.2).
 5. Booking-confirmation speed, once Option A or B is chosen (§2.1).
+
+---
+
+## 9. The survey-field bug, split in two (measured 2026-09-04, live)
+
+Chris's read was right that part of this is code. Measured against the production
+database and his live ClickFunnels editor, it is **two separate faults**, and only
+one of them is his to fix.
+
+**Survey builder, for anyone who needs it again:**
+`https://chrisstanbridgestea3f77f.myclickfunnels.com/account/survey_workflows/vklXEJ/builder`
+(workflow id `vklXEJ`, site `NOpbbd`). This was not written down anywhere, which is
+why "fix the two CF questions" cost a hunt.
+
+### 9.1 Raw row ids instead of words — CODE, already fixed, NOT PROVEN
+
+All five sim clients store every answer as a ClickFunnels row id, not the answer:
+
+```
+cf_svy_funding_target_amount = 207883      (not "$200k - $400k")
+cf_svy_planned_use           = 207888      (not "Growth (marketing, inventory, hiring)")
+```
+
+The ids are per-submission, not per-option — the same answer text carries a different
+number on each client (sim-02 and sim-04 both answered "Under $100k" and stored 208008
+and 208009). So the words are not recoverable from what we kept.
+
+`pickSurveyAnswers` in `src/adapters/clickfunnels.mjs` resolves this now, using the
+`_label` / `_labels` siblings CF sends beside each id. It landed in `a733801b` on
+2026-09-03 and is on `main`.
+
+**But the sims were created at 00:47-01:08 UTC on 2026-09-04, during the walk and
+BEFORE that fix deployed. So their data proves nothing about whether the fix works.**
+And the fix degrades silently: `if (words == null) continue;` keeps the id when no
+label arrives. If ClickFunnels does not actually send `_label` siblings, the screens
+still show numbers and nothing complains. **Nobody has confirmed CF sends them.**
+One real submission through the funnel, then read the raw payload, settles it.
+
+### 9.2 "Can You Verify Revenue?" overwrites the revenue answer — CLICKFUNNELS
+
+"Annual Business Revenue" **is mapped correctly** — its Contact Attribute reads
+`Cf Svy Business Revenue` in the live editor, checked 2026-09-04. The claim in §1
+that it "saves into nothing at all" is wrong; delete it.
+
+What is wrong is the other one. Across all five sims:
+
+* `cf_svy_business_revenue` — has a value on all four business-branch clients
+* `cf_svy_revenue_verifiable` — **null on every one of them**
+
+If the verify question were mapped to its own attribute, those four rows would carry
+a number. They are empty, and F8 recorded the panel showing the verify answer
+("Yes, both") under Business revenue. So the second question is still pointing at the
+first question's attribute, and the revenue figure is destroyed by the answer that
+follows it.
+
+**Chris's one job here:** open the builder link above, click **Can You Verify
+Revenue?**, and set Contact Attribute to `cf_svy_revenue_verifiable`. That is the
+whole fix. The "Annual Business Revenue" question needs nothing.

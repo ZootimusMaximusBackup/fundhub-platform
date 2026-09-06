@@ -117,7 +117,7 @@ export default async function handler(req, res) {
        attempt is recorded either way, accepted or refused — a limiter that only
        counts successes is one an attacker never trips. */
     const rate = await checkApplyRate(db, { orgId, email: parsed.email, ip });
-    recordAttempt(ip);
+    await recordAttempt(db, { orgId, ip });
 
     if (rate.limited) {
       res.setHeader("Retry-After", String(rate.retryAfterMinutes * 60));
