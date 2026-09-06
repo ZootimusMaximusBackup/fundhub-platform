@@ -107,6 +107,12 @@ const API_KEYS = [
   "gifts/message-blaster",
   "health",
   "hiring/application",
+  /* The public careers door. A plain GET answers 200 with the open roles and no
+     session, so it is a real uptime probe — and the surface it proves is the one
+     where being down is invisible to us and total to the person on it: if this
+     fails, /careers.html shows "we could not load the roles" and nobody can
+     apply for a job. Monitored on the GET; the POST is never pinged. */
+  "hiring/apply",
   "hiring/bench",
   "hiring/candidates",
   "hiring/decide",

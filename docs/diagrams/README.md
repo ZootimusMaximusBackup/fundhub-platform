@@ -28,7 +28,7 @@ the diagrams are regenerated. That is the whole point: they cannot drift quietly
 | source | supplies |
 |---|---|
 | `src/events/canonical.mjs` | the 77 canonical event names and their grouping |
-| `src/workflows/index.mjs` | 68 registered Inngest functions and their triggers |
+| `src/workflows/index.mjs` | 70 registered Inngest functions and their triggers |
 | `db/seed/002_pipelines.sql` | 6 rails and their stages |
 | `src/adapters/*.mjs` | 12 adapters, their auth scheme and emitted events |
 | `src/handlers/*.mjs` | 49 synchronous bus handler registrations |

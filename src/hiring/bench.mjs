@@ -24,6 +24,7 @@
 // v_hiring_bench in 051 is where that definition lives, once.
 
 import { createTask } from "../lib/create-task.mjs";
+import { assigneeFor } from "./owner.mjs";
 
 /* checkBench(tx, { orgId }) → { roles[], shortfalls[] }
 
@@ -45,16 +46,23 @@ export async function checkBench(tx, { orgId, today = null } = {}) {
     // run raises it again if still short.
     const day = (today ? new Date(today) : new Date()).toISOString().slice(0, 10);
 
+    /* ROUTING MOVED OUT OF THIS FILE (2026-09-05, migration 294).
+       This used to be a hardcoded assigneeRole: "admin" with the staff id
+       hung off it, so every bench alert for every role landed in one queue
+       and, since hiring_manager_staff_id has never been written, the staff id
+       was always null. The owner's actual rule — sales seats to the sales
+       manager, everything else to the owner — now lives in
+       hiring_roles.owner_role and is resolved by src/hiring/owner.mjs. */
+    const { assigneeRole, assigneeStaffId } =
+      await assigneeFor(tx, { orgId, roleKey: r.role_key });
+
     const task = await safeTask(tx, {
       orgId,
       title: `Bench short for ${r.role_name}: ${r.bench_count} of ${r.bench_target}`,
       body: `hiring:bench:${r.role_key}:${day}`,
       sourceWorkflow: "hiring-bench-monitor",
-      // Routed to the role's hiring manager when there is one; the assigneeRole is
-      // still required by createTask, so admin is the queue and the staff id is
-      // the claim.
-      assigneeRole: "admin",
-      assigneeStaffId: r.hiring_manager_staff_id || null
+      assigneeRole,
+      assigneeStaffId
     });
 
     shortfalls.push({
@@ -64,9 +72,12 @@ export async function checkBench(tx, { orgId, today = null } = {}) {
       shortfall: r.bench_shortfall,
       open_applications: r.open_applications,
       task_created: task.created === true,
-      // Surfaced rather than swallowed: a bench alert with nobody to route to is
-      // the gap v_hiring_config_gaps also reports.
-      unrouted: !r.hiring_manager_staff_id
+      assignee_role: assigneeRole,
+      /* NOW MEANS "no PERSON is accountable", not "this went nowhere".
+         Before 294 an alert with no hiring manager genuinely had no
+         destination. It always has one now, so the honest signal is the
+         weaker one: a queue picked it up and no individual owns it. */
+      unrouted: !assigneeStaffId
     });
   }
 
