@@ -17,6 +17,7 @@ import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
 import { hiringOutreachCadence } from './hiring-outreach-cadence.mjs';
 import { waypointNudgeSweeper } from './waypoint-nudge-sweeper.mjs';
+import { paidCheckoutExpirySweeper } from './paid-checkout-expiry-sweeper.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { partnerProductionFloorReview } from './partner-production-floor.mjs';
@@ -174,6 +175,31 @@ export const functions = [
      never chased, and the last rung is a staff task rather than a fourth
      message. */
   waypointNudgeSweeper,
+
+  /* THE END OF A CHECKOUT INVITATION. Registered 2026-09-06, and it is the
+     other half of the sweeper above.
+
+     Nothing in this repository ever ended a paid_service_requests row sitting
+     at 'awaiting_payment'. The payment webhook could, and
+     docs/journeys/paid-round-actual.md records that the payment handler is not
+     on the live bus — so in the shipped product the row was permanent. The
+     chase ladder was suspending a client's whole overdue checklist behind it,
+     on the stated ground that "a checkout link is out; it expires; then we
+     chase again". It did not expire. Measured: 200 such clients starved a live
+     one to zero messages, that day and a year later.
+
+     Now the invitation carries a deadline in the data
+     (paid_service_requests.checkout_expires_at, db/migrations/370, seven days
+     from src/paid-services/checkout.mjs) and this pass is what closes it —
+     status 'cancelled', state_reason 'checkout_expired'.
+
+     IT MOVES NO MONEY. A row at awaiting_payment has never been charged; a
+     hosted link is an invitation, not a payment. Cancelling one takes nothing
+     from anybody and creates no refund. It frees the client to ask for the same
+     round again, which is right, because the link they were given is dead.
+
+     COMPLIANCE REVIEW REQUIRED: payment rails and fee timing. */
+  paidCheckoutExpirySweeper,
 
   meetTranscriptSweeper,
 

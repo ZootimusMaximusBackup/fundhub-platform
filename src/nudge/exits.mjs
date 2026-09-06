@@ -7,14 +7,25 @@
 // provider, no dispatcher and no template, and every function in it can do
 // exactly one thing — say no.
 //
-// IT WRITES IN EXACTLY ONE PLACE, AND ONLY EVER TO ADD A STOP.
-// scanForEscalation() records the durable client_escalations row (368) the
-// first time a client's legal or complaint language is seen. That INSERT is
-// ON CONFLICT DO NOTHING and there is no update or delete path here, so this
-// file can add a permanent stop and can never lift one. It used to re-derive
-// that answer from the client's most recent 200 messages on every pass, which
-// meant a legal threat EXPIRED once they had sent 200 more — see the comment
-// above PRESCAN_SOURCE.
+// IT WRITES IN EXACTLY TWO PLACES, BOTH ON THE SAME EVENT, AND NEITHER CAN
+// LIFT A STOP.
+//
+//   1. scanForEscalation() records the durable client_escalations row (368) the
+//      first time a client's legal or complaint language is seen. That INSERT
+//      is ON CONFLICT DO NOTHING and there is no update or delete path here, so
+//      this file can add a permanent stop and can never lift one. It used to
+//      re-derive that answer from the client's most recent 200 messages on
+//      every pass, which meant a legal threat EXPIRED once they had sent 200
+//      more — see the comment above PRESCAN_SOURCE.
+//   2. announceEscalation() creates ONE staff task, only when 1 actually wrote
+//      a new row. Added 2026-09-06, round four: a reviewer's "that collection
+//      agency that keeps calling me is a scam" — a client complaining about
+//      somebody else — permanently ended every chase that client will ever
+//      have, and because nothing outside src/nudge/ reads client_escalations,
+//      no screen in the product showed that it had happened. The stop stays
+//      permanent; it is no longer invisible.
+//
+// Neither write can send anything. A task is a row on a staff board.
 //
 //
 // ═══════════════════════════════════════════════════════════════════════════
@@ -60,6 +71,11 @@
 // the spent step as `no_contact`.
 
 import { isOptedOut } from "../lib/opt-out.mjs";
+import { createTask } from "../lib/create-task.mjs";
+/* The seven-day checkout window, from the one file that holds it. link-ttl.mjs
+   imports nothing, so this does not put a processor — or a fetch — anywhere
+   near the exit gate. CLAUDE.md §12. */
+import { CHECKOUT_LINK_TTL_MS } from "../paid-services/link-ttl.mjs";
 
 /* ─────────────────────────────────────────────────────────────────────────
    Which waypoint states may be chased
@@ -75,17 +91,87 @@ import { isOptedOut } from "../lib/opt-out.mjs";
 export const CHASEABLE_STATES = Object.freeze(new Set(["not_started", "in_progress"]));
 
 /** Statuses of paid_service_requests (331) that mean the client HAS BOUGHT the
-    paid alternative. Money is recorded at 'paid' and everything after it.
+    paid alternative AND WE STILL OWE THEM THE WORK. Money is recorded at
+    'paid'; 'staged' is prepared and waiting on a human to send; 'fulfilled' is
+    delivered.
 
     'quoted' and 'awaiting_payment' are NOT here. A quote nobody accepted must
     not silence the ladder forever — that would turn "we offered to do it for
-    you" into "we stopped reminding you". 'awaiting_payment' is handled as a
-    temporary hold instead, further down, because a checkout link that is
-    genuinely out should not be interrupted by a nudge either. */
-export const BOUGHT_STATUSES = Object.freeze(new Set(["paid", "staged", "fulfilled", "refunded"]));
+    you" into "we stopped reminding you". 'awaiting_payment' is a hold with an
+    end on it, handled further down.
 
-/** A checkout link is out. Hold this pass; do not end the ladder. */
+    'refunded' IS NOT HERE EITHER, AND IT USED TO BE. A refund means the money
+    went back, which means WE DID NOT DO IT FOR THEM. Treating that as "they
+    paid us to handle this one" left the client permanently unchased about a
+    task that is theirs again — silence bought with money we gave back. The
+    reviewer who found it also checked the two neighbours: 'cancelled' and
+    'quoted' both correctly leave the client chaseable, and they still do.
+    'failed' likewise. */
+export const BOUGHT_STATUSES = Object.freeze(new Set(["paid", "staged", "fulfilled"]));
+
+/** A checkout link is out. Hold this pass; do not end the ladder — AND THE HOLD
+    HAS AN END, which until 2026-09-06 it did not.
+
+    See paymentHoldIsLive() below for the whole story and the measurement. The
+    short version: nothing in this repository ever expired a checkout link, so
+    "we will chase again when it expires" meant "never", and those clients held
+    a slot in a platform-wide queue for ever. */
 export const PENDING_PAYMENT_STATUSES = Object.freeze(new Set(["awaiting_payment"]));
+
+/**
+ * paymentHoldIsLive(row, now) → is this awaiting_payment row still a reason to
+ * stay quiet?
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THE PREMISE WAS FALSE. THIS IS WHAT MAKES IT TRUE.
+ *
+ * `payment_in_flight` was classified as a TEMPORARY stop on the stated ground
+ * that "a checkout link is out. It expires; then we chase again." Enumerated on
+ * 2026-09-06: paid_service_requests had no expiry column, src/paid-services/
+ * checkout.mjs set no deadline, and no file under src/workflows/ named the
+ * table. The only code that moved a row off awaiting_payment was the payment
+ * webhook — which docs/journeys/paid-round-actual.md records is not on the live
+ * bus — and closeFailed, which only fires when minting the link fails.
+ *
+ * So a client sent a link who never paid was never chased again, and because
+ * that waypoint stayed overdue and oldest it sorted FIRST and held a slot in a
+ * queue shared by every company on the platform. Measured on a scratch Postgres
+ * 16.14 in this worktree: 200 such clients plus one freshly overdue live client
+ * gave 200 candidates, the live one not among them, zero messages to them,
+ * today and a year later.
+ *
+ * db/migrations/370 adds checkout_expires_at and refuses an awaiting_payment
+ * row without one; src/paid-services/checkout.mjs states the number (seven
+ * days) and stamps it at mint; src/paid-services/expire.mjs closes the row when
+ * it passes. This function is the fourth place, and it is here so the fix holds
+ * on a pass where the sweep has not run yet.
+ *
+ * A MISSING STAMP IS NOT TREATED AS A LIVE HOLD. NULL means unknown
+ * (CLAUDE.md §12) and unknown must survive as unknown — but "we do not know
+ * when this invitation dies" is not the same question as "may we chase this
+ * person", and answering the second one with silence for ever is what the whole
+ * defect was. So an awaiting_payment row with no stamp falls back to the
+ * request's own requested_at plus the same seven days: the EARLIEST the link
+ * could have died, because a link is minted at or after the request. That errs
+ * toward resuming a chase rather than toward permanent quiet. 370's CHECK plus
+ * its backfill mean this branch should never be reached; it is written down
+ * rather than assumed away.
+ */
+export function paymentHoldIsLive(row = {}, now = new Date()) {
+  const at = now instanceof Date ? now : new Date(now);
+  if (Number.isNaN(at.getTime())) return true; // an unreadable clock is not a reason to start chasing
+  const stamped = row.checkout_expires_at ? new Date(row.checkout_expires_at) : null;
+  if (stamped && !Number.isNaN(stamped.getTime())) return stamped.getTime() > at.getTime();
+
+  const requested = row.requested_at ? new Date(row.requested_at) : null;
+  if (requested && !Number.isNaN(requested.getTime())) {
+    return requested.getTime() + CHECKOUT_LINK_TTL_MS > at.getTime();
+  }
+  /* No stamp and no request time at all. Both columns are NOT NULL in 331 or
+     enforced by 370, so this is unreachable; if the schema ever loosens, the
+     conservative answer for a MESSAGE is not to send one. */
+  return true;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    Escalation keywords — the "complaint or a lawyer" half of exit 6
@@ -184,15 +270,26 @@ export const ESCALATION_PRESCAN = PRESCAN_SOURCE;
  * because there is no update path here and `fundhub_app` holds neither UPDATE
  * nor DELETE on that table.
  *
- * THAT SECOND HALF WAS FALSE UNTIL 2026-09-06 AND IT WAS WRITTEN IN FIVE
- * PLACES. 104_app_role.sql:226 runs ALTER DEFAULT PRIVILEGES ... GRANT SELECT,
- * INSERT, UPDATE, DELETE ON TABLES TO fundhub_app, so every table created after
- * it is already fully writable and 368's original `GRANT SELECT, INSERT` added
- * nothing. It takes an explicit REVOKE, which 368 now carries. Do not restate
- * the claim anywhere without keeping
+ * THAT SECOND HALF TOOK TWO ROUNDS TO MAKE TRUE, AND BOTH HALVES ARE WORTH
+ * KNOWING BECAUSE THE SENTENCE WAS WRITTEN IN FIVE PLACES BEFORE EITHER WAS.
+ *
+ *   1. 104_app_role.sql:226 runs ALTER DEFAULT PRIVILEGES ... GRANT SELECT,
+ *      INSERT, UPDATE, DELETE ON TABLES TO fundhub_app, so every table created
+ *      after it is already fully writable and 368's original
+ *      `GRANT SELECT, INSERT` added nothing. It takes an explicit REVOKE, which
+ *      368 now carries.
+ *   2. THE REVOKE ALONE WAS STILL NOT ENOUGH (found 2026-09-06, round four).
+ *      368 declared client_id ... REFERENCES clients(id) ON DELETE CASCADE, and
+ *      a cascade runs with the REFERENCED table's owner privileges rather than
+ *      the deleting role's. fundhub_app holds DELETE on clients. So the
+ *      application could still destroy the record — by deleting the client.
+ *      db/migrations/370 makes that foreign key ON DELETE RESTRICT: the
+ *      database now refuses to delete a client who has one of these rows.
+ *
+ * Do not restate the claim anywhere without keeping
  * src/nudge/escalation-permanence.pg.test.mjs green — it is the only thing
- * standing between that sentence and fiction, and it asserts the live refusal
- * as fundhub_app, not just the catalog.
+ * standing between that sentence and fiction, and it asserts both live
+ * refusals as fundhub_app, not just the catalog.
  *
  * Never throws. A failed write must not turn a detected escalation into a
  * permitted send: the caller blocks on the detection, not on the write, and
@@ -213,6 +310,83 @@ export async function recordEscalation(db, { orgId, clientId, messageId = null,
     return rows.length > 0;
   } catch (err) {
     console.warn(`[nudge/exits] escalation not recorded for client ${clientId}: ${String(err?.message || err)}`);
+    return false;
+  }
+}
+
+/** Who is told when a client's chases are stopped for good. The customer
+    success manager owns the client after the sale, which is the same role
+    src/nudge/run.mjs hands a stalled checklist to. */
+export const ESCALATION_TASK_ROLE = "csm";
+
+export const ESCALATION_TASK_WORKFLOW = "waypoint-nudge-escalation";
+
+/**
+ * announceEscalation — MAKE THE PERMANENT STOP VISIBLE TO A PERSON.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * WHY THIS EXISTS: A MIS-FIRE WAS UNRECOVERABLE **AND** INVISIBLE
+ *
+ * A reviewer sent one inbound text on 2026-09-06:
+ *
+ *     "that collection agency that keeps calling me is a scam"
+ *
+ * That is a client complaining about SOMEBODY ELSE — the exact class the
+ * keyword list's own comment says it is trying to avoid. It matched \bscam\b,
+ * wrote a permanent client_escalations row, and ended every chase that client
+ * will ever have. Round three's REVOKE (368) means no code path in the product
+ * can lift it, and nothing outside src/nudge/ reads the table, so no screen
+ * anywhere showed that it had happened.
+ *
+ * THE PERMANENCE IS RIGHT AND IS NOT BEING WEAKENED. What was wrong is that a
+ * mistake was silent. A person now gets a task the first time a client is
+ * stopped, so the stop is a thing somebody sees rather than a thing somebody
+ * eventually notices from the absence of messages.
+ *
+ * WHAT WAS DELIBERATELY NOT DONE, AND WHY:
+ *
+ *   * The regex was NOT narrowed. Every narrowing considered — requiring a
+ *     second-person word near "scam", excluding a third-party subject — also
+ *     lets through language plainly aimed at us ("stop harassing me", "this is
+ *     a scam"). The brief says not to weaken the stop for language aimed at us,
+ *     and a keyword list cannot tell the two apart reliably. Leaving it wide and
+ *     making the result visible fails toward silence, which is the safe side.
+ *   * NO LIFT PATH WAS ADDED. Lifting would mean the application writing to a
+ *     row 368 exists to make unwritable, and a lifted row would be re-detected
+ *     and re-applied by the very next scan of the same message. A human with
+ *     database access can still lift one; the application cannot, and that is
+ *     the promise. This is recorded as an OPEN GAP, not as fixed.
+ *
+ * THE TASK CARRIES NO CLIENT WORDS. Same rule 368 sets for the row itself: the
+ * body is our own regex source and the task id, never the client's sentence.
+ *
+ * Never throws and never blocks. The stop has already been recorded by the time
+ * this runs; a task-table problem must not turn a detected escalation into a
+ * permitted send.
+ */
+export async function announceEscalation(db, { orgId, clientId, pattern = null } = {}) {
+  if (!orgId || !clientId) return false;
+  try {
+    const res = await createTask(db, {
+      orgId,
+      clientId,
+      title: "Chases stopped: this client's words matched our escalation rules",
+      sourceWorkflow: ESCALATION_TASK_WORKFLOW,
+      assigneeRole: ESCALATION_TASK_ROLE,
+      /* Also the dedupe key, so a replay finds the task it already made. One
+         client can only ever have one escalation row, so one task. */
+      eventId: `escalation:${clientId}`,
+      body:
+        "Every automatic chase for this client has been stopped for good. " +
+        "Our own rule that matched: " + (pattern ? String(pattern).slice(0, 200) : "not recorded") + ". " +
+        "This records which of OUR rules fired, not anything the client said. " +
+        "A human owns this client from here. If the rule fired on something the " +
+        "client said about somebody else, the stop cannot be lifted from inside " +
+        "the app — that is deliberate, and it needs someone with database access."
+    });
+    return Boolean(res?.created);
+  } catch (err) {
+    console.warn(`[nudge/exits] escalation task not created for client ${clientId}: ${String(err?.message || err)}`);
     return false;
   }
 }
@@ -297,9 +471,16 @@ export async function scanForEscalation(db, { orgId, clientId } = {}) {
   for (const m of rows) {
     const pattern = matchedEscalationPattern(m.rendered_body);
     if (!pattern) continue;
-    await recordEscalation(db, {
+    const recorded = await recordEscalation(db, {
       orgId, clientId, messageId: m.id, saidAt: m.created_at, pattern
     });
+    /* ONLY ON A GENUINELY NEW ROW. recordEscalation returns true exactly once
+       per client — 368's UNIQUE (client_id) with ON CONFLICT DO NOTHING — so
+       this cannot produce a task on every pass. See announceEscalation for why
+       a silent permanent stop was the defect. */
+    if (recorded) {
+      await announceEscalation(db, { orgId, clientId, pattern });
+    }
     return true;
   }
 
@@ -369,8 +550,12 @@ export function contactFor(client = {}, channel) {
  *   waypoint_blocked               blocked on something; see CHASEABLE_STATES
  *   not_overdue           —        no due date, or the date has not passed
  *   ladder_exhausted      exit 4   step 4 has been spent. Four, ever.
- *   paid_alternative_bought exit 3 they paid us to do it
- *   payment_in_flight     exit 3   a checkout link is out; hold, do not end
+ *   paid_alternative_bought exit 3 they paid us to do it — and 'refunded' is
+ *                                  NOT one of those, because a refund means we
+ *                                  did not do it
+ *   payment_in_flight     exit 3   a checkout link is out AND STILL LIVE; hold,
+ *                                  do not end. Seven days, from the row's own
+ *                                  checkout_expires_at (370)
  *   client_replied        exit 5   a human takes it from here
  *   escalation            exit 6   a lawyer, a threat, a complaint about us
  *   opted_out             exit 6   the existing suppression path said stop
@@ -418,13 +603,25 @@ export async function blockersFor(db, { waypointId, now = new Date() } = {}) {
     )).rows.map((r) => Number(r.step));
     if (spent.includes(4)) reasons.push("ladder_exhausted");
 
-    /* EXIT 3 — they bought the paid alternative for THIS waypoint. */
+    /* EXIT 3 — they bought the paid alternative for THIS waypoint, or an
+       invitation to pay for it is still live.
+
+       'refunded' is NOT a purchase — see BOUGHT_STATUSES. And the in-flight
+       hold is bounded now: paymentHoldIsLive() reads the row's own
+       checkout_expires_at (db/migrations/370), so a link that went out and was
+       never taken up stops silencing this waypoint after seven days instead of
+       for ever. */
     const paid = (await db.query(
-      `SELECT status FROM paid_service_requests WHERE waypoint_id = $1`,
+      `SELECT status, requested_at, checkout_expires_at
+         FROM paid_service_requests WHERE waypoint_id = $1`,
       [waypointId]
-    )).rows.map((r) => String(r.status));
-    if (paid.some((s) => BOUGHT_STATUSES.has(s))) reasons.push("paid_alternative_bought");
-    else if (paid.some((s) => PENDING_PAYMENT_STATUSES.has(s))) reasons.push("payment_in_flight");
+    )).rows;
+    if (paid.some((r) => BOUGHT_STATUSES.has(String(r.status)))) {
+      reasons.push("paid_alternative_bought");
+    } else if (paid.some((r) => PENDING_PAYMENT_STATUSES.has(String(r.status))
+                             && paymentHoldIsLive(r, at))) {
+      reasons.push("payment_in_flight");
+    }
 
     /* EXIT 6 — the EXISTING suppression path. isOptedOut() from
        src/lib/opt-out.mjs, which is the same function sendTemplated calls and
@@ -503,6 +700,7 @@ export async function blockersFor(db, { waypointId, now = new Date() } = {}) {
 
 export default {
   blockersFor, contactFor, looksLikeEscalation, matchedEscalationPattern,
-  recordEscalation, hasEscalation, scanForEscalation, ESCALATION_PRESCAN,
-  CHASEABLE_STATES, BOUGHT_STATUSES
+  recordEscalation, hasEscalation, scanForEscalation, announceEscalation,
+  paymentHoldIsLive, ESCALATION_PRESCAN,
+  CHASEABLE_STATES, BOUGHT_STATUSES, PENDING_PAYMENT_STATUSES
 };

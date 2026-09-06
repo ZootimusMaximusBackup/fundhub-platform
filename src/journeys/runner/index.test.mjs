@@ -66,14 +66,19 @@ import { isSyntheticRow } from "./synthetic.mjs";
    the correct outcome for a scheduled job rather than a coverage hole. It is
    exercised directly by src/workflows/partner-production-floor.test.mjs and,
    against a real Postgres, by src/partners/floors.pg.test.mjs. */
-/* 70 since the hiring outreach cadence (2026-09-05) was registered — candidate
+/* 72 since the paid checkout expiry sweeper (2026-09-06) was registered — the
+   clock that ends a hosted checkout invitation nobody accepted. It is a cron
+   with no event trigger, so like every sweeper here it will always appear in
+   neverFired, which is the correct outcome for a scheduled job.
+
+   Was 71 since the hiring outreach cadence (2026-09-05) was registered — candidate
    follow-up on a 30-minute clock, the first thing here that ever contacts a
    candidate.
 
    It is a cron with no event trigger, so no journey can ever reach it and it
    will always appear in neverFired — the same note the sweepers above carry,
    and the correct outcome for a scheduled job rather than a coverage hole. */
-const REGISTERED = 71;
+const REGISTERED = 72;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

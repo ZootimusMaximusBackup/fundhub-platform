@@ -73,6 +73,7 @@ import { onRepairPath } from "../repair/on-repair-path.mjs";
 import { negativeKeysFromResult } from "../crs/snapshot-negatives.mjs";
 import { requestSoftPull } from "../finance/soft-pulls.mjs";
 import { mintCheckoutLink } from "./checkout.mjs";
+import { checkoutExpiresAt } from "./link-ttl.mjs";
 import { REFUSAL, refuse, refusalMessage } from "./refusals.mjs";
 
 export const SERVICE_KIND = "dispute_round";
@@ -266,7 +267,11 @@ export async function requestRound(db, {
   outcomeTier,
   env = process.env,
   fetchImpl = fetch,
-  mintFn = mintCheckoutLink
+  mintFn = mintCheckoutLink,
+  /* The clock, so a test can mint a link and then look at it from a week
+     later without waiting a week. Only ever used to stamp
+     checkout_expires_at. */
+  now = new Date()
 } = {}) {
   const eligible = await assessRoundEligibility(db, { orgId, clientId, outcomeTier });
   if (!eligible.ok) return eligible;
@@ -369,12 +374,21 @@ export async function requestRound(db, {
     return r;
   }
 
+  /* THE INVITATION GETS A DEADLINE, AND THE DEADLINE IS A COLUMN.
+     Until 2026-09-06 nothing in this repository ever ended an awaiting_payment
+     row, and a different feature was relying on the opposite: src/nudge/ held a
+     client's overdue checklist item out of the chase queue "because a checkout
+     link is out — it expires; then we chase again". It did not expire. See the
+     header of ./checkout.mjs for the measurement and the seven-day number.
+     db/migrations/370 refuses an awaiting_payment row with no stamp, so this is
+     not something a later edit can quietly drop. */
+  const expiresAt = checkoutExpiresAt(now);
   const updated = await db.query(
     `UPDATE paid_service_requests
-        SET status = 'awaiting_payment', checkout_url = $2
+        SET status = 'awaiting_payment', checkout_url = $2, checkout_expires_at = $3::timestamptz
       WHERE id = $1::uuid AND status = 'quoted'
       RETURNING *`,
-    [row.id, minted.checkoutUrl]
+    [row.id, minted.checkoutUrl, expiresAt ? expiresAt.toISOString() : null]
   );
 
   return {

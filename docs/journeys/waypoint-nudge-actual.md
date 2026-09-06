@@ -4,10 +4,13 @@
 
 What the code **does** when a checklist step the client owns goes past its date.
 Traced from `src/nudge/run.mjs`, `src/nudge/exits.mjs`, `src/nudge/ladder.mjs`,
-`src/nudge/clock.mjs` and `db/migrations/365_waypoint_nudges.sql`, and watched running
-against a real Postgres in `src/nudge/run.pg.test.mjs`. Hand-maintained: this feature is not
-part of the generated set in `scripts/journeys/generate.mjs`, which draws routes and this has
-none.
+`src/nudge/clock.mjs`, `src/paid-services/link-ttl.mjs`, `src/paid-services/expire.mjs`,
+`src/workflows/paid-checkout-expiry-sweeper.mjs`, `db/migrations/365_waypoint_nudges.sql`,
+`db/migrations/368_client_escalations.sql` and
+`db/migrations/370_checkout_expiry_and_escalation_fk.sql`, and watched running against a real
+Postgres in `src/nudge/run.pg.test.mjs` and `src/nudge/escalation-permanence.pg.test.mjs`.
+Hand-maintained: this feature is not part of the generated set in
+`scripts/journeys/generate.mjs`, which draws routes and this has none.
 
 ## The short version
 
@@ -84,18 +87,60 @@ again here on 2026-09-06 before the fix:
 * 200 clients who had texted **STOP**, same shape, same result: **0 messages**, for ever.
 
 Now every *permanent* reason to stop is applied **inside** the search, before the 200 are chosen,
-so a client we can never contact again cannot take a place. Temporary reasons are deliberately
-left alone and keep their place in the queue — a checkout link that is still out, the
-one-message-a-day cap, night-time in the client's timezone. Tomorrow those can send, so tomorrow
-they must still be in the line.
+so a client we can never contact again cannot take a place. Genuinely temporary reasons are
+deliberately left alone and keep their place in the queue — the one-message-a-day cap,
+night-time in the client's timezone, and a database error we could not read. Tomorrow those can
+send, so tomorrow they must still be in the line.
+
+**One of them was filed as temporary and was not — that was the round-four blocker.** A client
+who had been sent a checkout link was held out of the chase, on the stated ground that "a
+checkout link is out. It expires; then we chase again." *Nothing in this system ever expired
+one.* There was no expiry date on the record, nothing set one when the link was made, and no
+scheduled job anywhere touched those records at all. So the hold was permanent while being
+written down as temporary, and it held a place for ever. Reproduced here on 2026-09-06: 200
+clients each holding an unpaid checkout from 400 days earlier, plus one newly late client — 200
+candidates, the live one not among them, **0 messages to them, that day and a year later**.
+
+Now an invitation to pay has an end date, and the end date is a real column on the record
+(`paid_service_requests.checkout_expires_at`, `db/migrations/370`). **Seven days**, set when the
+link is made. The database refuses a record that sits in "waiting for payment" without one, an
+hourly job closes the record when the date passes, and the chase search only holds a place open
+while the link is genuinely live. After that the client is chased again — exactly what the
+sentence always promised. Seven and not thirty because the whole ladder is only nine days long;
+a longer hold would swallow it.
+
+**And a client whose money we gave back was being treated as a paying customer.** "Refunded"
+counted as "they paid us to handle this one", so somebody who got their money back — meaning we
+did **not** do it for them — was never chased again about a job that is theirs again. Refunded no
+longer counts as a purchase. Cancelled, quoted and failed never did.
+
+**The day cap used to burn the budget too.** A client with eight late rows put all eight into the
+pass; the first became their one message and the other seven were refused for "already had a
+message today" — each having spent a place. Being the oldest rows they did it again every hour. A
+reviewer measured 25 clients with 8 rows each filling all 200 places and reaching 25 people, with
+a live client waiting two days. The search now takes **at most one row per client per pass** —
+their most overdue one. Nothing is lost, because the other seven could not have produced a
+message today anyway.
 
 This is a shorter queue, never a looser one. Every check the search now does is a check the
 send-time gate was already doing a moment later; the gate still runs on every single message
 before it goes out, and a test fails if the two ever disagree. Proved by
 `200 CANCELLED programs do NOT hold the budget against one live client`,
 `200 clients who texted STOP do NOT hold the budget against one live client`,
-`a TEMPORARILY blocked waypoint keeps its place, and is reached once the hold lifts`, and
+`an abandoned checkout link at 200 days does not hold a slot for ever`,
+`an abandoned checkout link at 400 days does not hold a slot for ever`,
+`a LIVE checkout link holds NO slot, and still sends nothing`,
+`an EXPIRED checkout link stops holding the waypoint, and the chase resumes`,
+`the expiry is a fact in the data, not only in the nudge query`,
+`a REFUNDED paid request means we did NOT do it, so the client is still chased`,
+`the daily cap no longer burns the budget: 25 clients, 8 rows each, one live client`, and
 `every waypoint the SQL removes is one the gate would have refused`.
+
+**What "does not hold a slot for ever" means at 200 and 400 days, stated exactly.** Those 200
+abandoned checkouts are not dead weight any more — their invitations are long gone, so they are
+real work again. Being 200+ days late they are all at the last rung, so one pass hands each of
+them to a person and finishes their ladder for good. That pass is full, and it says so. **The
+live client is reached on the very next pass** — one hour, rather than never.
 
 **One honest gap.** A client who has threatened us but has never been looked at yet still holds a
 place for exactly one pass — the pass that looks at them, refuses them, and writes the permanent
@@ -172,13 +217,13 @@ line — see "the pass cannot quietly starve" above for why that second column m
 |---|---|---|
 | done / skipped / blocked | `client_waypoints.state`, read fresh in `exits.mjs` | yes — permanent |
 | deleted, or ours now | `client_waypoints` row missing, or `owner_kind <> 'client'` | yes — permanent |
-| paid the alternative | `paid_service_requests.status` in paid / staged / fulfilled / refunded | yes — permanent |
+| paid the alternative | `paid_service_requests.status` in paid / staged / fulfilled. **Not `refunded`** — see below | yes — permanent |
 | rung 4 used | a `waypoint_nudges` row at step 4 — stored, never remembered | yes — permanent |
 | the client replied | an inbound `messages` row after our first nudge on that row | yes — permanent |
 | STOP or opt-out | `isOptedOut()` — the existing `opt_outs` table, no second store | yes — permanent |
 | a lawyer or a complaint about us | a keyword screen over the client's inbound messages, **and a permanent row in `client_escalations`** — see below | yes, from the pass after the first sighting |
 | program complete / cancelled | `repair_programs.status` | yes — permanent |
-| a checkout link still out | `paid_service_requests.status` = awaiting_payment | **no — keeps its place** |
+| a checkout link still out **and still live** | `paid_service_requests.status` = awaiting_payment, and `checkout_expires_at` has not passed | yes, while the link is live — see below |
 | already had a message today, or it is night where they are | the day cap in `db/migrations/365` and `369`, and `clock.mjs` | **no — keeps its place** |
 | we could not tell (a database error) | `check_failed` from `exits.mjs` | **no — keeps its place** |
 | no address | `clients.phone` / `clients.email`, plus that channel's do-not-disturb flag | no — the rung is used up instead |
@@ -199,14 +244,22 @@ over.
 
 Two supporting details, because they are the parts that could go wrong:
 
-* **The application really cannot delete one — and until 2026-09-06 that sentence was false.**
+* **The application really cannot delete one — and that sentence took two goes to make true.**
   Round two wrote it in five places while the app could still delete the row. The reason is dull
   and worth knowing: `db/migrations/104` hands the app full write access to *every* table made
   after it, so granting a smaller list later changes nothing. It takes an explicit **take-away**,
   and `db/migrations/368` now has one. Proved by trying it as the app's own database user on a
   freshly built database: the delete came back **"permission denied"**, and so did an attempt to
-  edit the row. Not "nothing happened" — refused. `src/nudge/escalation-permanence.pg.test.mjs`
-  fails if that ever stops being true.
+  edit the row. Not "nothing happened" — refused.
+
+  **That was still not the whole door.** The record was set to be swept away automatically if the
+  *client* record was deleted, and that sweep runs with the table owner's permission rather than
+  the app's — so the app could still destroy the record, by deleting the client. Found on
+  2026-09-06. `db/migrations/370` changes that link so the database now **refuses to delete a
+  client who has one of these records on file**. Proved as the app's own database user: the
+  delete is rejected outright and the record is still there afterwards. A client with no such
+  record deletes exactly as before. `src/nudge/escalation-permanence.pg.test.mjs` fails if any of
+  that stops being true.
 * **There is no window and no bookmark of any kind.** The search reads the client's whole history
   every time, until the memory row exists. Round two replaced the 200-message window with a
   bookmark saying "we have read this far", and the bookmark had the same disease: it moved past
@@ -222,6 +275,36 @@ Two supporting details, because they are the parts that could go wrong:
 
 The row stores no client words. It stores which of *our* rules matched. It is not a finding
 against the client and it is never shown to them.
+
+### Somebody is told, because a mistake here used to be silent
+
+The word list is deliberately wide, and wide lists misfire. A reviewer sent one text on
+2026-09-06:
+
+> that collection agency that keeps calling me is a scam
+
+That is a client complaining about **somebody else** — exactly the case the list is meant to
+avoid. It matched anyway, wrote the permanent record, and ended every chase that client will ever
+have. And because the take-away above means no part of the app can undo it, and because nothing
+outside the chase code reads that table, **no screen in the product showed that it had
+happened**.
+
+The stop stays permanent. What is fixed is the silence: the first time a client is stopped this
+way, a task lands on the CSM's board saying so, naming *our* rule and not the client's sentence.
+One client, one record, one task, ever. Proved by
+`a permanent stop is no longer INVISIBLE — a person is given the task`.
+
+**Two things were deliberately not done, and both are open gaps, not fixes:**
+
+* **The word list was not narrowed.** Every narrowing tried also let through language plainly
+  aimed at us — "stop harassing me", "this is a scam". A keyword list cannot reliably tell who
+  the client is talking about. Leaving it wide fails toward saying nothing, which is the safe
+  side of this particular mistake.
+* **There is still no way to lift one from inside the app, and there deliberately isn't.**
+  Lifting would mean the app writing to a record that exists precisely because the app must not
+  be able to write to it, and the very next scan of the same message would put it straight back.
+  A person with database access can lift one. The product cannot. **If the task above turns out
+  to be a misfire, that is what has to happen.**
 
 **On hold is not one of them, and that is a gap, not an omission.** `repair_programs.status`
 permits only `active`, `complete`, `upsell_pending` and `cancelled`, and nothing in this

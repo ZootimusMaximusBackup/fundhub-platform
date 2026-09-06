@@ -14,6 +14,7 @@ import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { planNudges, deliverNudge, runNudges, idempotencyKeyFor, STAFF_TASK_ROLE } from "./run.mjs";
 import { blockersFor, scanForEscalation, hasEscalation } from "./exits.mjs";
+import { expireStaleCheckouts } from "../paid-services/expire.mjs";
 import { recordOptOut } from "../lib/opt-out.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -139,6 +140,40 @@ async function makeClientAccount(clientId) {
   )).rows[0].id;
 }
 
+/* A paid_service_requests row for one waypoint.
+   `expiresInDays` is measured from NOON and is only meaningful for
+   'awaiting_payment' — db/migrations/370 REFUSES a row at that status with no
+   checkout_expires_at, which is the point of the column: an invitation to pay
+   cannot exist without a deadline. Pass null to prove the fallback path in
+   paymentHoldIsLive() (that only works for a status the CHECK does not cover). */
+async function paidRequest(clientId, waypointId, {
+  status = "awaiting_payment", expiresInDays = 7, requestedDaysAgo = 0, paid = false
+} = {}) {
+  const accountId = await makeClientAccount(clientId);
+  const expiresAt = expiresInDays == null
+    ? null
+    : new Date(NOON.getTime() + expiresInDays * DAY).toISOString();
+  const requestedAt = new Date(NOON.getTime() - requestedDaysAgo * DAY).toISOString();
+  /* 331's paid_service_requests_resolved_ck: a finished request has an end
+     time and an open one does not. The fixture obeys the constraint rather
+     than the test disabling it. */
+  const finished = ["fulfilled", "failed", "cancelled", "refunded"].includes(status);
+  return (await db.query(
+    `INSERT INTO paid_service_requests
+       (org_id, client_id, waypoint_id, service_kind, requested_by_kind,
+        requested_by_account_id, status, price_components, price_total_cents,
+        checkout_expires_at, requested_at, amount_paid_cents, paid_at, resolved_at)
+     VALUES ($1,$2,$3,'dispute_round','client',$4,$5,
+             '[{"code":"round_base","label":"Dispute round","quantity":1,"unit_cents":10000,"amount_cents":10000}]'::jsonb,
+             10000, $6::timestamptz, $7::timestamptz,
+             CASE WHEN $8::boolean THEN 10000 ELSE NULL END,
+             CASE WHEN $8::boolean THEN $7::timestamptz ELSE NULL END,
+             CASE WHEN $9::boolean THEN $7::timestamptz ELSE NULL END)
+     RETURNING id`,
+    [orgId, clientId, waypointId, accountId, status, expiresAt, requestedAt, paid, finished]
+  )).rows[0].id;
+}
+
 /* One inbound row, dated. `at` matters for the escalation proofs: the defect
    was a 200-row horizon, so the whole point is putting the threat far enough
    back that ordinary later traffic buries it. */
@@ -250,7 +285,16 @@ test("three overdue waypoints, one client, one day: ONE message",
 
     const tally = await runNudges(db, { orgId, now: NOON });
 
-    assert.equal(tally.considered, 3, "all three were candidates");
+    /* ONE CANDIDATE, NOT THREE — CHANGED 2026-09-06, ROUND FOUR, AND IT IS A
+       FIX RATHER THAN A RELAXATION. This used to assert `considered === 3` and
+       two `daily_cap` refusals, which is exactly the waste a reviewer measured:
+       the two rows that could not possibly send today each spent a slot out of
+       a budget shared by the whole platform, and being the oldest rows they did
+       it again on every hourly pass. 25 clients with 8 rows each filled all 200
+       slots and queued 25 messages. The plan now takes at most one waypoint per
+       client (DISTINCT ON in planNudges), so the other two are simply not
+       considered — and the outcome the client sees is identical. */
+    assert.equal(tally.considered, 1, "one candidate per client per pass");
     assert.equal(tally.queued, 1, "one message, not three");
     assert.equal(await countMessages(clientId), 1);
 
@@ -258,8 +302,46 @@ test("three overdue waypoints, one client, one day: ONE message",
     assert.equal((await Promise.all(spent)).reduce((x, y) => x + y, 0), 1,
       "the other two rungs are NOT spent — they are chased on a later day");
 
-    const capped = tally.results.filter((r) => (r.reasons || []).includes("daily_cap"));
-    assert.equal(capped.length, 2, "the other two say why");
+    /* THE CAP ITSELF IS UNCHANGED AND STILL BITES. A second pass on the SAME
+       day picks the client's next overdue row — the first one's rung is spent —
+       and the database refuses it. One message a day, still enforced by
+       365's unique index and not by this loop. */
+    const again = await runNudges(db, { orgId, now: new Date(NOON.getTime() + 60 * 60 * 1000) });
+    assert.equal(again.considered, 1, "still one candidate for this client");
+    assert.equal(again.queued, 0, "and the day is already spoken for");
+    assert.ok(again.results.flatMap((r) => r.reasons || []).includes("daily_cap"),
+      "the refusal names the cap");
+    assert.equal(await countMessages(clientId), 1, "still one message today");
+  });
+
+test("the daily cap no longer burns the budget: 25 clients, 8 rows each, one live client",
+  { skip: !HAS_DB }, async () => {
+    /* THE REVIEWER'S MEASUREMENT, at the size they used. Before this fix, on a
+       scratch Postgres 16.14 in this worktree on 2026-09-06:
+         day 0: candidates 200, queued 25, 175 refused daily_cap,
+                the live client NOT in the plan, 0 messages to them
+         day 1: identical. The live client waited two days.
+       Twenty-five clients a day out of a budget of two hundred. */
+    /* One day overdue, so every backlogged row is rung 1 — a client message,
+       which is what the daily cap is about — and every one of them still sorts
+       ahead of the live client. */
+    for (let i = 0; i < 25; i += 1) {
+      const c = await makeClient();
+      for (let j = 0; j < 8; j += 1) {
+        await makeWaypoint(c, { dueDaysAgo: 1, title: `Backlog ${i}-${j}` });
+      }
+    }
+    const live = await makeClient();
+    const liveWp = await makeWaypoint(live, { dueDaysAgo: 0, title: "Link your business bank account" });
+
+    const plan = await planNudges(db, { orgId: null, now: NOON });
+    assert.equal(plan.length, 26, "25 backlogged clients + the live one, one row each");
+    assert.ok(plan.some((c) => c.waypointId === liveWp), "the live client is in the plan");
+
+    const tally = await runNudges(db, { orgId: null, now: NOON });
+    assert.equal(tally.budget_exhausted, false, "26 candidates is nowhere near the budget");
+    assert.equal(tally.queued, 26, "every one of them gets today's message");
+    assert.equal(await countMessages(live), 1, "including the live client, on day 0");
   });
 
 test("the daily cap is the client's own calendar day, and it releases the next day",
@@ -624,9 +706,18 @@ test("a missing template spends the rung but gives the client's day back",
       [orgId]
     );
     try {
-      const tally = await runNudges(db, { orgId, now: NOON });
-      assert.equal(tally.queued, 0);
-      assert.equal(tally.template_pending, 2, "both rungs are spent");
+      /* TWO PASSES, NOT ONE, AND THAT IS THE PROOF NOW. The plan takes at most
+         one waypoint per client per pass (round four), so the two rungs are
+         spent on two passes of the same day. The property being asserted is
+         unchanged and is actually stronger this way: the second pass can only
+         happen at all because the first one gave the client's day BACK. If
+         client_local_date had been left set, 365's unique index would refuse
+         the second claim and this would fail. */
+      const first = await runNudges(db, { orgId, now: NOON });
+      const second = await runNudges(db, { orgId, now: new Date(NOON.getTime() + 60 * 60 * 1000) });
+      assert.equal(first.queued, 0);
+      assert.equal(second.queued, 0);
+      assert.equal(first.template_pending + second.template_pending, 2, "both rungs are spent");
       for (const id of [waypointId, other]) {
         const rows = await nudgeRows(id);
         assert.equal(rows[0].outcome, "template_pending");
@@ -878,6 +969,50 @@ test("the escalation is recorded once and cannot be erased by deleting the messa
     assert.equal(await countMessages(clientId), 0);
   });
 
+test("a permanent stop is no longer INVISIBLE — a person is given the task",
+  { skip: !HAS_DB }, async () => {
+    /* ROUND FOUR. A reviewer sent one inbound text:
+         "that collection agency that keeps calling me is a scam"
+       — a client complaining about SOMEBODY ELSE. It matched \\bscam\\b, wrote
+       the permanent row, and ended every chase that client will ever have. The
+       REVOKE from round three means no code path in the product can lift it,
+       and nothing outside src/nudge/ reads client_escalations, so NO SCREEN
+       ANYWHERE SHOWED THAT IT HAD HAPPENED.
+
+       The permanence is correct and is not being weakened. What is fixed is the
+       silence: a task now lands on a person's board the first time a client is
+       stopped. Lifting a mis-fire from inside the application is still
+       impossible and is recorded as an open gap, not as fixed. */
+    const clientId = await makeClient();
+    await inboundMessage(clientId, "that collection agency that keeps calling me is a scam");
+    const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 0 });
+
+    assert.ok((await blockersFor(db, { waypointId, now: NOON })).includes("escalation"));
+
+    const tasks = (await db.query(
+      `SELECT title, body, assignee_role, source_workflow FROM tasks
+        WHERE client_id = $1 AND source_workflow = 'waypoint-nudge-escalation'`,
+      [clientId]
+    )).rows;
+    assert.equal(tasks.length, 1, "somebody is told, exactly once");
+    assert.equal(tasks[0].assignee_role, "csm");
+    assert.match(tasks[0].title, /Chases stopped/);
+    assert.match(tasks[0].body, /scam/,
+      "the task names OUR rule, so a human can see a mis-fire for what it is");
+    assert.equal(tasks[0].body.includes("that collection agency"), false,
+      "and it still does not repeat the client's own sentence");
+
+    /* A second and third pass write no second task, the same way they write no
+       second escalation row. */
+    await blockersFor(db, { waypointId, now: NOON });
+    await blockersFor(db, { waypointId, now: NOON });
+    assert.equal(Number((await db.query(
+      `SELECT count(*)::int AS n FROM tasks
+        WHERE client_id = $1 AND source_workflow = 'waypoint-nudge-escalation'`, [clientId]
+    )).rows[0].n), 1, "one client, one escalation, one task — ever");
+    assert.equal(await countMessages(clientId), 0, "and still nothing is sent to them");
+  });
+
 test("an ordinary client who never threatened us is still chased",
   { skip: !HAS_DB }, async () => {
     /* The other half of the escalation change, and the one that matters for the
@@ -1111,42 +1246,183 @@ test("200 clients who texted STOP do NOT hold the budget against one live client
     assert.equal(tally.queued, 1);
   });
 
-test("a TEMPORARILY blocked waypoint keeps its place, and is reached once the hold lifts",
+const checkoutStarvation = async (ageDays) => {
+  /* The reviewers' scenario, at their sizes: 200 clients each with an
+     awaiting_payment request minted `ageDays` ago against a waypoint the same
+     number of days overdue, plus one freshly overdue live client. */
+  const stopped = [];
+  for (let i = 0; i < 200; i += 1) {
+    const c = await makeClient();
+    const w = await makeWaypoint(c, { dueDaysAgo: ageDays + i, title: `Unpaid ${i}` });
+    await paidRequest(c, w, {
+      status: "awaiting_payment",
+      requestedDaysAgo: ageDays + i,
+      expiresInDays: -(ageDays + i - 7)
+    });
+    stopped.push(w);
+  }
+  const live = await makeClient();
+  const liveWp = await makeWaypoint(live, { dueDaysAgo: 0, title: "Link your business bank account" });
+  return { stopped, live, liveWp };
+};
+
+for (const ageDays of [200, 400]) {
+  test(`an abandoned checkout link at ${ageDays} days does not hold a slot for ever`,
+    { skip: !HAS_DB }, async () => {
+      /* BEFORE THE FIX, measured by a reviewer and reproduced in this worktree
+         on a scratch Postgres 16.14 on 2026-09-06:
+             today          -> candidates 200, live in plan FALSE,
+                               messages to live client 0, budget_exhausted true
+             one year later -> candidates 200, live in plan FALSE,
+                               messages to live client 0, budget_exhausted true
+             waypoint_nudges rows ever written for those 200: 0
+         The last line is why round two's anti-join could not help: the rows
+         never wrote anything to anti-join against.
+
+         AFTER THE FIX the 200 are not a dead weight at all — their invitations
+         are long dead, so they are REAL work again and each one runs to the end
+         of its ladder in a single pass (200+ days overdue is rung 4, a person).
+         That drains them permanently, and the live client is reached on the
+         very next pass. One pass, versus never. */
+      const { stopped, live, liveWp } = await checkoutStarvation(ageDays);
+
+      const pass1 = await runNudges(db, { orgId: null, now: NOON });
+      assert.equal(pass1.staff_tasks, 200,
+        "every abandoned one is finished off rather than left to sit for ever");
+      assert.equal(pass1.not_reached, 1, "and the pass says out loud who it could not reach");
+
+      /* The whole point: they are gone from the queue afterwards, permanently. */
+      const plan2 = await planNudges(db, { orgId: null, now: NOON });
+      assert.equal(plan2.some((c) => stopped.includes(c.waypointId)), false,
+        "an abandoned checkout may not hold a slot on the next pass");
+      assert.ok(plan2.some((c) => c.waypointId === liveWp), "the live client is now in the plan");
+
+      const pass2 = await runNudges(db, { orgId: null, now: new Date(NOON.getTime() + 60 * 60 * 1000) });
+      assert.equal(pass2.budget_exhausted, false);
+      assert.equal(pass2.queued, 1);
+      assert.equal(await countMessages(live), 1, "the live client gets their message");
+    });
+}
+
+/* ── ROUND FOUR: THE CHECKOUT LINK THAT HELD A SLOT FOR EVER ───────────────
+   ═════════════════════════════════════════════════════════════════════════
+
+   `payment_in_flight` was classified TEMPORARY on the stated ground that "a
+   checkout link is out. It expires; then we chase again." NOTHING IN THIS
+   CODEBASE EVER EXPIRED ONE — no expiry column, nothing set a deadline at mint,
+   and no file under src/workflows/ even named paid_service_requests. So the
+   hold was permanent while filed as temporary, and it held a slot in a
+   platform-wide budget for ever.
+
+   Both halves are pinned below: a LIVE link costs no slot and sends nothing,
+   and an EXPIRED one is chased again exactly as the sentence always promised. */
+
+test("a LIVE checkout link holds NO slot, and still sends nothing",
   { skip: !HAS_DB }, async () => {
-    /* The other half of the rule. A checkout link that is out (payment_in_flight)
-       is not a reason to drop the row from the queue — tomorrow it can send. Only
-       PERMANENT stops are excluded in SQL. */
+    const clientId = await makeClient();
+    const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 1 });
+    await paidRequest(clientId, waypointId, { status: "awaiting_payment", expiresInDays: 7 });
+
+    const held = await planNudges(db, { orgId, now: NOON });
+    assert.equal(held.some((c) => c.waypointId === waypointId), false,
+      "a live hold costs no slot — the gate would refuse it a moment later anyway");
+
+    /* The gate is still the authority, and it still says no. A stale plan that
+       somehow carried this row must produce nothing. */
+    const blockers = await blockersFor(db, { waypointId, now: NOON });
+    assert.deepEqual(blockers, ["payment_in_flight"]);
+    const out = await deliverNudge(db, {
+      waypointId, orgId, clientId, key: "k", title: "t", detail: null,
+      dueAt: overdueBy(1), step: 1, kind: "client_message", channel: "sms",
+      templateKey: "SMS-WAYPOINT-DUE"
+    }, { now: NOON });
+    assert.equal(out.action, "skipped");
+    assert.deepEqual(out.reasons, ["payment_in_flight"]);
+    assert.equal(await countMessages(clientId), 0);
+  });
+
+test("an EXPIRED checkout link stops holding the waypoint, and the chase resumes",
+  { skip: !HAS_DB }, async () => {
+    const clientId = await makeClient();
+    const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 1 });
+    /* Minted eight days before NOON, so its seven-day stamp has passed. */
+    await paidRequest(clientId, waypointId, {
+      status: "awaiting_payment", expiresInDays: -1, requestedDaysAgo: 8
+    });
+
+    assert.deepEqual(await blockersFor(db, { waypointId, now: NOON }), [],
+      "an invitation nobody took is not a reason to stay quiet for ever");
+    const plan = await planNudges(db, { orgId, now: NOON });
+    assert.ok(plan.some((c) => c.waypointId === waypointId));
+
+    const tally = await runNudges(db, { orgId, now: NOON });
+    assert.equal(tally.queued, 1, "the chase resumes, exactly as the comment always promised");
+    assert.equal(await countMessages(clientId), 1);
+  });
+
+test("the expiry is a fact in the data, not only in the nudge query",
+  { skip: !HAS_DB }, async () => {
+    /* THE COLUMN IS THE ENFORCEMENT. db/migrations/370 refuses a row that sits
+       at awaiting_payment without a deadline, so a future writer cannot
+       reintroduce an unbounded hold by forgetting to stamp one. */
     const clientId = await makeClient();
     const waypointId = await makeWaypoint(clientId, { dueDaysAgo: 1 });
     const accountId = await makeClientAccount(clientId);
-    await db.query(
-      `INSERT INTO paid_service_requests
-         (org_id, client_id, waypoint_id, service_kind, requested_by_kind,
-          requested_by_account_id, status, price_components, price_total_cents)
-       VALUES ($1,$2,$3,'dispute_round','client',$4,'awaiting_payment',
-               '[{"code":"round_base","label":"Dispute round","quantity":1,"unit_cents":10000,"amount_cents":10000}]'::jsonb,
-               10000)`,
-      [orgId, clientId, waypointId, accountId]
+    await assert.rejects(
+      () => db.query(
+        `INSERT INTO paid_service_requests
+           (org_id, client_id, waypoint_id, service_kind, requested_by_kind,
+            requested_by_account_id, status, price_components, price_total_cents)
+         VALUES ($1,$2,$3,'dispute_round','client',$4,'awaiting_payment',
+                 '[{"code":"round_base","label":"Dispute round","quantity":1,"unit_cents":10000,"amount_cents":10000}]'::jsonb,
+                 10000)`,
+        [orgId, clientId, waypointId, accountId]
+      ),
+      (err) => err.code === "23514"
+        && /awaiting_needs_expiry/.test(String(err.constraint || err.message)),
+      "an awaiting_payment row with no deadline must be refused by the database"
     );
 
-    const held = await planNudges(db, { orgId, now: NOON });
-    assert.ok(held.some((c) => c.waypointId === waypointId),
-      "a temporary hold must NOT remove the row from the queue");
-    const first = await runNudges(db, { orgId, now: NOON });
-    assert.equal(first.queued, 0, "and it must still send nothing while the hold is on");
-    assert.equal(await countMessages(clientId), 0);
-    assert.ok(first.results.flatMap((r) => r.reasons || []).includes("payment_in_flight"));
-
-    /* The checkout was cancelled. The next day it is chased. */
-    await db.query(
-      `UPDATE paid_service_requests SET status = 'cancelled', resolved_at = now()
-        WHERE waypoint_id = $1`,
+    /* And the sweep moves the row off that status when the deadline passes, so
+       'awaiting_payment for ever' stops being a state the table can hold. */
+    await paidRequest(clientId, waypointId, {
+      status: "awaiting_payment", expiresInDays: -1, requestedDaysAgo: 8
+    });
+    const swept = await expireStaleCheckouts(db, { now: NOON });
+    assert.equal(swept.closed, 1);
+    const row = (await db.query(
+      `SELECT status, state_reason FROM paid_service_requests WHERE waypoint_id = $1`,
       [waypointId]
-    );
-    const nextDay = new Date(NOON.getTime() + DAY);
-    const second = await runNudges(db, { orgId, now: nextDay });
-    assert.equal(second.queued, 1, "once the hold lifts, the row is chased");
-    assert.equal(await countMessages(clientId), 1);
+    )).rows[0];
+    assert.equal(row.status, "cancelled");
+    assert.equal(row.state_reason, "checkout_expired");
+  });
+
+test("a REFUNDED paid request means we did NOT do it, so the client is still chased",
+  { skip: !HAS_DB }, async () => {
+    /* 'refunded' used to sit in BOUGHT_STATUSES, so a client whose money had
+       gone back was treated for ever as "they paid us to handle this one" and
+       was never chased about a task that is theirs again. */
+    const refunded = await makeClient();
+    const refundedWp = await makeWaypoint(refunded, { dueDaysAgo: 1 });
+    await paidRequest(refunded, refundedWp, { status: "refunded", paid: true, expiresInDays: null });
+
+    const paid = await makeClient();
+    const paidWp = await makeWaypoint(paid, { dueDaysAgo: 1 });
+    await paidRequest(paid, paidWp, { status: "paid", paid: true, expiresInDays: null });
+
+    assert.deepEqual(await blockersFor(db, { waypointId: refundedWp, now: NOON }), [],
+      "money given back is not work delivered");
+    assert.deepEqual(await blockersFor(db, { waypointId: paidWp, now: NOON }),
+      ["paid_alternative_bought"], "a real purchase still stops the chase");
+
+    const plan = await planNudges(db, { orgId, now: NOON });
+    assert.ok(plan.some((c) => c.waypointId === refundedWp));
+    assert.equal(plan.some((c) => c.waypointId === paidWp), false);
+
+    await runNudges(db, { orgId, now: NOON });
+    assert.equal(await countMessages(refunded), 1);
+    assert.equal(await countMessages(paid), 0);
   });
 
 test("every waypoint the SQL removes is one the gate would have refused",

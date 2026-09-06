@@ -70,7 +70,8 @@ import { emit } from "../events/bus.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { sendTemplated as defaultSend } from "../workflows/messaging.mjs";
 import { STEPS, FINAL_STEP, dueStep, stepFor } from "./ladder.mjs";
-import { blockersFor, contactFor, BOUGHT_STATUSES, CHASEABLE_STATES } from "./exits.mjs";
+import { blockersFor, contactFor, BOUGHT_STATUSES, PENDING_PAYMENT_STATUSES, CHASEABLE_STATES } from "./exits.mjs";
+import { CHECKOUT_LINK_TTL_DAYS } from "../paid-services/link-ttl.mjs";
 import { destinationKey } from "./destination.mjs";
 import { zoneForClient, isDaytime, localDate } from "./clock.mjs";
 
@@ -194,25 +195,59 @@ const sqlList = (set) => [...set].map((s) => `'${String(s).replace(/'/g, "''")}'
        waypoint_complete        state done/skipped, or completed_at set
        waypoint_blocked         state outside CHASEABLE_STATES
        ladder_exhausted         a row at the final rung
-       paid_alternative_bought  paid_service_requests in BOUGHT_STATUSES
+       paid_alternative_bought  paid_service_requests in BOUGHT_STATUSES.
+                                'refunded' LEFT that set on 2026-09-06 (round
+                                four): a refund means the money went back, which
+                                means we did NOT do it for them, and treating it
+                                as a purchase bought their permanent silence
+                                with money we had given back.
        client_replied           an inbound message after our first nudge on it
        opted_out                opt_outs, either channel, not opted back in
        escalation               a client_escalations row (368)
        program_complete         repair_programs.status
        program_cancelled        repair_programs.status
 
+     BOUNDED — excluded while it is true, and it stops being true by itself
+       payment_in_flight        a checkout link is out AND STILL LIVE. Seven
+                                days from the mint, stamped on the row itself
+                                (paid_service_requests.checkout_expires_at,
+                                db/migrations/370).
+
+                                THIS ONE WAS MISCLASSIFIED AS TEMPORARY AND IT
+                                WAS THE ROUND-FOUR BLOCKER. The stated reason
+                                was "a checkout link is out. It expires; then we
+                                chase again." Nothing in this codebase ever
+                                expired one — no expiry column existed, nothing
+                                at mint set a deadline, and no file under
+                                src/workflows/ so much as named the table. So
+                                the hold was permanent while being filed as
+                                temporary, and it held a slot for ever.
+                                Reproduced here: 200 clients each holding an
+                                awaiting_payment request minted 400 days ago,
+                                plus one freshly overdue live client — 200
+                                candidates, the live one not among them, zero
+                                messages to them, that day and a year later.
+
+                                Now it is excluded WHILE THE LINK IS LIVE, which
+                                costs nothing (the gate would have refused it a
+                                moment later anyway, so the slot was being spent
+                                on a guaranteed refusal) and it comes straight
+                                back into the queue the moment the stamp passes.
+                                An expired one is chased again, exactly as the
+                                original sentence promised.
+
      TEMPORARY — deliberately NOT excluded; these keep their place in the queue
        not_overdue              tomorrow it is due. It is the query's own
                                 due_at filter, so it is not a candidate today
                                 and holds no slot either way.
-       payment_in_flight        a checkout link is out. It expires; then we
-                                chase again.
        check_failed             a database error. Transient by definition, and
                                 excluding on "we could not tell" would turn one
                                 bad query into a permanent silence.
        one-per-day / per-destination caps, and quiet hours — all in
                                 deliverNudge, all true only for today, all of
-                                them must still be reached tomorrow.
+                                them must still be reached tomorrow. The daily
+                                cap no longer BURNS the budget, though: see
+                                ONE WAYPOINT PER CLIENT PER PASS below.
 
    THIS IS NOT A SUBSTITUTE FOR THE GATE. Every clause below mirrors a branch of
    blockersFor() exactly, so a row it removes is a row the gate would have
@@ -234,11 +269,29 @@ const PERMANENT_STOPS_SQL = `
               SELECT 1 FROM waypoint_nudges nx
                WHERE nx.waypoint_id = d.id AND nx.step = ${FINAL_STEP}
             )
-        /* paid_alternative_bought — they paid us to do this one. */
+        /* paid_alternative_bought — they paid us to do this one. 'refunded' is
+           NOT in BOUGHT_STATUSES: the money went back, so the task is theirs
+           again and they must still be chased about it. */
         AND NOT EXISTS (
               SELECT 1 FROM paid_service_requests p
                WHERE p.waypoint_id = d.id
                  AND p.status IN (${sqlList(BOUGHT_STATUSES)})
+            )
+        /* payment_in_flight — an invitation to pay that is STILL LIVE. Bounded,
+           not permanent: the row's own checkout_expires_at (370) ends it, and
+           the waypoint is a candidate again on the first pass after that. The
+           COALESCE fallback mirrors paymentHoldIsLive() in ./exits.mjs exactly,
+           for a row written before 370 backfilled the column — the earliest the
+           link could have died, never a later date, because guessing late is
+           guessing toward silence. */
+        AND NOT EXISTS (
+              SELECT 1 FROM paid_service_requests p
+               WHERE p.waypoint_id = d.id
+                 AND p.status IN (${sqlList(PENDING_PAYMENT_STATUSES)})
+                 AND COALESCE(
+                       p.checkout_expires_at,
+                       p.requested_at + interval '${CHECKOUT_LINK_TTL_DAYS * 24} hours'
+                     ) > $1::timestamptz
             )
         /* client_replied — an inbound message after our first nudge ON THIS
            waypoint. min() is NULL when we have never nudged it, and
@@ -272,6 +325,46 @@ const PERMANENT_STOPS_SQL = `
                  AND rp.status IN ('complete', 'cancelled')
             )`;
 
+/* ═════════════════════════════════════════════════════════════════════════
+   ONE WAYPOINT PER CLIENT PER PASS — THE DAILY CAP STOPS BURNING THE BUDGET
+   ═════════════════════════════════════════════════════════════════════════
+
+   THE DEFECT. The database allows ONE client-facing message per client per
+   calendar day, across all of their waypoints (365's partial unique index). The
+   pass did not know that: it took the 200 oldest due rows, and a client with
+   eight overdue items contributed all eight. The first became their message and
+   the other seven were refused as `daily_cap` — having each spent a slot. Being
+   the oldest rows, they sorted first, so they did it again on the next hourly
+   pass, and the one after.
+
+   Measured by a reviewer, reproduced here on a scratch Postgres 16.14 on
+   2026-09-06 — 25 clients with 8 overdue rows each, plus one live client:
+
+     day 0: candidates 200, queued 25, 175 refused for daily_cap, the live
+            client NOT in the plan, 0 messages to them
+     day 1: identical. The live client waited two days.
+
+   Effective throughput was 25 clients a day out of a budget of 200.
+
+   THE FIX. DISTINCT ON (client_id), ordered oldest-first, so each client
+   contributes exactly ONE candidate to a pass: their most overdue item. Nothing
+   is lost — the other seven could not have produced a message today under the
+   cap the database already enforces, and they are still there tomorrow. The
+   rows they were displacing belong to clients who CAN be messaged.
+
+   IT IS NOT A SECOND CAP. The cap is still 365's unique index and deliverNudge
+   still discovers it the same way; this only stops the pass from spending its
+   budget discovering it 175 times. */
+const ONE_PER_CLIENT_SQL = `,
+     picked AS (
+       SELECT DISTINCT ON (e.client_id)
+              e.id, e.org_id, e.client_id, e.key, e.title, e.detail, e.due_at, e.state, e.step
+         FROM eligible e
+        /* id breaks a tie so two rows due at the same instant resolve the same
+           way on every pass, rather than by whatever order the plan returns. */
+        ORDER BY e.client_id, e.due_at ASC, e.id ASC
+     )`;
+
 /* The `due` CTE. owner_kind, state and completed_at are the permanent stops
    that live on the waypoint row itself, so they belong here rather than in the
    outer WHERE — narrowing before the CASE is evaluated. */
@@ -281,8 +374,14 @@ const DUE_CTE_WHERE = `w.owner_kind = 'client'
           AND w.due_at IS NOT NULL`;
 
 /**
- * planNudges — phase 1. Every overdue, client-owned waypoint that can still be
- * chased: its due rung is unspent AND no permanent stop applies to it.
+ * planNudges — phase 1. The most overdue chaseable waypoint for each client:
+ * its due rung is unspent, no permanent stop applies to it, and no live
+ * checkout link is holding it.
+ *
+ * AT MOST ONE ROW PER CLIENT — see ONE_PER_CLIENT_SQL above. The database
+ * already allows a client only one message a day, so a client's other overdue
+ * rows could only ever have been refused; before this they were refused AFTER
+ * spending a slot each.
  *
  * EVERY PERMANENT REFUSAL IS APPLIED INSIDE THE QUERY, BEFORE THE LIMIT, AND
  * THAT IS THE FIX. Filtering after the LIMIT moves the bug; filtering inside it
@@ -316,15 +415,18 @@ export async function planNudges(db, { orgId = null, now = new Date(), limit = D
          FROM client_waypoints w
         WHERE ${DUE_CTE_WHERE}
           AND w.due_at <= $1::timestamptz${orgClause}
-     )
-     SELECT d.id, d.org_id, d.client_id, d.key, d.title, d.detail, d.due_at, d.state, d.step
-       FROM due d
-      WHERE d.step IS NOT NULL
-        AND NOT EXISTS (
-              SELECT 1 FROM waypoint_nudges n
-               WHERE n.waypoint_id = d.id AND n.step = d.step
-            )${PERMANENT_STOPS_SQL}
-      ORDER BY d.due_at ASC
+     ),
+     eligible AS (
+       SELECT d.id, d.org_id, d.client_id, d.key, d.title, d.detail, d.due_at, d.state, d.step
+         FROM due d
+        WHERE d.step IS NOT NULL
+          AND NOT EXISTS (
+                SELECT 1 FROM waypoint_nudges n
+                 WHERE n.waypoint_id = d.id AND n.step = d.step
+              )${PERMANENT_STOPS_SQL}
+     )${ONE_PER_CLIENT_SQL}
+     SELECT * FROM picked
+      ORDER BY due_at ASC, id ASC
       LIMIT $${params.length}`,
     params
   );
@@ -375,13 +477,18 @@ export async function countEligible(db, { orgId = null, now = new Date() } = {})
   }
   try {
     const { rows } = await db.query(
+      /* count(DISTINCT client_id), because the plan now takes at most one
+         waypoint per client per pass. Counting ROWS here against a plan that
+         counts CLIENTS would report `not_reached` for waypoints that were never
+         going to be reached this pass and did not need to be — an invented
+         backlog. */
       `WITH due AS (
          SELECT w.id, w.client_id, w.due_at, ${DUE_STEP_SQL} AS step
            FROM client_waypoints w
           WHERE ${DUE_CTE_WHERE}
             AND w.due_at <= $1::timestamptz${orgClause}
        )
-       SELECT count(*)::int AS n
+       SELECT count(DISTINCT d.client_id)::int AS n
          FROM due d
         WHERE d.step IS NOT NULL
           AND NOT EXISTS (

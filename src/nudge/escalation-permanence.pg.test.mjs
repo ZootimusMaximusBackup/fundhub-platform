@@ -27,7 +27,7 @@
 // migrations 361 and 363 — and this file is what stops the claim drifting back
 // into fiction.
 //
-// TWO ASSERTIONS, AND THE SECOND ONE IS THE REAL ONE.
+// THREE ASSERTIONS, AND THE THIRD ONE IS THE ONE ROUND THREE MISSED.
 //
 //   1. THE CATALOG. has_table_privilege() answers for the fundhub_app role
 //      without needing to log in as it, so this half runs everywhere the suite
@@ -37,6 +37,14 @@
 //      a refusal — it is the same answer a working DELETE gives on an empty
 //      table, which is exactly how the first version of this claim survived
 //      review. Needs APP_DATABASE_URL; skipped, out loud, when it is absent.
+//   3. THE CASCADE. Round three revoked UPDATE and DELETE and both halves above
+//      passed — while 368 still declared the client_id foreign key ON DELETE
+//      CASCADE. A cascade runs with the REFERENCED table's owner privileges,
+//      not the deleting role's, and fundhub_app holds DELETE on clients. So the
+//      application could still destroy the record, by deleting the client, and
+//      the promise was written with no exception in two more places.
+//      db/migrations/370 makes that foreign key ON DELETE RESTRICT and the
+//      third test below proves the refusal as fundhub_app.
 
 import { test, before, after } from "node:test";
 import assert from "node:assert";
@@ -183,6 +191,65 @@ test("a DELETE by the application RAISES — a silent 'DELETE 0' is not a refusa
       (await db.query(`SELECT count(*)::int AS n FROM client_escalations WHERE client_id = $1`, [other])).rows[0].n,
       1,
       "the application must still be able to RECORD an escalation");
+  });
+
+test("the application cannot reach the escalation by deleting the CLIENT either",
+  { skip: !HAS_DB ? "no DATABASE_URL"
+         : !rlsIsReal() ? "no APP_DATABASE_URL — cannot connect as the unprivileged role"
+         : false },
+  async () => {
+    /* ROUND FOUR. THE REVOKE ABOVE WAS REAL AND IT WAS NOT ENOUGH.
+       368 declared client_id ... REFERENCES clients(id) ON DELETE CASCADE, and
+       a cascade runs with the privileges of the referenced table's owner rather
+       than the deleting role's. fundhub_app holds DELETE on clients. So the
+       application COULD destroy an escalation record — by deleting the client —
+       while two of the five places that state the promise said, with no
+       exception, "the application really cannot delete one".
+
+       db/migrations/370 makes the foreign key ON DELETE RESTRICT. The delete is
+       now refused, out loud, error 23503. */
+    const clientId = await makeClient();
+    await db.query(
+      `INSERT INTO client_escalations (org_id, client_id, matched_pattern)
+       VALUES ($1,$2,'\\blawyer\\b')`,
+      [orgId, clientId]
+    );
+
+    const { rows: fk } = await db.query(
+      `SELECT confdeltype FROM pg_constraint
+        WHERE conrelid = 'public.client_escalations'::regclass
+          AND contype = 'f'
+          AND confrelid = 'public.clients'::regclass`
+    );
+    assert.deepEqual(fk.map((r) => r.confdeltype), ["r"],
+      "the client_id foreign key must be ON DELETE RESTRICT ('r'); 'c' is CASCADE " +
+      "and means the application can still destroy the record by deleting the client");
+
+    const app = rlsPool();
+    await assert.rejects(
+      () => app.query(`DELETE FROM clients WHERE id = $1`, [clientId]),
+      (err) => {
+        /* 23503 is foreign_key_violation. */
+        assert.equal(err.code, "23503",
+          `expected a foreign-key refusal (23503), got ${err.code}: ${err.message}`);
+        return true;
+      },
+      "deleting a client who has an escalation must be refused, not cascade"
+    );
+
+    assert.equal(
+      (await db.query(`SELECT count(*)::int AS n FROM client_escalations WHERE client_id = $1`, [clientId])).rows[0].n,
+      1,
+      "the escalation survived the attempt");
+
+    /* A client with NO escalation is unaffected — nothing about ordinary client
+       deletion changed. */
+    const ordinary = await makeClient();
+    await app.query(`DELETE FROM clients WHERE id = $1`, [ordinary]);
+    assert.equal(
+      (await db.query(`SELECT count(*)::int AS n FROM clients WHERE id = $1`, [ordinary])).rows[0].n,
+      0,
+      "a client with no escalation on file still deletes normally");
   });
 
 test("there is no read watermark table left behind",

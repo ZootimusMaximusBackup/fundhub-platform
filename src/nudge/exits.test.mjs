@@ -5,9 +5,10 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import {
-  looksLikeEscalation, matchedEscalationPattern, contactFor,
+  looksLikeEscalation, matchedEscalationPattern, contactFor, paymentHoldIsLive,
   ESCALATION_PATTERNS, ESCALATION_PRESCAN, CHASEABLE_STATES, BOUGHT_STATUSES
 } from "./exits.mjs";
+import { CHECKOUT_LINK_TTL_DAYS } from "../paid-services/link-ttl.mjs";
 
 test("language aimed at us stops the chase", () => {
   for (const said of [
@@ -86,6 +87,51 @@ test("a quote nobody accepted does not count as having bought the paid alternati
   assert.equal(BOUGHT_STATUSES.has("awaiting_payment"), false);
   assert.equal(BOUGHT_STATUSES.has("paid"), true);
   assert.equal(BOUGHT_STATUSES.has("fulfilled"), true);
+});
+
+test("a REFUND means we did NOT do it, so it is not a purchase", () => {
+  /* 'refunded' used to be in this set, so a client whose money had gone back
+     was treated for ever as "they paid us to handle this one" and was never
+     chased again about a task that is theirs again. */
+  assert.equal(BOUGHT_STATUSES.has("refunded"), false);
+  assert.equal(BOUGHT_STATUSES.has("cancelled"), false);
+  assert.equal(BOUGHT_STATUSES.has("failed"), false);
+  assert.deepEqual([...BOUGHT_STATUSES].sort(), ["fulfilled", "paid", "staged"]);
+});
+
+/* ── the checkout hold, which used to have no end ─────────────────────────── */
+
+test("a live checkout link holds; an expired one does not", () => {
+  const now = new Date("2026-09-10T18:00:00.000Z");
+  const days = (n) => new Date(now.getTime() + n * 24 * 60 * 60 * 1000).toISOString();
+
+  assert.equal(paymentHoldIsLive({ checkout_expires_at: days(1) }, now), true);
+  assert.equal(paymentHoldIsLive({ checkout_expires_at: days(-1) }, now), false,
+    "an invitation nobody took is not a reason to stay quiet for ever");
+  assert.equal(paymentHoldIsLive({ checkout_expires_at: now.toISOString() }, now), false,
+    "the deadline itself is the end of it, not the start of another day");
+});
+
+test("no stamp falls back to the request's own age, never to silence for ever", () => {
+  /* db/migrations/370 makes a stampless awaiting_payment row unwritable, so
+     this branch guards a state that should not arise. If it ever does, the
+     answer is the EARLIEST the link could have died — a link is minted at or
+     after the request — because guessing late is guessing toward permanent
+     quiet, which is the whole defect. */
+  const now = new Date("2026-09-10T18:00:00.000Z");
+  const daysAgo = (n) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000).toISOString();
+
+  assert.equal(paymentHoldIsLive({ requested_at: daysAgo(1) }, now), true);
+  assert.equal(paymentHoldIsLive({ requested_at: daysAgo(CHECKOUT_LINK_TTL_DAYS + 1) }, now), false);
+  assert.equal(paymentHoldIsLive({ requested_at: daysAgo(CHECKOUT_LINK_TTL_DAYS - 1) }, now), true);
+});
+
+test("a row with nothing readable on it, and an unreadable clock, both fail closed", () => {
+  const now = new Date("2026-09-10T18:00:00.000Z");
+  assert.equal(paymentHoldIsLive({}, now), true,
+    "unknown is not a licence to send a message");
+  assert.equal(paymentHoldIsLive({ checkout_expires_at: "not a date" }, now), true);
+  assert.equal(paymentHoldIsLive({ checkout_expires_at: "2026-01-01T00:00:00.000Z" }, new Date("nope")), true);
 });
 
 /* ── the SQL pre-filter, pinned in the only direction that matters ────────── */
