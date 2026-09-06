@@ -553,3 +553,67 @@ impossible to being possible. Those are not the same kind of hour.
 generator together in one session, and do items 4 and 5 in the same afternoon because
 between them they cost an hour and one of them is the only thing standing between you and
 knowing which ads make money.
+
+---
+
+# Phase 3, corrected — 2026-09-06, after Chris read the first design
+
+The first design was wrong in one important way and over-built in another. Chris:
+
+> "What we're basically doing is testing to make sure that the scripts sound natural,
+> editing them, and then feeding them back in, and then training AI to not make those
+> mistakes again, because AI has a really hard time with natural language... over time
+> you get to hear my voice and learn."
+
+> "I don't want to over-engineer something. It just needs to be really simple and good
+> and save me time."
+
+## What changes
+
+**The generator is not the system. The correction loop is.** A generator that writes ten
+scripts and forgets what Chris fixed will need re-teaching every single week, forever.
+The value is in keeping the fixes. That was missing from Design 1 entirely.
+
+**So there is a second file, and it is the important one.** `docs/ads/VOICE.md` holds
+before-and-after pairs: the line the model wrote, and the line Chris replaced it with. It
+starts empty. Every review adds to it. Every run reads it before writing a word.
+
+Week one Chris rewrites a lot. Week six he rewrites a little. That curve is the whole
+point, and nothing else in this plan produces it.
+
+**Why before-and-after pairs and not a list of rules.** Chris's objection is about how
+copy sounds, not about what it claims. "Sounds stupid" cannot be written as a rule a
+model will obey, but it can be shown. A model matches examples far better than it follows
+adjectives. The hard no's still belong in `RULES.md`, where a regex can enforce them.
+
+**The format is not one format.** It varies by ad type and it varies again for a VSL.
+The inputs already exist: `registry.json` carries lane, gate, entry and door;
+`ANGLE-GENERATOR.md` carries the runtime bands and the four-part shape;
+`CONTROLS.md` carries the founder VSL as the one worked long-form example. The skill
+takes the type as an argument rather than assuming one shape.
+
+## The build, cut down
+
+Three files. Nothing else. No GitHub Action, no cron, no secret, no new package.
+
+1. **`docs/ads/RULES.md`** - the hard no's only. Never-say lines, banned AI words, word
+   count per runtime band, the cause-first hook test, the format per ad type.
+2. **`docs/ads/VOICE.md`** - before-and-after pairs from Chris's edits. Starts empty and
+   is the only file that grows.
+3. **The skill** - reads both, plus the concept sheet and the lane rules, and writes.
+   A small checker runs first so banned phrases never reach Chris.
+
+**Effort:** about half a day. **Saves:** 3 to 5 hours a week immediately, and more every
+week as `VOICE.md` fills.
+
+## Parked, on purpose
+
+**Feeding results back from the Meta advertising API.** Chris named it and called it "a
+whole nother cookie". It is parked for one concrete reason: performance data is keyed to
+the ad name, the name is the word after the dash in `utm_content`, and **21 of the 24
+registered ads have no name.** Every report would come back as a bare digit. Naming the
+21 is a 30-minute job only Chris can do, and it is the real prerequisite. Build the loop
+first, name the ads, then wire the numbers.
+
+**The wider FundHub AI product.** This is being built for Chris's own use first. Nothing
+here should be generalised for other tenants until he has used it for a few weeks.
