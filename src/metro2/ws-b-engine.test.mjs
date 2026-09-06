@@ -133,10 +133,29 @@ describe("WS-B R4–R6 bureau prose pools", () => {
     }
   });
 
-  it("R4 opening comes from the R3 final-notice pool", () => {
-    const r3 = openingFor(0, ROUND.R3);
-    const r4 = openingFor(0, "R4");
-    assert.equal(r4, r3);
+  /* THIS USED TO ASSERT THE R4 OPENING WAS THE R3 OPENING, WORD FOR WORD.
+     It was, and that is exactly what stopped the ladder at Round 3: the
+     variance gate compares each letter against recent letters to the same
+     bureau and refuses anything over 35% similar, so a Round 4 letter built
+     from Round 3's sentences came back `variance_gate_exhausted` every time.
+     Measured on origin/main against real Postgres and the production sim seed:
+     R1 five letters, R2 three, R3 three, R4 zero, R5 zero, R6 zero.
+
+     R4, R5 and R6 have their own words now. What must NOT change is the
+     authority behind them — `promptPoolRound` still calls all three a final
+     notice (pinned above), the statutory hooks are R3's, and none of them
+     climbs to a stronger claim. That is what this pins instead. */
+  it("R4, R5 and R6 write in their own words while citing exactly what R3 cites", () => {
+    const r3Openings = new Set(Array.from({ length: 6 }, (_, i) => openingFor(i, ROUND.R3)));
+    const r3 = roundInstructions(ROUND.R3);
+    for (const round of ["R4", "R5", "R6"]) {
+      for (let seed = 0; seed < 6; seed++) {
+        assert.equal(r3Openings.has(openingFor(seed, round)), false,
+          `${round} opening ${seed} is still one of Round 3's own sentences`);
+      }
+      assert.deepEqual(roundInstructions(round).hooks, r3.hooks,
+        `${round} must rest on the same law Round 3 rests on, and no more`);
+    }
   });
 
   it("NO R4-R6 WORDING CLAIMS A COMPLAINT WAS ALREADY FILED", () => {

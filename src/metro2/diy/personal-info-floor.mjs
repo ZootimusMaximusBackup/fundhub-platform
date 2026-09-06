@@ -286,6 +286,15 @@ function claim(ruleId, { bureau, subject, reason, observed, expected, creditor =
  */
 export function nameClaim({ namesOnFile, legalName, bureau }) {
   const legal = text(legalName);
+  /* NO VERIFIED NAME MEANS NO NAME CLAIM. Not a softer claim, not one built out
+     of whatever the file happens to print — none.
+     The name a letter asks a bureau to hold the file to comes from the client's
+     own uploaded government ID, read and checked against their proof of address
+     (src/identity/). Until that exists for a client we do not know what their
+     legal name is, and every wording below says "My name is X" out loud. An
+     earlier draft let this through and printed "My name is ." into a letter
+     addressed to a credit bureau. */
+  if (!legal) return null;
   const labels = namesOnFile.map((n) => n.label);
   const legalKey = normalizeLabel(legal);
   const onFile = namesOnFile.find((n) => n.key === legalKey);
@@ -507,12 +516,27 @@ export function personalInfoFloorByBureau(merged, { legalName = null, currentAdd
   return out;
 }
 
+/** The floor's own name claims. Both shapes, so neither can be missed. */
+const FLOOR_NAME_RULES = Object.freeze(["PI-NAME-CONSOLIDATE", "PI-NAME-CONFIRM"]);
+
 /**
  * Everything already found, then the floor beneath it.
  *
- * Concatenates rather than de-duplicating: a floor claim is about the file's
- * personal information, and no Metro 2 or derogatory claim covers the same
- * ground, so there is nothing here that could be a duplicate to drop.
+ * ONE NAME CLAIM PER BUREAU, NEVER TWO. M2-032 (../checks/personal-info.mjs
+ * checkNameVariants) says the same thing the floor's name claim says — the file
+ * carries a name that is not the consumer's, take it off — and until 2026-09-04
+ * it could not fire, because nothing ever supplied the consumer side of the
+ * engine context (./consumer-context.mjs). Now that it can, a bureau whose file
+ * carries a stray name would draw both claims and the letter would ask for the
+ * same deletion twice in two different voices. M2-032 is the more specific of
+ * the two — it names the exact variant — so it wins and the floor's name claim
+ * drops for that bureau.
+ *
+ * The address and inquiry halves of the floor are untouched: M2-031 is an
+ * age-based rule about FORMER addresses and asserts something different.
+ *
+ * Everything else concatenates, because no Metro 2 or derogatory claim covers
+ * the same ground.
  */
 export function mergePersonalInfoClaims(byBureau = {}, floorByBureau = {}) {
   const out = {};
@@ -521,10 +545,11 @@ export function mergePersonalInfoClaims(byBureau = {}, floorByBureau = {}) {
     ...Object.keys(floorByBureau || {})
   ]);
   for (const bureau of bureaus) {
-    const merged = [
-      ...((byBureau || {})[bureau] || []),
-      ...((floorByBureau || {})[bureau] || [])
-    ];
+    const base = (byBureau || {})[bureau] || [];
+    const engineNamesFire = base.some((v) => String(v?.ruleId || "") === "M2-032");
+    const floor = ((floorByBureau || {})[bureau] || [])
+      .filter((v) => !(engineNamesFire && FLOOR_NAME_RULES.includes(String(v?.ruleId || ""))));
+    const merged = [...base, ...floor];
     if (merged.length) out[bureau] = merged;
   }
   return out;

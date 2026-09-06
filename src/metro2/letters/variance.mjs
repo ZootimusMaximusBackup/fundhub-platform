@@ -3,7 +3,25 @@
 // No override. Two regeneration strikes, then fail.
 
 const DEFAULT_THRESHOLD = 0.35;
-const MAX_STRIKES = 2;
+/**
+ * How many times the writer may TRY again before the batch is refused.
+ *
+ * THE THRESHOLD IS NOT TOUCHED. Every letter still has to come in under 0.35
+ * against every recent letter to the same bureau, and a letter that cannot is
+ * still refused. This number only says how much of the prompt bank gets looked
+ * at before we give up looking.
+ *
+ * Raised from 2 to 5 on 2026-09-04. Each attempt draws one opening and one
+ * closing out of pools of six, so the space is thirty-six pairs and three
+ * attempts saw three of them. Measured: a bureau letter walked R1 to R6 with the
+ * same claims was refused at Round 5 for some seeds and sailed through for
+ * others — which client got their round 5 letter came down to the hash of their
+ * id. Six attempts search a sixth of the space instead of a twelfth, and the
+ * refusal that remains is a real one rather than a coin flip.
+ *
+ * The cost is CPU on a refusal path that already ran three times.
+ */
+const MAX_STRIKES = 5;
 
 /* Every rule id a claim block can be headed with.
  *
@@ -75,6 +93,19 @@ export function proseForVariance(letterText) {
     .replace(/\bPI-[A-Z0-9]+(?:-[A-Z0-9]+)+\b/g, " ")
     .replace(/15 U\.S\.C\.[^\n.]*/g, " ")
     .replace(/§\s*1681[^\n.]*/g, " ")
+    /* "FCRA section 611(a)(5)(A)" is the same fixed fact as the two lines above
+       and was the only citation spelling they missed. It matters more than it
+       looks: what this function hands the gate is the header plus the opening
+       plus the demand — the claim strip above swallows everything from the first
+       claim block to CITATIONS — so a statute named in the demand was a large
+       share of the compared text at every round that cites it. Rounds 3, 4, 5
+       and 6 all demand deletion under 611(a)(5)(A), because that is the section
+       that requires it, and they were scoring similar to each other for quoting
+       the same law rather than for saying the same thing.
+       Two identical letters are still identical after this strip and are still
+       refused — pinned in ./letters.test.mjs. */
+    .replace(/FCRA\s+section\s+[0-9]+(?:\([0-9a-zA-Z]+\))*/gi, " ")
+    .replace(/FCRA\s+§\s*[^\n.,;]*/g, " ")
     .replace(/Field \d+:[\s\S]*?(?=\n|$)/g, " ")
     .replace(/Signature: _+/g, " ")
     .replace(/^Date: _+$/gim, " ");
