@@ -16,6 +16,7 @@ import { dailyPulse } from './daily-pulse.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
 import { hiringOutreachCadence } from './hiring-outreach-cadence.mjs';
+import { waypointNudgeSweeper } from './waypoint-nudge-sweeper.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { partnerProductionFloorReview } from './partner-production-floor.mjs';
@@ -147,6 +148,33 @@ export const functions = [
      and on an opt-out — a follow-up sequence with no exit is a complaint
      generator, so the exits are tested rather than assumed. */
   hiringOutreachCadence,
+
+  /* THE OVERDUE-CHECKLIST CHASE. Registered 2026-09-06, hourly.
+
+     A client with a waypoint they own and have not done hears nothing today.
+     The progress page shows it, and that is all — nothing in this platform ever
+     reaches out about a checklist row going overdue.
+
+     REGISTERING IT WRITES A QUEUED ROW AND NOTHING ELSE. src/nudge/run.mjs
+     calls sendTemplated, which writes `messages` with status='queued'; the
+     dispatcher sends, behind the per-company outbound switch and the compliance
+     gate, exactly as it does for every other workflow here.
+
+     WHAT STOPS IT RUNNING AWAY IS IN THE DATABASE, NOT IN THE SCHEDULER.
+     db/migrations/365_waypoint_nudges.sql carries UNIQUE (waypoint_id, step)
+     with step CHECKed to 1..4 — a fifth message about one waypoint is
+     unwritable — and a partial UNIQUE (client_id, client_local_date) capping
+     every client at one client-facing message per day across all their
+     waypoints. Both are written BEFORE anything is queued, so duplicate
+     triggers, replays, retries and two schedulers all collapse to one send.
+     That is the direct fix for 2026-09-03, when a chase loop sent 51 identical
+     texts to one phone in two hours.
+
+     It only ever chases owner_kind='client' rows. A waypoint FundHub owes is
+     never chased, and the last rung is a staff task rather than a fourth
+     message. */
+  waypointNudgeSweeper,
+
   meetTranscriptSweeper,
 
   /* THE RECURRING BILLING RAIL. Registered 2026-08-31. Until it, nothing in

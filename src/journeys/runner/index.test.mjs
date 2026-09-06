@@ -73,7 +73,7 @@ import { isSyntheticRow } from "./synthetic.mjs";
    It is a cron with no event trigger, so no journey can ever reach it and it
    will always appear in neverFired — the same note the sweepers above carry,
    and the correct outcome for a scheduled job rather than a coverage hole. */
-const REGISTERED = 70;
+const REGISTERED = 71;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

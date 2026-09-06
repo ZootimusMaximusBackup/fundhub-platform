@@ -101,6 +101,12 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      row (042). It also reaches nobody until a partner has an activated_at, which
      db/migrations/282_partner_production_floor.sql deliberately leaves NULL for
      every partner activated before it existed rather than guessing a date.
+     Was 70 since the waypoint nudge sweeper (2026-09-06) — the hourly chase on
+     an overdue checklist row the CLIENT owns. Registering it queues a message
+     and nothing more: what stops it running away is in the database, not in the
+     scheduler — db/migrations/365_waypoint_nudges.sql caps it at four messages
+     per waypoint ever and one client-facing message per client per day, both as
+     unique constraints written before anything is queued.
      Was 67 since the subscription billing sweeper (2026-08-31) — the recurring
      billing rail. Registering it charges nobody: the charge-function registry
      in src/subscriptions/charger.mjs is empty because Commas exposes no
@@ -124,7 +130,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 70, `expected 70, got ${functions.length}`);
+  assert.equal(functions.length, 71, `expected 71, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);
