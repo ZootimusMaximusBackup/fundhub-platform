@@ -49,15 +49,16 @@ flowchart TD
     CAN --> A_top_level[Everything else — 42 routes]
     CAN --> A_trials[trials — 4 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 3 routes]
+    WHO -->|Yes| CANT[Blocked — 6 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_chat[chat — 1 blocked]
+    CANT --> B_push[push — 3 blocked]
     CANT --> B_read[Reading data — 1 blocked]
 ```
 
 ## What they can reach
 
-**220 of 223 routes.**
+**220 of 226 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -291,12 +292,15 @@ flowchart TD
 
 ## What they are blocked from
 
-**3 of 223 routes.**
+**6 of 226 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/affiliates/refer` | POST | client |
 | `/api/chat/portal-message` | POST | client |
+| `/api/push/key` | GET | client |
+| `/api/push/subscribe` | GET, POST | client |
+| `/api/push/unsubscribe` | DELETE, POST | client |
 | `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 
 ## UNVERIFIED
