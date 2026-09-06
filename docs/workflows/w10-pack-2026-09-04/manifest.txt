@@ -1,9 +1,35 @@
-REGENERATED 2026-09-06 (ROUND 4). Every file in this directory came out of the
-code as it stands, by one command:
+REGENERATED 2026-09-06 (ROUND 3 VERIFIER REPAIR — the second regeneration today;
+the round-4 notes further down are still accurate except where a later block
+says otherwise). Every file in this directory came out of the code as it stands,
+by one command:
 
     node scripts/black-reports/regen-w10-pack.mjs
 
 Sizes are bytes. Run `--check` instead to see what would change without writing.
+
+WHAT CHANGED IN THIS SECOND REGENERATION, and why every file moved:
+
+  · A NEW CASE, zero-limit/ — one open card whose limit the file REPORTS, as $0.
+    That is a known value, not a missing one, and it used to be run through the
+    10% arithmetic and printed as "Pay SECURED CARD from $900 down to $0". Its
+    own section is at the bottom.
+
+  · THE LAST PAGE OF EVERY DOCUMENT. It used to read "You have lenders you can
+    apply to today" in this printer and "You have clean bureaus ready for funding
+    now" — to EVERY client, whatever their bureaus said — in the other two. All
+    three now lead with the clean bureaus this file actually shows, else the
+    lenders open today, else no claim about either. Every PDF here carries that
+    page, which is why every byte count below moved.
+
+  · THE MONTH-6 SCORE COLUMN reads "Set at your next pull" in all three printers
+    now. It was four blank cells in two of them, because `score_targets` is
+    initialised and never assigned anywhere in this repository.
+
+  · TWO SENTENCES BELOW WERE QUOTED WITH THEIR OLD WORDING and are corrected in
+    place: "No open card on this file reports a credit limit" now reads
+    "...a credit limit **above $0**", and "1 card on this file reports no limit"
+    now reads "1 card on this file **has no 10% target**". Both had to change
+    because they were false for a card whose limit IS reported, as $0.
 
 
 WHY THE WHOLE PACK WAS REPLACED
@@ -42,29 +68,33 @@ lender lists with two names and two different counts is exactly the confusion
 this pack is supposed to prevent.
 
 
-THE PRINTER, AND HOW WE KNOW WHICH ONE PRODUCTION USES
-------------------------------------------------------
-Printed by the NODE printer (src/underwrite/black-report-node.mjs), which is
-what a real client receives today. Round 3 said so and gave one reason —
-"WeasyPrint is not installed on Netlify". That reason is true and it is not the
-only one, and the earlier wording read as if the render service were already the
-live path. MEASURED 2026-09-06 against the real site:
+THE PRINTER — ONE HALF PROVEN, ONE HALF NOT
+--------------------------------------------
+Printed by the NODE printer (src/underwrite/black-report-node.mjs).
 
-    netlify env:list --context production --plain | cut -d= -f1
-
-returns 82 names and NEITHER `BLACK_REPORT_RENDER_URL` NOR `FUNDHUB_RENDER_KEY`
-is one of them. Same for deploy-preview, branch-deploy and dev. So
-resolveRenderService() (src/underwrite/black-report-pdf.mjs:138-143) returns
-null on Netlify, the remote step cannot be taken at all, and with no Python on
-the Node runtime either, every live print lands on the pdf-lib printer. Run
-against that env the resolver says so out loud:
+PROVEN, from the code, and anyone can open the file and check it:
+resolveRenderService() (src/underwrite/black-report-pdf.mjs) returns null unless
+BOTH `BLACK_REPORT_RENDER_URL` and `FUNDHUB_RENDER_KEY` are set, and with it null
+the pdf-lib printer runs and says so out loud:
 
     [black-report] engine=pdf-lib
       reason=render_service_not_configured (local_python_not_attempted)
       files=4 DEGRADED — short documents, not the designed set
 
-Until those two settings exist, the designed WeasyPrint documents are not what
-production prints. render-service/README.md step 7 carries the same note.
+WITHDRAWN 2026-09-06 — this section used to say "which is what a real client
+receives today" and back it with a `netlify env:list --context production`
+result. A reviewer could not reproduce that result, and no agent working in this
+repository can: api.netlify.com is blocked by the network policy (CLAUDE.md §11)
+and the CLI fails at CONNECT before a request is sent. A measurement nobody can
+repeat is not a measurement. **WHICH PRINTER PRODUCTION USES IS AN OPEN
+QUESTION**, and settling it needs somebody with Netlify access to run
+`netlify env:list --context production --plain` and paste the answer here.
+
+The consequence is the whole reason this round exists: because nobody can say
+which printer prints a live document, EVERY FIX GOES INTO ALL THREE PRINTERS. A
+defect closed in two and shipped in the third is not closed — that is exactly
+what happened between round 2 and round 3. render-service/README.md step 7 is
+the two commands that would switch the render service on.
 
 A laptop with WeasyPrint prints the same five documents through
 scripts/black-reports/fundhub_gen.py and the bytes differ — pass
@@ -87,11 +117,11 @@ scripts/sim/push-credit.mjs (762/770/758, clean, no inquiries), through the real
 tier engine and the real buildLetterPack(). Pull date fixed at 2026-07-25 so the
 cover date is a property of the input.
 
-   13273  7 pages  Bank-Lender-Match-List.pdf
-    1601  1 page   Capital-Readiness-Summary.pdf
-    8952  5 pages  Credit-Analysis-Report.pdf
-    9535  5 pages  Credit-Optimization-Roadmap.pdf
-   11316  5 pages  Funding-Snapshot.pdf
+   13334  7 pages  Bank-Lender-Match-List.pdf
+    1600  1 page   Capital-Readiness-Summary.pdf
+    9008  5 pages  Credit-Analysis-Report.pdf
+    9593  5 pages  Credit-Optimization-Roadmap.pdf
+   11379  5 pages  Funding-Snapshot.pdf
 
 READ THIS BEFORE QUOTING THE PACK ON F44. This client reads "No business entity
 on file… Forming an LLC is fast", and that is correct under the owner's F15
@@ -114,11 +144,11 @@ with-company/ — the same file with one `businesses` row
 --------------------------------------------------------
 Sim Five Holdings LLC, 72 months. What F44 actually fixes.
 
-   11168  6 pages  Bank-Lender-Match-List.pdf
-    1601  1 page   Capital-Readiness-Summary.pdf
-    8952  5 pages  Credit-Analysis-Report.pdf
-    9573  5 pages  Credit-Optimization-Roadmap.pdf
-   10854  5 pages  Funding-Snapshot.pdf
+   11229  6 pages  Bank-Lender-Match-List.pdf
+    1600  1 page   Capital-Readiness-Summary.pdf
+    9008  5 pages  Credit-Analysis-Report.pdf
+    9639  5 pages  Credit-Optimization-Roadmap.pdf
+   10910  5 pages  Funding-Snapshot.pdf
 
   · Funding Snapshot: "Sim Five Holdings LLC is on file at 72 months old…"
     instead of "Forming an LLC is fast".
@@ -148,10 +178,10 @@ scripts/black-reports/regen-w10-pack.mjs and every finding in it is the vendor
 engine's own wording (optimization-findings.js). No Capital Readiness Summary:
 the summary generator produces none for this file, same as the 2026-09-04 set.
 
-   13256  7 pages  Bank-Lender-Match-List.pdf
-    9180  5 pages  Credit-Analysis-Report.pdf
-    9482  5 pages  Credit-Optimization-Roadmap.pdf
-    8684  4 pages  Funding-Snapshot.pdf
+   13315  7 pages  Bank-Lender-Match-List.pdf
+    9246  5 pages  Credit-Analysis-Report.pdf
+    9576  5 pages  Credit-Optimization-Roadmap.pdf
+    8744  4 pages  Funding-Snapshot.pdf
 
   · TRI-MERGE. One card at $4,500 of $10,000 reported by all three bureaus. The
     engine's own totals are $13,500 of $30,000. Funding Snapshot prints
@@ -186,10 +216,10 @@ preset spending limit, and nothing else. The vendor engine sums
 and its utilization percentage is null. Ten percent of 0 is 0, and
 `balance - 0` is the client's WHOLE balance.
 
-   13248  7 pages  Bank-Lender-Match-List.pdf
-    7310  4 pages  Credit-Analysis-Report.pdf
-    9241  5 pages  Credit-Optimization-Roadmap.pdf
-    7418  4 pages  Funding-Snapshot.pdf
+   13296  7 pages  Bank-Lender-Match-List.pdf
+    7369  4 pages  Credit-Analysis-Report.pdf
+    9315  5 pages  Credit-Optimization-Roadmap.pdf
+    7471  4 pages  Funding-Snapshot.pdf
 
   · WHAT IT USED TO SAY. Reproduced 2026-09-06 by printing this exact fixture
     through the code as it stood:
@@ -201,11 +231,15 @@ and its utilization percentage is null. Ten percent of 0 is 0, and
     hosted web pages (src/deliverables/) read "$0" too.
 
   · WHAT IT SAYS NOW, page 2 of the roadmap in this directory, read back out of
-    the committed PDF:
+    the committed PDF on 2026-09-06 after the second regeneration:
         AMEX PLATINUM (NPSL)   $5,200   -   -   -
-        "No open card on this file reports a credit limit, so there is no 10%
-         total to work back to. Keep the balances moving down and we will set a
-         target as soon as a limit reports."
+        "No open card on this file reports a credit limit above $0, so there is
+         no 10% total to work back to. Keep the balances moving down and we will
+         set a target as soon as a limit reports."
+
+    The words "above $0" were added in the round-3 verifier repair. Without them
+    the sentence is false for the client in zero-limit/ below, whose card DOES
+    report a limit — of nothing.
 
   · NO FIGURE IS INVENTED ANYWHERE ELSE EITHER. "Overall utilization" reads "-"
     in every table that carries it. The Credit Analysis Report prints no overall
@@ -227,9 +261,63 @@ hard-cases/Credit-Optimization-Roadmap.pdf, read back from the committed PDF:
     TEST CARD   $4,500   $10,000   $1,000 or less   $3,500
     AMEX PLATINUM (NPSL)   $5,200   -   -   -
     "Total paydown to reach 10% utilization: $3,500. That covers the cards that
-     report a limit. 1 card on this file reports no limit, so nothing for it is
-     in this number. You do not have to do it all at once - start with the card
-     at the highest percentage."
+     report a limit above $0. 1 card on this file has no 10% target, so nothing
+     for it is in this number. You do not have to do it all at once - start with
+     the card at the highest percentage."
 
 Round 3 printed the $3,500 with no such qualifier, so the $5,200 the client also
-owes sat silently outside a total that claimed to reach 10%.
+owes sat silently outside a total that claimed to reach 10%. The round-3 verifier
+repair changed "report a limit" to "report a limit above $0" and "reports no
+limit" to "has no 10% target", because a card reporting a limit of $0 has no
+target and is not a card that reports no limit.
+
+
+zero-limit/ — the one open card REPORTS a credit limit, and it is $0
+---------------------------------------------------------------------
+NEW IN THE ROUND-3 VERIFIER REPAIR, and the reason that round exists. This is NOT
+the same case as no-limit/ above, and treating the two as one is the whole
+defect. The limit cell holds one of THREE things:
+
+    a positive number   the file states a ceiling. 10% of it is a target.
+    the number $0       the file states a ceiling of nothing. KNOWN, not missing.
+    nothing at all      the file does not say.
+
+The code asked only "is it null?", so the middle case computed round(0 × 0.1) = 0
+and printed it as an instruction.
+
+   13296  7 pages  Bank-Lender-Match-List.pdf
+    7312  4 pages  Credit-Analysis-Report.pdf
+    9297  5 pages  Credit-Optimization-Roadmap.pdf
+    7440  4 pages  Funding-Snapshot.pdf
+
+  · WHAT IT USED TO SAY. Reproduced 2026-09-06 by rendering this exact fixture
+    through the code as it stood at the branch tip:
+        "Pay SECURED CARD from $900 down to $0"
+    in credit_analysis_report.html, funding_snapshot.html AND
+    optimization_roadmap.html, and in all four bodies of the WeasyPrint printer.
+    Three lines under it, the same card's own row correctly printed dashes. Only
+    the pdf-lib printer was already right: "SECURED CARD $900 $0 - -".
+
+  · WHAT IT SAYS NOW, read back out of the committed PDFs in this directory:
+        Roadmap page 2:
+          SECURED CARD   $900   $0   -   -
+          "No open card on this file reports a credit limit above $0, so there is
+           no 10% total to work back to."
+        Roadmap 6-month checklist:
+          "Month 1 - SECURED CARD - $900 owed. The credit limit reported for this
+           card is $0, so there is no 10% target to pay down to."
+        Credit Analysis Report page 3:
+          SECURED CARD   Experian   $900   $0   -   -   MONITOR
+
+  · AND IT IS NOT CALLED AN UNREPORTED LIMIT EITHER. The fix is not to route a
+    reported zero into the missing-limit sentence. Telling the holder of a card
+    whose limit IS reported, as $0, that "no credit limit is reported for this
+    card" is a second false sentence about the same account. Compare the two
+    checklist lines side by side:
+        no-limit/    "No credit limit is reported for this card"
+        zero-limit/  "The credit limit reported for this card is $0"
+    Same outcome — no target. Different fact, different sentence.
+
+  · THE LAST PAGE names his own bureaus: "You have clean bureaus ready for
+    funding now - Experian, Equifax, TransUnion." It used to say that to every
+    client, including one with no clean bureau at all.

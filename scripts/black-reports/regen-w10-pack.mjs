@@ -25,21 +25,28 @@
 // over it, and hands the result to the same buildLetterPack() the workflow
 // calls. The numbers are the sim profile's own; nothing is retyped here.
 //
-// THE PRINTER, AND HOW WE KNOW WHICH ONE PRODUCTION USES.
+// THE PRINTER — ONE HALF PROVEN, ONE HALF NOT. Read both.
 // printBlackReports() resolves in four steps: an explicit "node" request, a
 // local Python with WeasyPrint, the remote render service, then the Node
 // pdf-lib printer as the last resort.
 //
-// MEASURED 2026-09-06 against the live site, not read off a document:
-//   netlify env:list --context production --plain | cut -d= -f1
-// returns 82 names and NONE of them is BLACK_REPORT_RENDER_URL or
-// FUNDHUB_RENDER_KEY — same for deploy-preview, branch-deploy and dev. So
-// resolveRenderService() returns null on Netlify, step 3 cannot be taken, and
-// with no Python on the Node runtime either, production lands on the pdf-lib
-// printer with reason `render_service_not_configured`. That is why this pack is
-// printed with --engine=node by default: it is what a real client receives
-// today. Run `--engine=python` to see the designed set, which is what
-// production will print once those two variables are set.
+// PROVEN, from the code: resolveRenderService() returns null unless BOTH
+// BLACK_REPORT_RENDER_URL and FUNDHUB_RENDER_KEY are set, and with it null the
+// pdf-lib printer runs and logs reason `render_service_not_configured`. Open
+// src/underwrite/black-report-pdf.mjs and check it.
+//
+// NOT PROVEN, and WITHDRAWN 2026-09-06: this header used to quote a
+// `netlify env:list --context production` result as measurement. A reviewer
+// could not reproduce it and no agent working here can — api.netlify.com is
+// blocked by the network policy (CLAUDE.md §11) and the CLI fails at CONNECT.
+// A measurement nobody can repeat is not a measurement, so WHAT THOSE TWO
+// VARIABLES HOLD ON THE LIVE SITE IS AN OPEN QUESTION.
+//
+// So this pack is printed with --engine=node by default because that is the
+// fall-through path, not because anyone has confirmed it is the live one, and
+// --engine=python prints the designed set. Both are regenerated here for the
+// same reason every fix goes into all three printers: we cannot say which one
+// prints a client's document.
 
 import { mkdirSync, mkdtempSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -201,6 +208,43 @@ const NO_LIMIT_ANYWHERE = Object.freeze({
   }
 });
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   ZERO IS NOT NULL. One open card, SECURED CARD, whose credit limit the file
+   REPORTS — as $0. That is a known value, not a missing one, and the code asked
+   only "is it null?", so ten percent of it came out as $0 and was printed as an
+   instruction: "Pay SECURED CARD from $900 down to $0", in three of the four web
+   pages and in all four bodies of the WeasyPrint printer, three lines under the
+   same card's own row which correctly printed dashes.
+
+   NO_LIMIT_ANYWHERE above does NOT cover this: its card reports no limit at all,
+   which is the OTHER state, and the sentence for it is different on purpose.
+   Telling the holder of a card whose limit IS reported, as $0, that "no credit
+   limit is reported for this card" is its own false statement. This case is in
+   the pack so both sentences are documents somebody can open side by side.
+   ───────────────────────────────────────────────────────────────────────────── */
+const ZERO_LIMIT = Object.freeze({
+  outcome: "FULL_FUNDING",
+  pulledAt: PULLED_AT,
+  consumerSignals: {
+    scores: { median: 700, perBureau: { ex: 700, eq: 705, tu: 695 } },
+    utilization: { totalBalance: 900, totalLimit: 0, pct: null }
+  },
+  preapprovals: { totalCombined: 50000 },
+  projectedPreapproval: { totalCombined: 60000 },
+  businessSignals: { available: false },
+  findings: [],
+  normalized: {
+    tradelines: [
+      { source: "experian", creditorName: "SECURED CARD", accountIdentifier: "SEC-1",
+        accountType: "revolving", status: "open", isAU: false, isDerogatory: false,
+        currentBalance: 900, effectiveLimit: 0, openedDate: null,
+        currentRatingType: "AsAgreed" }
+    ],
+    inquiries: [],
+    identity: {}
+  }
+});
+
 const HARD_CASES_PERSONAL = Object.freeze({
   name: "Fixture Client",
   address: "100 Test Ave\nDenton, TX 76205",
@@ -230,7 +274,9 @@ async function main() {
     { dir: "hard-cases", label: "hand-built: tri-merge, no-limit card, AU card",
       crsResult: HARD_CASES, personal: HARD_CASES_PERSONAL, business: null },
     { dir: "no-limit", label: "hand-built: NO open card reports a credit limit",
-      crsResult: NO_LIMIT_ANYWHERE, personal: HARD_CASES_PERSONAL, business: null }
+      crsResult: NO_LIMIT_ANYWHERE, personal: HARD_CASES_PERSONAL, business: null },
+    { dir: "zero-limit", label: "hand-built: the one open card REPORTS a limit of $0",
+      crsResult: ZERO_LIMIT, personal: HARD_CASES_PERSONAL, business: null }
   ];
 
   const outRoot = CHECK_ONLY ? mkdtempSync(join(tmpdir(), "w10-regen-")) : PACK_DIR;
