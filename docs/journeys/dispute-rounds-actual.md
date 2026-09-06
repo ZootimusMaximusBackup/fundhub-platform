@@ -64,17 +64,31 @@ malformed answer all resolve to **null**, and null means unknown:
 | Name claim in the letter | Yes — keep this one name | **None at all** |
 | Address claim | Yes — keep this one address | **None at all** |
 | M2-032 name variants | Can fire | Cannot fire |
-| M2-033 date of birth | Can fire | Cannot fire |
+| M2-033 date of birth | Can fire, but never on an ambiguous date | Cannot fire |
 | M2-034 employment | Can fire when a source supplies employers | Cannot fire |
+| The name on the letterhead and signature | The legal name off the ID | No letter is written |
 | A clean file on the repair path | Produces a confirmation letter | Produces nothing — `identity_not_verified` |
+| A file with real findings, on the repair path | Produces the letters | Produces nothing — `identity_not_verified` |
 
-CHANGED 2026-09-06, last row. It used to answer `no_violations`, which the Repair desk
-prints as "the credit file looks clean — nothing to dispute". On a client whose ID has not
-been read that sentence is false in the way that matters: the file may be spotless or a
-wreck, and what is missing is the identity read. `identity_not_verified` says so, and the
-desk copy tells the Specialist to get the ID. Only clients ON the repair path get this
-answer — off it there is no floor to be missing an input for, and `no_violations` is still
-the honest word.
+CHANGED 2026-09-06, last two rows and the row above them. Two things moved.
+
+First, the refusal used to answer `no_violations`, which the Repair desk prints as "the
+credit file looks clean — nothing to dispute". On a client whose ID has not been read that
+sentence is false in the way that matters: the file may be spotless or a wreck, and what is
+missing is the identity read. `identity_not_verified` says so, and the desk copy tells the
+Specialist to get the ID. Only clients ON the repair path get this answer — off it there is
+no floor to be missing an input for, and `no_violations` is still the honest word.
+
+Second, and this is the row that was WRONG until 2026-09-06: the refusal only ever ran on
+the "nothing to dispute" branch. A repair client with an unread ID and any real finding
+still got all three letters — the personal-information claims merely absent from them — and
+the name printed at the top and signed at the bottom came from `clients.first_name` /
+`clients.last_name`, a typed form field. Measured by running `analyzeAndGenerate` against a
+client with one collection account. The check now runs ahead of every letter, and the
+printed name comes off the ID. It is gated on the NAME, not on both: a client with a
+verified name and no accepted proof of address still gets letters, with no address claim in
+them. The return address on the envelope is unchanged and may still fall back to the
+client's company address — that is routing, not a claim about where anybody lives.
 
 ALSO 2026-09-06: `src/repair/analyze.mjs` was looking for the identity module at three
 paths that do not exist. `src/identity/verified.mjs` is where it landed, and every import
@@ -97,6 +111,29 @@ M2-032 (`src/metro2/checks/personal-info.mjs`) and the floor's own name claim
 bureau, the floor's name claim stands down for that bureau —
 `mergePersonalInfoClaims()`. The address and inquiry halves are untouched: M2-031 is an
 age rule about former addresses and asserts something different.
+
+### A date of birth that could be read two ways makes no claim
+
+FIXED 2026-09-06. **COMPLIANCE REVIEW REQUIRED — dispute logic.**
+
+M2-033 tells a credit bureau that a wrong date of birth is one of the strongest signs
+another person's records have been merged into this file. It is an accusation, and it was
+being made out of a formatting difference.
+
+The bureau file writes a date of birth as `1985-03-02`. A government ID writes whatever was
+printed on it, commonly `02/03/1985`. Those are the same day — 2 March 1985 — written two
+ways, and nothing on either side says which half is the month. The code resolved it
+month-first by choice and fired the claim. Measured by running the real function on exactly
+that pair.
+
+Now an ambiguous date is UNKNOWN and makes no claim. The check lists every day a string
+could mean and speaks only when **no** reading of the file's date can be the same day as
+**any** reading of the consumer's. A date that is wrong however you read it — a different
+year, or two readings that both miss — still fires, and a date where one half cannot be a
+month (`03/22/1985`) is not ambiguous and is read normally.
+
+This path is newly reachable: it is the fix directly above, naming the real identity module,
+that supplies the consumer side of M2-033 for the first time.
 
 ## The six rounds
 
@@ -128,6 +165,46 @@ R4 -> 0 letters   R5 -> 0 letters   R6 -> 0 letters
 Every bureau `variance_gate_exhausted`. The ladder stopped at three, silently, for every
 client and every file shape. After: **R1 through R6 all write three bureau letters**, for a
 spotless file, a clean file and a damaged file alike.
+
+### Only Round 6 may call itself the last letter
+
+FIXED 2026-09-06. **COMPLIANCE REVIEW REQUIRED — dispute logic.**
+
+Four lines in the Round 3 pool call the letter the last one the bureau will get: "This is
+my last letter to your bureau on these items before I file with the CFPB and my state
+attorney general", "This Round 3 letter is the last bureau notice on these Metro 2
+defects", and two variants. While rounds 4, 5 and 6 produced nothing that was TRUE. The
+moment those rounds started writing letters — the fix directly above — it became a false
+statement mailed to a credit bureau in a real person's name.
+
+The stripper for exactly this already existed and was gated on rounds 4, 5 and 6, which is
+every round except the one where the claim newly bit. Measured by rendering, before the
+fix: **972 letters built** — six rounds x three bureaus x eighteen regeneration attempts x
+three claim mixes — of which **90 of the 162 Round 3 letters carried one of these lines**.
+R1, R2, R4 and R5 carried none.
+
+Now every round with another bureau round after it has the claim stripped: R1, R2, R3, R4,
+R5 and the furnisher letter. **R6 is the last rung of the ladder, so R6 is the one letter
+allowed to say so**, and it says it in its own words.
+
+Re-measured after the fix, on a WIDER sweep than the one that found it — **1,890 letters**,
+seven rounds (the six plus the furnisher letter) x three bureaus x eighteen attempts x five
+claim mixes, and eleven phrase patterns rather than three: **zero letters outside Round 6
+carry a finality claim.** Round 6's 270 all carry its own wording, which is true of Round 6.
+
+Two more checks, because a rendered sample is not a proof of a pool:
+
+* Every sentence the writer can draw was listed **out of the source**, across all seven
+  rounds — 112 distinct lines. Exactly 13 contain finality wording: 4 in Round 3 (the ones
+  fixed), 7 in Round 6 (all true), and 2 in Round 1 that say the letter is *not* a final
+  notice, which is honest. Rounds 2, 4, 5 and the furnisher letter contain none.
+* Rounds 4, 5, 6 and the furnisher letters were compared **byte for byte** against the same
+  letters built from the commit before this fix: 1,134 letters compared, and the only text
+  that moved anywhere is Round 3's 90.
+
+Nothing in any round says a CFPB or state attorney general complaint HAS been filed.
+Rounds 4 and 5 name both only in the future tense, because nothing in this repository
+records whether either was actually submitted.
 
 ## Gaps between this and the intended journey
 

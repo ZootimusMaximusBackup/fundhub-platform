@@ -624,10 +624,7 @@ export async function analyzeAndGenerate(db, {
   /* WHAT THE LETTER IS ALLOWED TO CALL THE CONSUMER'S NAME AND ADDRESS.
      Read off the uploaded ID and proof of address, never off the CRM record —
      see loadVerifiedIdentity above. Both may be null, and null means the letter
-     makes no claim about that thing at all. `identity` is still used for the
-     letterhead, which is a different job: an envelope needs somewhere for the
-     reply to go and may fall back to the client's company address, while the
-     sentence "my name is X" may not fall back to anything. */
+     makes no claim about that thing at all. */
   const verified = await loadVerifiedIdentity(db, { orgId, clientId }, verifiedIdentity);
   const verifiedName = verified?.legalName || null;
   const verifiedAddress = verifiedAddressLabel(verified?.address);
@@ -636,6 +633,44 @@ export async function analyzeAndGenerate(db, {
      never fire. Empty when there is no verified identity, which leaves them
      exactly as dark as they were. */
   const consumerContext = consumerContextFrom(verified);
+
+  /* ── THE NAME PRINTED ON A BUREAU LETTER COMES FROM A DOCUMENT ────────────
+   *
+   * COMPLIANCE REVIEW REQUIRED — dispute logic.
+   *
+   * OWNER-SET, and it was only half true until 2026-09-06. Only the personal-
+   * information CLAIMS were gated on the verified read; the LETTERHEAD and the
+   * signature block still printed `clients.first_name / last_name` — what a
+   * closer typed into a form, which this module's own comments call not evidence.
+   * So a repair-path client whose ID had not been read yet, but who had any real
+   * finding on the file, still got all three bureau letters, addressed and signed
+   * with an unverified name and carrying no personal-information claims. The
+   * refusal that was supposed to stop that sat inside the zero-claims branch
+   * below and never ran for them.
+   *
+   * A letter that cannot be addressed truthfully refuses. So the gate moves here,
+   * ahead of every letter, and it is the NAME that gates it: a bureau matches a
+   * letter to a file by the name on it, and there is no truthful addressee
+   * without a verified one. Repair path only — a client off that path gets
+   * exactly what they always got, and `no_violations` when the file is clean.
+   *
+   * The RETURN ADDRESS is deliberately not gated. An envelope needs somewhere for
+   * the reply to go and may fall back to the client's company address; that is
+   * routing, not a statement about where anybody lives. The sentence "my address
+   * is X" still comes from `verifiedAddress` and from nowhere else.
+   *
+   * The refusal clears the moment the doc-check agent accepts an ID
+   * (../identity/verified.mjs). */
+  if (onRepairPath && !verifiedName) {
+    return { ok: false, reason: "identity_not_verified", round };
+  }
+
+  /* Every letter below is addressed and signed with the verified legal name.
+     Off the repair path there is no verified read to stand on and the CRM name
+     is used, unchanged from before. */
+  const letterIdentity = verifiedName
+    ? { ...identity, fullName: verifiedName }
+    : identity;
 
   const byBureau = onRepairPath
     ? mergePersonalInfoClaims(
@@ -651,26 +686,12 @@ export async function analyzeAndGenerate(db, {
     : violationsByBureauFromMergedCrs(result, consumerContext);
   const bureaus = BUREAU_CODES.filter((code) => (byBureau[code] || []).length > 0);
   if (bureaus.length === 0) {
-    /* WHY THIS IS NOT "no_violations". Two owner rules meet here and both hold.
-       The FLOOR says every repair-path client gets personal-information cleanup
-       on every round, clean file or not. The other rule says a letter may not
-       assert a name or an address that no document has proved — that is what
-       loadVerifiedIdentity above enforces, and it is the rule that stops a
-       mailed dispute from stating a fact about a real person that nobody
-       checked.
-
-       A repair-path client whose government ID has NOT been read yet satisfies
-       the second rule by making no claim, and so produces no letter at all. The
-       floor has not been abandoned: the input it needs is missing. Answering
-       "the credit file looks clean, nothing to dispute" would tell the Repair
-       desk the file is fine when what is actually missing is the identity read,
-       and a person acting on that answer would close the case.
-
-       So it says what is really wrong. The refusal clears the moment the
-       doc-check agent accepts an ID (../identity/verified.mjs). */
-    if (onRepairPath && !verifiedName && !verifiedAddress) {
-      return { ok: false, reason: "identity_not_verified", round };
-    }
+    /* A repair-path client without a verified name never reaches here — the
+       identity gate above already answered `identity_not_verified`, for a clean
+       file and a wrecked one alike. What is left to answer here is a client whose
+       ID HAS been read and whose file genuinely has nothing on it, and a client
+       off the repair path. Both get `no_violations`, which is the truth for them:
+       the Repair desk prints it as "the credit file looks clean". */
     return { ok: false, reason: "no_violations" };
   }
 
@@ -726,7 +747,7 @@ export async function analyzeAndGenerate(db, {
       try {
         letter = await generateLetter({
           violations: claims,
-          identity,
+          identity: letterIdentity,
           bureau,
           round,
           priorLetters,
@@ -817,7 +838,7 @@ export async function analyzeAndGenerate(db, {
       await insertItems(db, caseRow, group.claims);
 
       const built = buildFurnisherValidationLetter({
-        identity,
+        identity: letterIdentity,
         furnisher: {
           name: addr.name,
           addressLines: [

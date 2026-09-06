@@ -37,13 +37,24 @@ flowchart TD
     F -->|Yes| F1[Stop: credit_file_stale_for_round<br/>one fresh pull clears it]
     F -->|No| G{Is the customer on<br/>the repair path?}
     G -->|No| H[Only what the Metro 2 engine<br/>found in the file]
-    G -->|Yes| I[Metro 2 findings<br/>+ a claim per bad account<br/>+ THE FLOOR]
+    G -->|Yes| G2{Has a government ID been<br/>read and accepted for<br/>this customer?}
+    G2 -->|No| G3[Stop: identity_not_verified<br/>read the ID, then try again.<br/>However bad the file is.]
+    G2 -->|Yes| I[Metro 2 findings<br/>+ a claim per bad account<br/>+ THE FLOOR]
     H --> J{Anything at all to say?}
     I --> J
-    J -->|No, and the customer's ID<br/>has not been read yet| J2[Stop: identity_not_verified<br/>read the ID, then try again]
     J -->|No| J1[Stop: no_violations]
-    J -->|Yes| K[One letter per bureau, stored<br/>as generated. Nothing is mailed.]
+    J -->|Yes| K[One letter per bureau, addressed<br/>and signed with the name off the ID,<br/>stored as generated. Nothing is mailed.]
 ```
+
+**CHANGED 2026-09-06 — the ID check moved, and it now stops everybody.** It used
+to sit on the "nothing to say" branch only. So a repair customer whose ID had not
+been read, but who had a real problem on the file, still got all three letters —
+just with the name and address requests missing from them. And the name printed
+at the top of those letters, and signed at the bottom, came from
+`clients.first_name` / `clients.last_name`: what a closer typed into a form, not
+what any document proved. Measured by running it, on a customer with one
+collection account. Now the check runs before any letter is built. A letter that
+cannot be addressed truthfully is not written.
 
 **On the repair path** means either a signed credit-repair agreement, or an
 outcome tier of `REPAIR_ONLY` or `FUNDING_PLUS_REPAIR`. The agreement counts
@@ -118,9 +129,23 @@ customer's name. So:
   disputed items*, and the confirmations are asked for separately in the same
   paragraph. Nothing in the letter asks a bureau to delete the customer's own
   correct name.
-* **A repair customer whose ID has not been read yet is refused by name.** The
-  answer is `identity_not_verified`, not "the credit file looks clean". The file
-  is not the problem; the missing document is, and the desk is told which one.
+* **A repair customer whose ID has not been read yet is refused by name, and
+  gets no letter of any kind.** The answer is `identity_not_verified`, not "the
+  credit file looks clean". The file is not the problem; the missing document is,
+  and the desk is told which one. This holds however bad the file is — a customer
+  with three collections and no ID on record still gets nothing until the ID is
+  read, because the name at the top of the letter and on the signature line has
+  to come from the document too.
+* **The name on the letter comes off the ID.** The letterhead and the signature
+  block print the legal name the doc-check agent read, not `clients.first_name` /
+  `clients.last_name`. Where the two disagree, the document wins. The RETURN
+  ADDRESS is a separate thing and is allowed to fall back to the customer's
+  company address: an envelope needs somewhere for the reply to go, which is not
+  a statement about where anybody lives. The sentence "my address is X" inside
+  the letter still comes only from an accepted proof of address.
+* **A verified name with no accepted proof of address still produces letters.**
+  The name is what a bureau matches a file by, so the name is what the gate is
+  on. The address claim is simply not made.
 
 ### Rounds
 

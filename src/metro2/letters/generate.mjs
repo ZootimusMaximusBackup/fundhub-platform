@@ -507,11 +507,27 @@ const MIXED_WITH_CONFIRMATIONS = Object.freeze({
 });
 
 /**
- * Rounds 4, 5 and 6 draw the Round 3 prompt pool (./prompts.mjs
- * promptPoolRound), and four of that pool's lines call themselves the LAST
- * bureau notice. Sent at Round 4 with Round 5 and Round 6 still to come, that
- * is a statement the round ladder itself contradicts — and one of them calls
- * itself "This Round 3 letter" inside a Round 6 envelope.
+ * NO LETTER MAY CALL ITSELF THE LAST ONE WHILE ANOTHER BUREAU ROUND CAN FOLLOW.
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * Four lines in the Round 3 pool (./prompts.mjs OPENINGS/CLOSINGS R3) call
+ * themselves the LAST bureau notice, and one of them names itself "This Round 3
+ * letter". Rounds 4, 5 and 6 draw those lines too whenever they fall back to the
+ * R3 pool.
+ *
+ * Until the R4/R5/R6 letters actually produced output, Round 3 saying it was the
+ * last bureau letter was TRUE — nothing followed it. It stopped being true the
+ * moment those rounds started sending. MEASURED 2026-09-06 BY RENDERING, before
+ * this gate reached R3: 972 letters built over six rounds x three bureaus x
+ * eighteen attempts x three claim mixes, and 90 of the 162 Round 3 letters
+ * carried one of these lines to a credit bureau.
+ *
+ * So the strip runs for EVERY round with another bureau round after it — R1, R2,
+ * R3, R4, R5 and the furnisher letter. R6 is the terminal rung of
+ * ../letters/catalog.mjs ROUND_LADDER, so R6 is the one letter allowed to say it
+ * is the last, and it says so in its own words (see the R6 pool) rather than in
+ * any of the phrases below.
  *
  * Phrase replacement rather than whole-line keys, because each of these lines
  * also has a confirmation-only form and a without-Metro-2 form, and keying the
@@ -521,7 +537,7 @@ const MIXED_WITH_CONFIRMATIONS = Object.freeze({
  * ORDER MATTERS: the "This Round 3 letter" phrase contains the shorter
  * "the last bureau notice" phrase, so it is replaced first.
  */
-const PAST_R3_PHRASES = Object.freeze([
+const NOT_THE_LAST_NOTICE_PHRASES = Object.freeze([
   ["This Round 3 letter is the last bureau notice", "This letter is a further bureau notice"],
   ["This is my last letter to your bureau", "I am writing to your bureau again"],
   ["It is the last bureau notice", "It is a further bureau notice"]
@@ -529,8 +545,17 @@ const PAST_R3_PHRASES = Object.freeze([
 
 function withoutLastNoticeClaim(line) {
   let out = String(line);
-  for (const [from, to] of PAST_R3_PHRASES) out = out.split(from).join(to);
+  for (const [from, to] of NOT_THE_LAST_NOTICE_PHRASES) out = out.split(from).join(to);
   return out;
+}
+
+/**
+ * Is a further bureau letter still on the ladder after this one? R6 is the last
+ * rung, so only R6 answers no. Everything else — including an unrecognised round,
+ * which falls back to R1 prose — answers yes and gets the strip.
+ */
+function anotherBureauRoundFollows(round) {
+  return String(round || "").trim().toUpperCase() !== ROUND.R6;
 }
 
 /**
@@ -542,14 +567,14 @@ function withoutLastNoticeClaim(line) {
  *
  * @param {string} line
  * @param {{ metro2Backed?: boolean, confirmationOnly?: boolean,
- *           mixed?: boolean, pastR3?: boolean }} shape
+ *           mixed?: boolean, notTheLastNotice?: boolean }} shape
  */
 function accurate(line, shape = {}) {
   let out = String(line);
   if (shape.confirmationOnly && CONFIRMATION_ONLY[out]) out = CONFIRMATION_ONLY[out];
   else if (shape.mixed && MIXED_WITH_CONFIRMATIONS[out]) out = MIXED_WITH_CONFIRMATIONS[out];
   if (!shape.metro2Backed && WITHOUT_METRO2[out]) out = WITHOUT_METRO2[out];
-  if (shape.pastR3) out = withoutLastNoticeClaim(out);
+  if (shape.notTheLastNotice) out = withoutLastNoticeClaim(out);
   return out;
 }
 
@@ -715,10 +740,11 @@ export function buildLetterText(opts = {}) {
   const confirmationOnly = isConfirmationOnly(violations);
   /* Both kinds of claim in one letter. See MIXED_WITH_CONFIRMATIONS. */
   const mixed = !confirmationOnly && violations.some(isConfirmationClaim);
-  /* Rounds 4-6 borrow the Round 3 pool, whose lines call themselves the last
-     bureau notice. See PAST_R3_PHRASES. */
-  const pastR3 = ["R4", "R5", "R6"].includes(String(round).toUpperCase());
-  const shape = { metro2Backed, confirmationOnly, mixed, pastR3 };
+  /* Every round but the last strips the "this is my last letter" claim, Round 3
+     included — Round 3 stopped being the last bureau letter the day R4, R5 and R6
+     started sending. See NOT_THE_LAST_NOTICE_PHRASES. */
+  const notTheLastNotice = anotherBureauRoundFollows(round);
+  const shape = { metro2Backed, confirmationOnly, mixed, notTheLastNotice };
   /* WHY THE BUREAU IS SPREAD ACROSS THE POOL BY HAND, AND NOT LEFT TO THE SEED.
    *
    * The variance gate strips every itemised claim block before it compares two

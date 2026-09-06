@@ -581,17 +581,25 @@ describe("no verified identity", () => {
     assert.equal(r.reason, "no_violations");
   });
 
-  test("a real dispute still ships — it just makes no claim about the name", async () => {
+  /* CHANGED 2026-09-06, and the change is the whole of finding HIGH 3.
+     This test used to assert that a repair client with an unread ID and a real
+     collection on the file still got the letter, with the personal-information
+     claims simply absent. That was the code's real behaviour and it contradicted
+     the sentence shipped beside it, which told the owner such a client "now gets
+     NO letter at all". Both could not be true.
+
+     The refusal is the half that was kept, because the letterhead and the
+     signature block were still being filled from clients.first_name /
+     last_name — a typed form field, not a document. A letter that cannot be
+     ADDRESSED truthfully refuses; it does not guess. So the gate moved ahead of
+     every letter and no longer depends on the file being clean. */
+  test("a real dispute does not ship either, until the ID is read", async () => {
     const r = await analyzeAndGenerate(dbFor(CLEAN_PLUS_COLLECTION), {
       orgId: ORG, clientId: CLIENT, round: "R1"
     });
-    assert.equal(r.ok, true, JSON.stringify(r));
-    assert.deepEqual(r.letters[0].ruleIds, ["DEROG-COLLECTION"]);
-    assert.equal(r.verified_identity, false);
-    const body = r.letters[0].body_text;
-    assert.doesNotMatch(body, /My name is/i);
-    assert.doesNotMatch(body, /My address is/i);
-    assert.ok(!/PI-NAME/.test(body) && !/PI-ADDRESS/.test(body));
+    assert.equal(r.ok, false, JSON.stringify(r));
+    assert.equal(r.reason, "identity_not_verified");
+    assert.equal(r.round, "R1");
   });
 
   test("with the documents read, the same file carries the name and address claims", async () => {
@@ -605,6 +613,54 @@ describe("no verified identity", () => {
     );
     assert.equal(r.verified_identity, true);
     assert.equal(r.verified_identity_source, "id_document");
+    /* HIGH 4. The letterhead and the signature block carry the name the ID
+       proved, not the one a closer typed into the CRM. */
+    const body = r.letters[0].body_text;
+    assert.match(body, /^Sim Repair$/m, body.slice(0, 400));
+  });
+
+  /* A verified name and NO accepted proof of address still produces the letter:
+     the name is what a bureau matches the file by, and the address claim simply
+     is not made. Pins that the gate is on the NAME and not on both. */
+  test("a verified name with no proof of address still ships, with no address claim", async () => {
+    const r = await analyzeAndGenerate(dbFor(CLEAN_PLUS_COLLECTION), {
+      orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity: verifiedNameOnly
+    });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.deepEqual(r.letters[0].ruleIds, ["DEROG-COLLECTION", "PI-NAME-CONFIRM"]);
+    const body = r.letters[0].body_text;
+    assert.match(body, /^Sim Repair$/m);
+    assert.ok(!/PI-ADDRESS/.test(body), "no address claim without a proof of address");
+  });
+
+  /* ── HIGH 4, PROVEN THE ONLY WAY IT CAN BE ────────────────────────────────
+   *
+   * Every other fixture in this file gives the CRM row and the ID the SAME name
+   * ("Sim Repair"), so an assertion on the letterhead there passes whichever
+   * source it came from and proves nothing. Here the two disagree: the CRM says
+   * "Sim Repair" because that is what a closer typed, and the government ID says
+   * "Simone Repair-Vega". The letter is addressed and signed with the ID's name,
+   * and the typed one appears nowhere in it. */
+  test("the letterhead and signature use the ID's name, not the CRM's", async () => {
+    const r = await analyzeAndGenerate(dbFor(CLEAN_PLUS_COLLECTION), {
+      orgId: ORG,
+      clientId: CLIENT,
+      round: "R1",
+      verifiedIdentity: () => ({ ...VERIFIED, legalName: "Simone Repair-Vega" })
+    });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    const body = r.letters[0].body_text;
+    assert.match(body, /^Simone Repair-Vega$/m, body.slice(0, 400));
+    /* The signature block prints the name a second time under "Signature:". */
+    assert.equal(
+      body.split("\n").filter((l) => l.trim() === "Simone Repair-Vega").length,
+      2,
+      "letterhead and signature block both carry the verified name"
+    );
+    assert.ok(
+      !body.split("\n").some((l) => l.trim() === "Sim Repair"),
+      "the typed CRM name is on no line of the letter"
+    );
   });
 
   test("an identity module that throws is treated as no identity, never as a crash", async () => {
@@ -614,9 +670,11 @@ describe("no verified identity", () => {
       round: "R1",
       verifiedIdentity: () => { throw new Error("identity service down"); }
     });
-    assert.equal(r.ok, true, JSON.stringify(r));
-    assert.equal(r.verified_identity, false);
-    assert.deepEqual(r.letters[0].ruleIds, ["DEROG-COLLECTION"]);
+    /* The point of this test is that the throw is swallowed. A module that is
+       down reads as "no identity", which is now a refusal rather than a letter
+       with a CRM name on it — but it is still an answer and never an exception. */
+    assert.equal(r.ok, false, JSON.stringify(r));
+    assert.equal(r.reason, "identity_not_verified");
   });
 
   test("ONE name claim per bureau, never two", async () => {

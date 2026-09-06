@@ -113,8 +113,58 @@ export function checkNameVariants(context) {
     });
 }
 
+function isoDay(year, month, day) {
+  if (!Number.isInteger(month) || !Number.isInteger(day)) return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 /**
- * A date of birth reduced to YYYY-MM-DD, or NULL when it cannot be read.
+ * EVERY DAY THIS STRING COULD MEAN, as YYYY-MM-DD. Empty when it means nothing
+ * this can read.
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * "1985-03-02" means one day. "03/22/1985" means one day, because 22 is not a
+ * month. "02/03/1985" means TWO days — 3 February and 2 March — and nothing in
+ * a credit file or on a driving licence says which. Both are returned, and the
+ * caller may only speak when no reading of one side matches any reading of the
+ * other.
+ *
+ * WHY THIS IS NOT A DEFAULT TO US MONTH-FIRST ORDER. Until 2026-09-06 the
+ * ambiguous case was resolved month-first by choice. MEASURED BY RUNNING THE
+ * REAL FUNCTION: a file date of birth of "1985-03-02" against a consumer date of
+ * birth of "02/03/1985" — the same day, 2 March 1985, written two ways — fired
+ * M2-033, and M2-033 tells a credit bureau that a wrong date of birth is one of
+ * the strongest signs somebody else's records have been merged into this file.
+ * That is an accusation built out of a formatting difference and mailed in a real
+ * person's name. Every other claim in this lane refuses on ambiguity; this one
+ * refuses too.
+ */
+export function dobCandidates(value) {
+  const raw = value == null ? "" : String(value).trim();
+  if (raw === "") return [];
+  const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T ]|$)/.exec(raw);
+  if (iso) {
+    const one = isoDay(iso[1], Number(iso[2]), Number(iso[3]));
+    return one ? [one] : [];
+  }
+  const slash = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(raw);
+  if (!slash) return [];
+  const a = Number(slash[1]);
+  const b = Number(slash[2]);
+  const year = slash[3];
+  /* Month-first and day-first, de-duplicated. When only one of the two halves
+     can be a month, isoDay drops the other reading and one candidate is left. */
+  const out = [];
+  for (const day of [isoDay(year, a, b), isoDay(year, b, a)]) {
+    if (day && !out.includes(day)) out.push(day);
+  }
+  return out;
+}
+
+/**
+ * A date of birth reduced to the ONE day it can only mean, or NULL.
  *
  * The two sides of check 33 come from different places and are written
  * differently: a bureau file carries "1985-03-02T00:00:00Z" or "1985-03-02",
@@ -123,31 +173,12 @@ export function checkNameVariants(context) {
  * makes every consumer look like a mixed file and would mail a bureau the claim
  * that the consumer's own correct date of birth belongs to somebody else.
  *
- * A value this cannot read returns NULL, and null means unknown: the check
- * returns no violation rather than guessing which way round a bare "03/04/1985"
- * was meant.
+ * A value this cannot read returns NULL, and so does a value that could be read
+ * two ways. Null means unknown, and unknown may not be turned into a claim.
  */
 export function dobKey(value) {
-  const raw = value == null ? "" : String(value).trim();
-  if (raw === "") return null;
-  const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T ]|$)/.exec(raw);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-  const slash = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(raw);
-  if (slash) {
-    const month = Number(slash[1]);
-    const day = Number(slash[2]);
-    /* Ambiguous only if BOTH halves could be a month. US order is assumed for
-       the unambiguous case and refused for the ambiguous one. */
-    if (month > 12 || day > 12) {
-      const m = month > 12 ? day : month;
-      const d = month > 12 ? month : day;
-      if (m < 1 || m > 12 || d < 1 || d > 31) return null;
-      return `${slash[3]}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    }
-    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-    return `${slash[3]}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  }
-  return null;
+  const candidates = dobCandidates(value);
+  return candidates.length === 1 ? candidates[0] : null;
 }
 
 /** Check 33 — DOB field. Date of birth mismatch. */
@@ -155,11 +186,15 @@ export function checkDateOfBirthMismatch(context) {
   const fileDob = str(context?.file?.dateOfBirth);
   const consumerDob = str(context?.consumer?.dateOfBirth);
   if (fileDob === null || consumerDob === null) return [];
-  const fileKey = dobKey(fileDob);
-  const consumerKey = dobKey(consumerDob);
+  const fileDays = dobCandidates(fileDob);
+  const consumerDays = dobCandidates(consumerDob);
   /* Either side unreadable is unknown, and unknown makes no claim. */
-  if (fileKey === null || consumerKey === null) return [];
-  if (fileKey === consumerKey) return [];
+  if (fileDays.length === 0 || consumerDays.length === 0) return [];
+  /* The claim is made ONLY when no reading of the file's date can be the same
+     day as any reading of the consumer's. One shared reading is enough doubt to
+     stay silent — the two sides may be the same day written two ways. A date
+     that disagrees however it is read is a real mismatch and still fires. */
+  if (fileDays.some((d) => consumerDays.includes(d))) return [];
 
   return [
     violation({

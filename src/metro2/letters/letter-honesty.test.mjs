@@ -181,11 +181,45 @@ const BANNED_WHEN_MIXED = Object.freeze([
   /for every item below you cannot stand behind/i
 ]);
 
-/* No letter with another bureau round after it may call itself the last one,
-   and a Round 6 letter may not call itself a Round 3 letter. */
-const BANNED_AFTER_ROUND_THREE = Object.freeze([
+/* NO LETTER WITH ANOTHER BUREAU ROUND AFTER IT MAY CALL ITSELF THE LAST ONE.
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * This list used to be checked for R4, R5 and R6 only, and R3 was the round
+ * where the claim newly bit: Round 3's own pool says "This is my last letter to
+ * your bureau ... before I file with the CFPB and my state attorney general",
+ * which was true while R4, R5 and R6 produced nothing and became a false
+ * statement mailed to a credit bureau the moment they started sending. MEASURED
+ * 2026-09-06 BY RENDERING, before the fix: 90 of the 162 Round 3 letters in this
+ * very sweep carried one of these lines.
+ *
+ * The sweep is now checked against these patterns in EVERY round except R6, the
+ * terminal rung of ../letters/catalog.mjs ROUND_LADDER — the one letter entitled
+ * to call itself the last, which it does in its own words. R1 and R2 are checked
+ * for the same class and have always been clean; keeping them in the sweep is
+ * what stops the class coming back through a pool nobody thought to look at.
+ *
+ * The longer patterns below the first three cover the whole family, not just the
+ * three phrases the R3 pool happens to use, so a newly written "this is the end
+ * of it" line in R1 through R5 fails here rather than in somebody's mailbox. */
+const BANNED_UNLESS_TERMINAL_ROUND = Object.freeze([
   /last letter to your bureau/i,
   /the last bureau notice/i,
+  /final written notice/i,
+  /the last of these letters/i,
+  /nothing further to send your bureau/i,
+  /closes my direct correspondence/i,
+  /closing written notice/i,
+  /ends what I will send you directly/i,
+  /\bis a final notice\b/i,
+  /\bmy (last|final) (letter|notice)\b/i
+]);
+
+/* And no letter may name itself as a round it is not. Checked in every round
+   including R3, because after the fix nothing produces the phrase at all — the
+   R3 line that carried it is rewritten to "This letter is a further bureau
+   notice". */
+const BANNED_ROUND_SELF_NAMING = Object.freeze([
   /This Round 3 letter/i
 ]);
 
@@ -220,9 +254,13 @@ function offenders(text, patterns, { allowScoped = false } = {}) {
 }
 
 function bannedFor(round, base) {
-  return ["R4", "R5", "R6"].includes(round)
-    ? [...base, ...BANNED_AFTER_ROUND_THREE]
-    : base;
+  /* R6 is the terminal rung and may say so. Every other round may not. */
+  const terminal = round === "R6";
+  return [
+    ...base,
+    ...(terminal ? [] : BANNED_UNLESS_TERMINAL_ROUND),
+    ...BANNED_ROUND_SELF_NAMING
+  ];
 }
 
 test("no letter asserts something its own claims do not support", () => {
