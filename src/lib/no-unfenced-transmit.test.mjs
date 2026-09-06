@@ -160,6 +160,7 @@ const ALLOWED_RAW_FETCH = {
 const INTERNAL_CALLERS = new Set([
   "src/company-brain/embed.mjs",
   "src/company-brain/transcribe.mjs",
+  "src/hiring/calendar-freebusy.mjs",
   // Added 2026-09-04. Sends a client's underwriting data to render-service/ —
   // our own Docker container running our own scripts/black-reports/fundhub_gen.py
   // — and gets four PDFs back. Reaches no person and changes no record at any

@@ -432,7 +432,22 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="card-bd" style="padding:16px;border-top:1px solid var(--line)">
           <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:end">
             <div class="selwrap"><label for="genKind">Kind</label>
-              <select id="genKind"><option>static</option><option>copy</option><option>video</option><option>resize</option></select>
+              <!-- "resize" is gone on purpose: a resize job has to be told WHICH picture to
+                   resize and this form has no way to pick one, so it could only ever fail —
+                   three tries with a wait between them. Put it back only once this form can
+                   send a parent creative to resize. -->
+              <select id="genKind"><option>static</option><option>copy</option><option>video</option></select>
+            </div>
+            <!-- What is being sold. The compliance check refuses anything that does not say,
+                 so leaving it out meant every creative made here came back blocked. The three
+                 values are the only ones the check accepts (src/compliance/screen.mjs). -->
+            <div class="selwrap"><label for="genOffer">What is being sold</label>
+              <select id="genOffer">
+                <option value="">— choose one —</option>
+                <option value="funding">Funding</option>
+                <option value="credit_cards">Credit cards</option>
+                <option value="credit_repair">Credit repair</option>
+              </select>
             </div>
             <div class="selwrap" style="flex:1 1 220px"><label for="genPrompt">What to make</label>
               <input id="genPrompt" placeholder="Working capital for owners…">
@@ -660,12 +675,13 @@ var JOB_ASSET_KINDS = ['static','video','copy','resize'];
 var PROVIDER_KEYS   = ['static','ugc-video','product-video','copy','resize'];
 
 /* ══ PARTNER SCOPE ══════════════════════════════════════════════════════
-   There is no partner roster in this file and no endpoint that lists partners.
-   This screen reads and writes for exactly ONE partner, named in the address as
-   ?partner_id=<uuid>; that value is what every request below sends. With no
-   partner named, PARTNERS stays empty, no request is issued, every panel shows
-   its empty state and the write controls are disabled — a stand-in id would read
-   and write against a partner that does not exist (UI-STANDARDS §6).
+   The roster comes from /api/read/partners (FHData.partners), and the picker at
+   the top of the screen is the only way S.partner is set — see loadPartnerPicker()
+   below. ?partner_id=<uuid> in the address is still honoured: it just preselects a
+   row instead of being the only way in. If that read fails, or answers with no
+   rows, PARTNERS stays empty, no creative request is issued, every panel shows its
+   empty state and the write controls are disabled — a stand-in id would read and
+   write against a partner that does not exist (UI-STANDARDS §6).
    ════════════════════════════════════════════════════════════════════════ */
 var PARTNERS = [];
 var CF_SUITE = { enabled: false, remaining: null, cap: null, used: null, loaded: false, error: null };
@@ -2291,10 +2307,16 @@ document.getElementById('genBtn').addEventListener('click', function () {
     try { partnerId = new URL(location.href).searchParams.get('partner_id'); } catch (e) {}
   }
   var kind = document.getElementById('genKind').value;
+  var offer = document.getElementById('genOffer').value;
   var prompt = document.getElementById('genPrompt').value.trim();
   var idem = document.getElementById('genIdem').value.trim();
   if (!partnerId) { msg.textContent = 'Need a partner first.'; return; }
   if (!idem) { msg.textContent = 'Give this batch a name first.'; return; }
+  /* Stopped here, the same way a missing batch name is. Sending it without an
+     offer type is not a smaller failure — the job runs, makes the creative, and
+     then the compliance check blocks every piece of it and shows the engine's
+     own words. Better to ask one question now. */
+  if (!offer) { msg.textContent = 'Say what is being sold first.'; return; }
   msg.textContent = 'Enqueueing…';
   var t = '';
   try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
@@ -2310,7 +2332,11 @@ document.getElementById('genBtn').addEventListener('click', function () {
       asset_kind: kind,
       idempotency_key: idem,
       prompt: prompt,
-      spec: { prompt: prompt, formats: ['1x1'], variants: 1, assetKind: kind }
+      /* offerType rides inside spec, not beside it. The endpoint hands body.spec
+         straight to enqueue(), which stores it on the job, and the compliance
+         check reads spec.offerType off that stored job — so a copy of it at the
+         top level of this body would be dropped and never seen. */
+      spec: { prompt: prompt, formats: ['1x1'], variants: 1, assetKind: kind, offerType: offer }
     })
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {

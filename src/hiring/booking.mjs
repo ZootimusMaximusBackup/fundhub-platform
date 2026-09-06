@@ -57,15 +57,16 @@
 
 import { ownerFor } from "./owner.mjs";
 import { advance, STAGES } from "./pipeline.mjs";
+import { createFreeBusyCache, hostCalendarClear } from "./calendar-freebusy.mjs";
 
 /* What a "the host is free" answer from this module does NOT cover. Exported so
    an endpoint or a screen can show it instead of implying a completeness this
    system does not have. */
 export const HOST_BLIND_SPOTS = Object.freeze([
   "client sales calls — `bookings` records the attendee, never the staff member, so no booking can be attributed to a host",
-  "the host's real calendar — Cronofy/Google/Outlook free-busy is not readable from this repo and no credential for it exists",
   "working hours and time off — no table in this system stores either",
-  "anything outside `hiring_interviews` with status='scheduled'"
+  "calendar events outside the host's Google Workspace primary calendar (other providers, shared calendars we do not query)",
+  "anything outside `hiring_interviews` with status='scheduled' that never landed on the host's Google Calendar"
 ]);
 
 /* The default interview length, mirroring hiring_interviews.duration_min's
@@ -233,7 +234,8 @@ export async function bookInterview(tx, {
   orgId, applicationId, kind, startsAt,
   durationMin = DEFAULT_DURATION_MIN,
   hostStaffId = null, meetingUrl = null, notes = null,
-  advanceStage = true, now = null
+  advanceStage = true, now = null,
+  env = process.env, fetchImpl, freeBusyCache = null
 } = {}) {
   if (!orgId) throw new BookingError("bookInterview: orgId is required");
   if (!applicationId) throw new BookingError("bookInterview: applicationId is required");
@@ -268,6 +270,27 @@ export async function bookInterview(tx, {
   });
   if (clashes.length) {
     throw hostBusy(host, clashes);
+  }
+
+  const cache = freeBusyCache || createFreeBusyCache();
+  const cal = await hostCalendarClear({
+    hostEmail: host.email,
+    startsAt: start,
+    durationMin: duration,
+    env,
+    fetchImpl,
+    cache
+  });
+  if (cal.unreadable) {
+    throw new BookingError(
+      "bookInterview: the host's calendar could not be read, so this time cannot be offered. " +
+      (cal.reason ? `(${cal.reason})` : ""),
+      { code: "CALENDAR_UNREADABLE", status: 503 });
+  }
+  if (!cal.clear) {
+    throw new BookingError(
+      `${host.name || "That host"} has something on their calendar then. Pick another time.`,
+      { code: "HOST_BUSY", status: 409, detail: { calendarBusy: cal.busy } });
   }
 
   let interview;
@@ -419,7 +442,7 @@ async function loadOpenApplication(tx, { orgId, applicationId }) {
 async function resolveHost(tx, { orgId, roleKey, hostStaffId }) {
   if (hostStaffId) {
     const { rows } = await tx.query(
-      `SELECT id, name, status, active, meeting_url FROM staff
+      `SELECT id, name, email, status, active, meeting_url FROM staff
         WHERE id = $1 AND org_id = $2`, [hostStaffId, orgId]);
     const s = rows[0];
     if (!s) {
@@ -431,7 +454,9 @@ async function resolveHost(tx, { orgId, roleKey, hostStaffId }) {
         `bookInterview: ${s.name} cannot host — that account is ${s.active ? s.status : "inactive"}`,
         { code: "NO_HOST", status: 409 });
     }
-    return { staffId: s.id, name: s.name, meetingUrl: s.meeting_url, source: "explicit" };
+    return {
+      staffId: s.id, name: s.name, email: s.email, meetingUrl: s.meeting_url, source: "explicit"
+    };
   }
 
   const owner = await ownerFor(tx, { orgId, roleKey });
@@ -445,9 +470,11 @@ async function resolveHost(tx, { orgId, roleKey, hostStaffId }) {
   }
 
   const { rows } = await tx.query(
-    `SELECT id, name, meeting_url FROM staff WHERE id = $1`, [owner.staffId]);
+    `SELECT id, name, email, meeting_url FROM staff WHERE id = $1`, [owner.staffId]);
   const s = rows[0];
-  return { staffId: s.id, name: s.name, meetingUrl: s.meeting_url, source: owner.source };
+  return {
+    staffId: s.id, name: s.name, email: s.email, meetingUrl: s.meeting_url, source: owner.source
+  };
 }
 
 /* THE JOIN LINK IS NEVER GENERATED. There is no Zoom, Meet or Whereby

@@ -216,15 +216,22 @@ async function storeAsset(tx, job, a, ctx) {
   const { rows } = await tx.query(
     `INSERT INTO creative_assets
        (org_id, partner_id, brand_kit_id, kind, format, provider, provider_asset_id,
-        storage_key, duration_sec, ai_generated, synthetic_performer,
+        storage_key, copy_text, duration_sec, ai_generated, synthetic_performer,
         compliance_state, created_by_agent_id, parent_asset_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending',$12,$13)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'pending',$13,$14)
      RETURNING *`,
     [job.org_id, job.partner_id, job.brand_kit_id, a.kind, a.format, a.provider,
      a.provider_asset_id,
      // Namespaced here, not by the provider — the service knows the partner id and
      // the CHECK in 045 enforces the prefix.
      storageKeyFor(job.partner_id, a),
+     // The words, saved with the row. A picture has none, and storageKeyFor()
+     // returns null for copy, so exactly one of these two columns is filled.
+     // Written HERE, in the insert, and not after the screen: a copy asset that
+     // gets blocked keeps its text like every other one. Blocked assets stay in
+     // the review queue to be read and fixed, and a blocked ad with no words in
+     // it is one nobody can act on.
+     copyTextFor(a),
      a.duration_sec, a.ai_generated !== false, Boolean(a.synthetic_performer),
      ctx.agentId || null, a.parent_asset_id || null]
   );
@@ -294,6 +301,18 @@ async function fail(tx, job, err, { retryable }) {
     [job.id, backToQueue ? "queued" : "failed", message]
   );
   return { status: backToQueue ? "queued" : "failed", assets: [], cost_cents: 0, error: message };
+}
+
+/* copyTextFor — the generated words, or null.
+
+   Blank is turned into null on purpose. creative_assets_copy_text_ck in 301
+   rejects an empty string, because an empty string renders as a blank card in
+   the library that looks like a loading bug, while null renders as "no text",
+   which is the truth for a picture. A provider that hands back "   " is saying
+   it produced nothing, not that it produced whitespace. */
+function copyTextFor(a) {
+  const text = typeof a.text === "string" ? a.text.trim() : "";
+  return text === "" ? null : text;
 }
 
 function storageKeyFor(partnerId, a) {

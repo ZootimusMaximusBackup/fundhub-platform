@@ -22,6 +22,7 @@
 
 import { test, before, after, describe } from "node:test";
 import assert from "node:assert";
+import crypto from "node:crypto";
 import { db, close, pool } from "../db.mjs";
 import { apply, advance } from "./pipeline.mjs";
 import {
@@ -32,6 +33,64 @@ import {
 const HAVE_DB = !!process.env.DATABASE_URL;
 const TAG = "booktest";
 const ROOM = "https://example.test/room/standing";
+
+const { privateKey: calPrivateKey } = crypto.generateKeyPairSync("rsa", {
+  modulusLength: 2048,
+  publicKeyEncoding: { type: "spki", format: "pem" },
+  privateKeyEncoding: { type: "pkcs8", format: "pem" }
+});
+
+const CAL_ENV = {
+  GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON: JSON.stringify({
+    client_email: "booktest-cal@test.iam.gserviceaccount.com",
+    private_key: calPrivateKey,
+    project_id: "booktest"
+  })
+};
+
+/** Mock Google token + freeBusy. Pass alwaysBusy to simulate a blocked calendar window. */
+function calendarFetchMock({ alwaysBusy = false } = {}) {
+  return async (url, init = {}) => {
+    const u = String(url);
+    if (u.includes("oauth2.googleapis.com/token")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { forEach() {} },
+        async text() {
+          return JSON.stringify({ access_token: "tok-test", expires_in: 3600 });
+        }
+      };
+    }
+    if (u.includes("calendar/v3/freeBusy")) {
+      const body = JSON.parse(init.body || "{}");
+      const calendars = {};
+      for (const item of body.items || []) {
+        const id = String(item.id || "").toLowerCase();
+        calendars[id] = {
+          busy: alwaysBusy
+            ? [{ start: body.timeMin, end: body.timeMax }]
+            : []
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        headers: { forEach() {} },
+        async text() {
+          return JSON.stringify({ calendars });
+        }
+      };
+    }
+    throw new Error(`unexpected fetch in booking test: ${u}`);
+  };
+}
+
+const CAL_FETCH = calendarFetchMock();
+
+function bookOpts(extra = {}) {
+  return { env: CAL_ENV, fetchImpl: CAL_FETCH, now: NOW, ...extra };
+}
 
 /* A fixed clock. Every time in this file is derived from it, so nothing depends
    on when the suite happens to run and "in the past" is never ambiguous. */
@@ -141,7 +200,7 @@ describe("booking a hiring interview", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
 
     const out = await withTx((tx) => bookInterview(tx, {
       orgId: org, applicationId: appId, kind: "one_on_one",
-      startsAt: at(24), now: NOW
+      startsAt: at(24), ...bookOpts()
     }));
 
     assert.strictEqual(out.interview.status, "scheduled");
@@ -178,7 +237,7 @@ describe("booking a hiring interview", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
 
     const out = await withTx((tx) => bookInterview(tx, {
       orgId: org, applicationId: appId, kind: "group",
-      startsAt: at(30), now: NOW
+      startsAt: at(30), ...bookOpts()
     }));
 
     assert.strictEqual(out.advanced, null, "no stage move");
@@ -191,7 +250,7 @@ describe("booking a hiring interview", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
     const appId = await application("carol", otherRoleKey);
     const err = await rejected(() => withTx((tx) => bookInterview(tx, {
       orgId: org, applicationId: appId, kind: "one_on_one",
-      startsAt: at(24), now: NOW
+      startsAt: at(24), ...bookOpts()
     })));
     assert.strictEqual(err.code, "NO_HOST");
     // The message has to name the fix, because the fix is a field nobody has filled in.
@@ -202,7 +261,7 @@ describe("booking a hiring interview", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
     const appId = await application("dana");
     const err = await rejected(() => withTx((tx) => bookInterview(tx, {
       orgId: org, applicationId: appId, kind: "one_on_one",
-      startsAt: at(24), hostStaffId: roomlessStaff, now: NOW
+      startsAt: at(24), hostStaffId: roomlessStaff, ...bookOpts()
     })));
     assert.strictEqual(err.code, "NO_MEETING_URL");
     assert.match(err.message, /meeting room/);
@@ -219,7 +278,7 @@ describe("booking a hiring interview", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
     const out = await withTx((tx) => bookInterview(tx, {
       orgId: org, applicationId: appId, kind: "one_on_one",
       startsAt: at(48), hostStaffId: roomlessStaff,
-      meetingUrl: "https://example.test/room/one-off", now: NOW
+      meetingUrl: "https://example.test/room/one-off", ...bookOpts()
     }));
     assert.strictEqual(out.interview.meeting_url, "https://example.test/room/one-off");
   });
@@ -228,7 +287,7 @@ describe("booking a hiring interview", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
     const appId = await application("fred");
     const err = await rejected(() => withTx((tx) => bookInterview(tx, {
       orgId: org, applicationId: appId, kind: "one_on_one",
-      startsAt: at(-2), now: NOW
+      startsAt: at(-2), ...bookOpts()
     })));
     assert.strictEqual(err.code, "BAD_TIME");
   });
@@ -241,7 +300,7 @@ describe("booking a hiring interview", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
     }));
     const err = await rejected(() => withTx((tx) => bookInterview(tx, {
       orgId: org, applicationId: appId, kind: "one_on_one",
-      startsAt: at(24), now: NOW
+      startsAt: at(24), ...bookOpts()
     })));
     assert.strictEqual(err.code, "NOT_OPEN");
   });
@@ -252,27 +311,52 @@ describe("booking a hiring interview", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
     const first = await application("hank");
     await withTx((tx) => bookInterview(tx, {
       orgId: org, applicationId: first, kind: "one_on_one",
-      startsAt: at(72), now: NOW
+      startsAt: at(72), ...bookOpts()
     }));
 
     const second = await application("iris");
     const err = await rejected(() => withTx((tx) => bookInterview(tx, {
       orgId: org, applicationId: second, kind: "one_on_one",
-      startsAt: at(72.5), now: NOW   // half an hour in, inside the 60-minute slot
+      startsAt: at(72.5), ...bookOpts()   // half an hour in, inside the 60-minute slot
     })));
     assert.strictEqual(err.code, "HOST_BUSY");
     assert.strictEqual(err.status, 409);
     assert.strictEqual(err.detail.conflicts.length, 1, "the clashing interview comes back");
   });
 
+  test("a host with something on their Google Calendar is refused", async () => {
+    const appId = await application("calbusy");
+    const err = await rejected(() => withTx((tx) => bookInterview(tx, {
+      orgId: org, applicationId: appId, kind: "one_on_one",
+      startsAt: at(200), ...bookOpts({ fetchImpl: calendarFetchMock({ alwaysBusy: true }) })
+    })));
+    assert.strictEqual(err.code, "HOST_BUSY");
+    assert.ok(err.detail?.calendarBusy?.length, "the busy block comes back");
+    const { rows } = await db.query(
+      `SELECT count(*)::int AS n FROM hiring_interviews i
+         JOIN hiring_interview_attendees a ON a.interview_id = i.id
+        WHERE a.application_id = $1`, [appId]);
+    assert.strictEqual(rows[0].n, 0, "nothing saved when calendar is busy");
+  });
+
+  test("fail closed when the calendar cannot be read — no booking", async () => {
+    const appId = await application("caldown");
+    const err = await rejected(() => withTx((tx) => bookInterview(tx, {
+      orgId: org, applicationId: appId, kind: "one_on_one",
+      startsAt: at(210), env: {}, fetchImpl: CAL_FETCH, now: NOW
+    })));
+    assert.strictEqual(err.code, "CALENDAR_UNREADABLE");
+    assert.strictEqual(err.status, 503);
+  });
+
   test("back to back is not a clash — 10:00-11:00 and 11:00-12:00 both stand", async () => {
     const a = await application("jack");
     const b = await application("kara");
     await withTx((tx) => bookInterview(tx, {
-      orgId: org, applicationId: a, kind: "one_on_one", startsAt: at(96), now: NOW
+      orgId: org, applicationId: a, kind: "one_on_one", startsAt: at(96), ...bookOpts()
     }));
     const out = await withTx((tx) => bookInterview(tx, {
-      orgId: org, applicationId: b, kind: "one_on_one", startsAt: at(97), now: NOW
+      orgId: org, applicationId: b, kind: "one_on_one", startsAt: at(97), ...bookOpts()
     }));
     assert.strictEqual(out.interview.status, "scheduled");
   });
@@ -280,14 +364,14 @@ describe("booking a hiring interview", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
   test("a cancelled interview stops holding the host's time", async () => {
     const a = await application("liam");
     const booked = await withTx((tx) => bookInterview(tx, {
-      orgId: org, applicationId: a, kind: "one_on_one", startsAt: at(120), now: NOW
+      orgId: org, applicationId: a, kind: "one_on_one", startsAt: at(120), ...bookOpts()
     }));
     await db.query(`UPDATE hiring_interviews SET status = 'cancelled' WHERE id = $1`,
       [booked.interview.id]);
 
     const b = await application("mona");
     const out = await withTx((tx) => bookInterview(tx, {
-      orgId: org, applicationId: b, kind: "one_on_one", startsAt: at(120), now: NOW
+      orgId: org, applicationId: b, kind: "one_on_one", startsAt: at(120), ...bookOpts()
     }));
     assert.strictEqual(out.interview.status, "scheduled");
 

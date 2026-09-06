@@ -310,13 +310,14 @@ html.fh-side-mini .app-shell {
   [href="automations.html"],
   [href="journeys.html"],
   [href="brand-studio.html"],
-  [href="campaign-manager.html"],
-  [href="social-studio.html"],
-  [href="creative-factory.html"],
   [href="hiring.html"],
   [href="affiliate.html"],
   [href="agent-editor.html"],
-  [href="content-admin.html"],
+  /* The four Marketing rows — campaign-manager, social-studio,
+     creative-factory and content-admin — came out of this list on 2026-09-06,
+     owner-set, at the same time as they came out of shell.js NAV_HIDDEN. The
+     two lists have to move together or the test above bites in one direction
+     or the other. */
   /* partner-training.html has no sidebar row to hide — it is a partner screen
      reached from Partner Home. It is listed so this block and shell.js's
      NAV_HIDDEN stay the same list, which is what
@@ -326,9 +327,24 @@ html.fh-side-mini .app-shell {
   display: none !important;
 }
 
-.navgroup[data-fh-section="marketing"] {
-  display: none !important;
-}
+/* THE MARKETING SECTION IS NOT HIDDEN HERE ANY MORE, AND THAT IS THE POINT.
+   A rule used to sit right here that said:
+
+     .navgroup[data-fh-section="marketing"] { display: none !important; }
+
+   It hid the whole Marketing box — the heading and all four rows inside it —
+   no matter what any other rule said. That made it the trap this note exists
+   to stop you falling into: someone would take a row off the hidden list in
+   shell.js, take the matching address off the list above, reload, see nothing
+   change, and assume they had got it wrong. They had not. The section around
+   the row was still gone.
+   Two reasons this rule beat everything else. It hid the PARENT, so the row
+   never had a chance to paint. And `!important` in a stylesheet beats the
+   plain `style="display:"` that shell.js gateLinks() writes on a group it has
+   decided to show, so the runtime could not put it back either.
+   Nothing needs to replace it. gateLinks() already hides any group whose rows
+   are all gated for the person looking, so a staff role sees no lonely
+   Marketing heading — it disappears with its rows, on its own. */
 
 .navitem {
   display: flex;

@@ -19,6 +19,7 @@
 
 import { grade } from "./grading.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { assigneeFor } from "./owner.mjs";
 
 // The funnel from doc 10 and doc 11, in order. `rejected` and `withdrawn` are
 // terminal and reachable from anywhere.
@@ -113,7 +114,19 @@ export async function apply(tx, {
     return { candidate, application: open.rows[0], created: false, strippedProtected };
   }
 
-  return { candidate, application: ins.rows[0], created: true, strippedProtected };
+  const application = ins.rows[0];
+  const { assigneeRole, assigneeStaffId } =
+    await assigneeFor(tx, { orgId, roleKey: role.key });
+  await safeTask(tx, {
+    orgId,
+    title: `New application: ${String(fullName).trim()} (${role.key})`,
+    body: `hiring:applied:${application.id}`,
+    sourceWorkflow: "hiring-new-application",
+    assigneeRole,
+    assigneeStaffId
+  });
+
+  return { candidate, application, created: true, strippedProtected };
 }
 
 /* scoreApplication(tx, spec) → score row

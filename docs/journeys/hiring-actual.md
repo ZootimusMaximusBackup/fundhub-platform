@@ -4,47 +4,19 @@
 > That generator only builds the eight role-reachability pages listed in
 > [README.md](./README.md); hiring is not one of them, so this file will not be
 > overwritten and will not be kept current for you. It describes the code as it sat
-> on disk at **16:30 on 2026-09-05**, on top of commit `91508b71`. That timestamp is
-> load-bearing — other work sessions were writing hiring code into this same checkout
-> while this page was being traced. See
-> [What is landing right now](#what-is-landing-right-now).
+> on disk at **18:55 on 2026-09-05**, on top of commit `bcba67a2`.
 >
 > **There is no `hiring-intended.md`.** Nobody has written down what hiring is
 > supposed to do, so there is nothing to compare this against. Everything below is
 > what the code does. Where the code and its own comments disagree, the code wins and
 > the disagreement is listed as a finding.
 
-The short version: **the hiring system can look at candidates and it can decide about
-them. It cannot find them, talk to them, book them, or score them.** A person has to
-put every candidate in by hand, and every single move through the funnel is a person
-pressing a button.
+The short version: **a stranger can apply, the bench monitor runs on a clock, and a
+person can advance or reject on the hiring board.** Outreach, scoring, interview
+booking, Zoho sync, and most of the post-hire funnel are built as modules but not
+connected to anything that runs in normal use.
 
 The state diagram on its own is [hiring-flow.md](./hiring-flow.md).
-
-## What is landing right now
-
-**Read this before you trust the findings at the bottom.** While this page was being
-written, other sessions were adding hiring code to this same checkout. These files were
-on disk, not yet committed, at 16:30 on 2026-09-05:
-
-| File on disk | What it is plainly aimed at | Which finding below it changes |
-|---|---|---|
-| `api/hiring/apply.mjs` (routed as `hiring/apply`) and `src/hiring/apply-public.mjs` | A public careers door: strangers can list the open roles and send one application | Findings **5** and **10** — this is the first live caller of `apply()`, and it reads the role brief |
-| `src/hiring/outreach.mjs` and `src/workflows/hiring-outreach-cadence.mjs` | Contacting candidates on a schedule | Finding **1** |
-| `src/hiring/booking.mjs` and `db/migrations/296_hiring_booking.sql` | Booking interviews | Finding **2** |
-| `src/workflows/hiring-bench-sweeper.mjs` | Putting the bench monitor on a timer | Finding **7** |
-
-**I did not read, run or verify any of them.** They were being edited as I looked, so
-describing their behaviour here would be documenting a moving target. They are listed
-so that a finding below which says "nothing does this" is read as *nothing did this at
-16:30 on 2026-09-05*, not as a claim about tomorrow. **Whoever lands that work owns
-re-tracing this page.**
-
-One knock-on worth naming: adding the `hiring/apply` route took the platform from 217
-routes to 218, which makes the eight generated journey pages and `README.md` stale.
-`node --test scripts/journeys/generate.test.mjs` fails for that reason and not because
-of anything on this page. Running `npm run journeys` would rewrite those eight files
-mid-landing, so it was deliberately not run here.
 
 ## The whole thing in one picture
 
@@ -55,14 +27,23 @@ outside a test file.
 ```mermaid
 flowchart TD
     subgraph GETTING_CANDIDATES [How a candidate gets in]
-      HIRE[Owner presses Hire a closer<br/>POST /api/ops/hire-closer] -->|actOnBrain decides the calendar is packed| DRAFT[Job posting row, status draft<br/>hiring_job_postings]
-      DRAFT -->|postJob sends it to LinkedIn<br/>UNVERIFIED against a real account| LIVE[Posting live on LinkedIn]
-      LIVE -.->|ingestApplications reads applications back<br/>NOT WIRED - nothing calls it| APPLYFN
-      APPLYFN[apply writes the person and the application<br/>src/hiring/pipeline.mjs:51<br/>NOT WIRED - only linkedin.mjs and tests call it] -.-> ROW
+      CAREERS[Stranger on /careers.html] -->|GET/POST /api/hiring/apply| APPLYFN
+      APPLYFN[src/hiring/apply-public.mjs → pipeline.mjs apply] --> ROW
+      ZOHO[src/hiring/zoho.mjs syncCandidates → apply<br/>NOT WIRED - no cron, no endpoint] -.-> ROW
+      LI[src/hiring/linkedin.mjs ingestApplications → apply<br/>NOT WIRED - owner-set dead] -.-> ROW
       HAND[A person writes rows straight into the database<br/>or the demo seed does] --> ROW
+      HIRE[Owner presses Hire a closer<br/>POST /api/ops/hire-closer] -->|actOnBrain decides the calendar is packed| DRAFT[Job posting row, status draft]
+      DRAFT -->|postJob via linkedin.mjs<br/>UNVERIFIED - no partner access| LIVE[Posting live]
     end
 
     ROW[(candidate_applications<br/>status open, stage Applied)]
+
+    subgraph OUTREACH [Follow-up after apply]
+      ROW -.->|ensureOutreach<br/>NOT WIRED - only tests call it| CAD[candidate_outreach row]
+      CAD -.-> SWEEP[hiring-outreach-cadence cron */30<br/>REGISTERED - only drains existing rows]
+      SWEEP -.->|queueStep → messages queued| DISPATCH[message-dispatch-sweeper]
+      DISPATCH -.->|gate blocks no-client messages<br/>OUTREACH keys not allowlisted| CANDMSG[The candidate]
+    end
 
     subgraph DECIDING [What a person can do]
       ROW --> SCREENPG[Hiring screen<br/>public/app/hiring.html]
@@ -73,33 +54,38 @@ flowchart TD
       REJ --> TASK[A to-do appears for an admin<br/>Send candidate feedback]
     end
 
+    subgraph TIMERS [What runs without being asked]
+      BENCHSW[hiring-bench-sweeper cron daily 13:30 UTC<br/>REGISTERED] --> CHECK[checkBench opens tasks when bench short]
+    end
+
     subgraph NOTWIRED [Built, finished, and nothing runs it]
       SCORE[scoreApplication - grades against the rubric<br/>pipeline.mjs:128<br/>NOT WIRED]
       GI[recordGroupInterview - yes and maybe move up<br/>pipeline.mjs:288<br/>NOT WIRED]
-      BENCH[checkBench - opens a task when the bench is thin<br/>bench.mjs:33<br/>NOT WIRED, no cron, no endpoint]
-      RAMPR[rampReview - the 60 day trial review<br/>bench.mjs:96<br/>NOT WIRED, and unreachable anyway]
-      BRIEF[briefFor and reviseBrief - the words describing the job<br/>owner.mjs:101 and :138<br/>NOT WIRED]
+      BOOK[bookInterview / joinInterview<br/>booking.mjs<br/>NOT WIRED - no endpoint]
+      RAMPR[rampReview - the 60 day trial review<br/>bench.mjs:96<br/>NOT WIRED, no cron, unreachable anyway]
+      BRIEF[briefFor and reviseBrief - the words describing the job<br/>owner.mjs:101 and :138<br/>NOT WIRED - no endpoint]
     end
 
-    TASK -.->|a person writes the email themselves<br/>nothing is sent by the system| CAND[The candidate]
+    TASK -.->|a person writes the email themselves<br/>candidate_notified_at never written| CANDMSG
 ```
 
 ## Who can do what
 
 | Surface | What it is | Who gets in |
 |---|---|---|
+| `GET /api/hiring/apply` | Open roles list (key, name, brief) | **No auth** — public careers door |
+| `POST /api/hiring/apply` | One application → `apply()`, stage `applied` | **No auth** — public careers door |
 | `GET /api/hiring/candidates` | The board — every application, filtered by stage | `owner`, `admin` (`ROLE_SETS.HIRING`) |
 | `GET /api/hiring/application?id=` | One candidate's full record: answers, every score, interviews, every decision | `owner`, `admin` |
 | `GET /api/hiring/decisions` | The decision log — who decided what, and whether a person decided it | `owner`, `admin` |
 | `GET /api/hiring/funnel` | Counts by stage and by where the candidate came from | `owner`, `admin` |
 | `GET /api/hiring/bench` | How many warm candidates each role has against its target | `owner`, `admin` |
 | `GET /api/hiring/postings` | Job adverts, without the description or the external id | `owner`, `admin` |
-| **`POST /api/hiring/decide`** | **The only write.** Advance or reject | `owner`, `admin`, gate written out in full at `api/hiring/decide.mjs:44` |
-| `POST /api/ops/hire-closer` | Puts a closer advert on LinkedIn when the calendar is packed | `owner`, `admin` |
+| **`POST /api/hiring/decide`** | **The only staff write.** Advance or reject | `owner`, `admin`, gate written out in full at `api/hiring/decide.mjs:44` |
+| `POST /api/ops/hire-closer` | Packed-calendar task + LinkedIn closer job via `linkedin.mjs postJob` | `owner`, `admin` |
 
-All eight are in the hardcoded `ROUTES` map in `netlify/functions/api.mjs`, so they
-answer in production. A handler missing from that map answers `404`, which is the trap
-`CLAUDE.md` §12 names. The six read endpoints answer `405` to anything but a `GET`.
+All nine hiring routes are in the hardcoded `ROUTES` map in `netlify/functions/api.mjs`.
+The six read endpoints answer `405` to anything but a `GET`.
 
 **Who decided is never a request field.** `api/hiring/decide.mjs:33` refuses a body
 that carries `decided_by`, `decided_by_staff_id` or `org_id` with a `400`. The
@@ -125,17 +111,22 @@ before storage, not merely ignored — `scoreable()` at `grading.mjs:87`.
 
 ## What actually runs today, in order
 
-1. **A candidate appears.** Somebody writes rows into `candidates` and
-   `candidate_applications` by hand, or the demo seed does
-   (`src/demo/seed-ui-coverage.mjs:203`). There is no application form anywhere in
-   this repository, and no endpoint that accepts one.
-2. **An owner or admin opens the hiring screen** and reads the application.
-3. **They press Advance,** picking the next stage from a dropdown. The dropdown only
+1. **A candidate appears.** Through `POST /api/hiring/apply` (public careers form),
+   by hand into the database, through the demo seed, or — when wired — through
+   `src/hiring/zoho.mjs syncCandidates`. Nothing scores them and nothing advances them.
+2. **The bench sweeper runs daily** (`src/workflows/hiring-bench-sweeper.mjs`, cron
+   `30 13 * * *`). It calls `checkBench()` per org and opens a task when a role is
+   below its bench target. It contacts no candidate and posts no job.
+3. **The outreach sweeper runs every 30 minutes**
+   (`src/workflows/hiring-outreach-cadence.mjs`). It drains `candidate_outreach` rows
+   that are due. **No production path creates those rows** — see finding 1.
+4. **An owner or admin opens the hiring screen** and reads the application.
+5. **They press Advance,** picking the next stage from a dropdown. The dropdown only
    moves forward and stops at Hired.
-4. **Or they press Reject** and type a reason. A to-do lands in the admin queue saying
-   to send the candidate feedback. **A person writes that email. The system sends
-   nothing.**
-5. Every advance and every rejection writes a permanent row in `hiring_decisions`.
+6. **Or they press Reject** and type a reason. A to-do lands in the admin queue saying
+   to send the candidate feedback. **A person writes that email. `candidate_notified_at`
+   is never written by any code path.**
+7. Every advance and every rejection writes a permanent row in `hiring_decisions`.
    Those rows and the score rows cannot be deleted — `hiring_no_delete()`,
    `051_hiring.sql:422`.
 
@@ -146,141 +137,161 @@ That is the entire live path.
 These are gaps between what the code contains and what a working hiring process needs.
 None of them is drawn in the diagram as if it exists.
 
-**1. Nobody is ever contacted.** *(Being addressed right now — see
-[What is landing right now](#what-is-landing-right-now).)* No email, no text, no calendar invite reaches a
-candidate at any point. `candidate_notified_at` is a column two endpoints read and
-**nothing ever writes**. A rejected candidate gets a to-do about them in a staff queue
-and nothing else.
+**1. Outreach is built but not started.** `src/hiring/outreach.mjs` and
+`src/workflows/hiring-outreach-cadence.mjs` are registered and tested. **`ensureOutreach()`
+is called only from `src/hiring/outreach.pg.test.mjs`** — neither `apply-public.mjs`,
+`pipeline.mjs apply()`, nor `zoho.mjs ingestOne()` starts a cadence. So the sweeper runs
+but has nothing to drain for a new applicant. Even when a row exists, **`src/messaging/gate.mjs`
+blocks messages with no `client_id` unless the template key is on
+`PARTNER_WELCOME_KEYS` / `PARTNER_WELCOME_SMS_KEYS**, and the eight
+`EMAIL-CANDIDATE-OUTREACH-*` / `SMS-CANDIDATE-OUTREACH-*` keys are not on those lists.
+`recordCandidateReply()` exists but **nothing calls it** — inbound replies are filed
+against `clients` rows in `src/handlers/comms.mjs` and dropped otherwise. Every role's
+`interview_booking_url` is empty, so `queueStep()` sends nothing and files a task.
 
-**2. No interview is ever booked.** *(Being addressed right now.)* The only `INSERT` into `hiring_interviews` in the
-whole repository is in `src/hiring/hiring.pg.test.mjs:340`. The group-interview logic
-(`recordGroupInterview`) is written, tested and never called by anything that runs.
+**2. Interview booking has no door.** `src/hiring/booking.mjs` (`bookInterview`,
+`joinInterview`, `listOpenInterviews`, `hostConflicts`) is complete and tested.
+**There is no `api/hiring/*` route for it** and `public/app/hiring.html` does not call
+it. The only `INSERT INTO hiring_interviews` outside tests is inside `booking.mjs`
+itself. `recordGroupInterview()` is likewise test-only.
 
-**3. Nothing is ever scored.** `apply()` says in its own comment that it scores the
-application against the active rubric. It does not — there is no call to `grade()` or
-`scoreApplication()` in it. **Measured on a scratch database on 2026-09-05: `apply()`
-wrote zero score rows.** And `scoreApplication()` itself has no caller outside tests.
-So the rubrics, the bands, the flags and the whole audit apparatus have never produced
-a single row in normal use.
+**3. Nothing is ever scored.** `apply()`'s header says it scores against the active
+rubric. It does not — there is no call to `grade()` or `scoreApplication()` in it.
+**Measured on a scratch database on 2026-09-05: `apply()` wrote zero score rows.**
+`scoreApplication()` has no caller outside tests.
 
 **4. Three of the five rubric stages have no rubric.** `hiring_rubrics` allows five
-stage keys (`051_hiring.sql:318`) and `051` seeds only two of them: `applied` and
+stage keys (`051_hiring.sql:318`) and `051` seeds only two: `applied` and
 `group_interview`. `screening`, `one_on_one` and `mock_call` are permitted with nothing
-behind them, so scoring at any of those three throws `no active rubric for stage`. A
-1:1 interview — the stage the bench is counted from — cannot be scored at all.
+behind them, so scoring at any of those three throws `no active rubric for stage`.
 
-**5. `apply()` — the whole inbound path — has no live caller.** *(Being addressed
-right now: a public `hiring/apply` route was added to the route map while this page was
-being written.)* It is reached only from
-`src/hiring/linkedin.mjs:175` (`ingestApplications`, which nothing calls) and from
-tests. So the redelivery guard, the protected-field stripping and the find-or-create
-person logic are all correct and all dormant.
+**5. CLOSED — `apply()` has a live caller.** `public/careers.html` →
+`GET/POST /api/hiring/apply` → `src/hiring/apply-public.mjs` → `pipeline.mjs apply()`.
+Applications land in `applied`, status `open`, with `answers = '{}'`.
 
-**6. Hired is a dead end, and it takes the 60-day trial with it.** Moving an
-application to `hired` sets its status to `hired`; `advance()` then refuses every later
-move because the application is no longer `open`. **Measured on a scratch database on
-2026-09-05:** advancing applied → screening → group interview → 1:1 → offer → hired all
-succeeded, then onboarding, ramp and performing were each refused with
-`advance: application is hired, not open`. The screen already knows and stops its
-dropdown at Hired (`public/app/hiring.html:2213`). The consequence: `rampReview()` looks
-for open applications sitting in `ramp`, and no application can ever be there, so the
-60-day trial review can never fire for anyone.
+**6. Hired is a dead end, and it takes the 60-day trial with it.** Moving to `hired`
+sets status to `hired`; `advance()` then refuses every later move because the
+application is no longer `open`. The screen stops its dropdown at Hired
+(`public/app/hiring.html:2213`). `rampReview()` reads open applications in `ramp` and
+no application can ever be there.
 
-**7. Nothing is on a timer.** *(Being addressed right now for the bench.)* `checkBench()` and `rampReview()` are complete, tested
-functions with no cron entry in `src/workflows/index.mjs` and no endpoint. The
-"always-on recruiting" the design is built around is not on. `GET /api/hiring/bench`
-shows the shortfall on a screen; it does not open the task that makes anyone act.
+**7. PARTIALLY CLOSED — one timer, not two.** `checkBench()` is on a clock via
+`hiring-bench-sweeper.mjs` (daily 13:30 UTC, registered in `src/workflows/index.mjs`).
+**`rampReview()` has no cron entry and no endpoint.**
 
-**8. The new routing rule is only half connected.** Migration 294 and
-`src/hiring/owner.mjs` resolve who owns a hiring req — a named person, then the
-standing rule (`owner_role`), then the owner. Only `checkBench()` uses it. The two
-to-dos created in `src/hiring/pipeline.mjs` (candidate feedback at `:271`, group
-interview "no" at `:315`) and the one in `rampReview()` at `bench.mjs:116` still
-hardcode `assigneeRole: "admin"`. Same work, two different destinations.
+**8. Routing is half connected.** Migration 294 and `src/hiring/owner.mjs` resolve who
+owns a hiring req. `checkBench()` and outreach's `askForBookingLink()` use
+`assigneeFor()`. The to-dos in `src/hiring/pipeline.mjs` (candidate feedback at `:271`,
+group interview "no" at `:315`) and `rampReview()` at `bench.mjs:116` still hardcode
+`assigneeRole: "admin"`.
 
 **9. `hiring_manager_staff_id` is still written by nothing.** Four places read it. No
-code path sets it. Every bench alert therefore routes to a role queue with no
-individual name on it, which `checkBench()` honestly reports as `unrouted: true`.
+code path sets it. Bench alerts and booking's `resolveHost()` therefore route to a role
+queue with no individual name.
 
-**10. The job briefs are empty and there is no way to fill one in.** *(A reader is
-landing right now; the writing path and the text itself are still absent.)* `role_brief`,
-`briefFor()` and `reviseBrief()` all exist. No endpoint calls them and no screen shows
-them. Absence noted, not filled: **no brief text has been written for any role, and I
-have not invented one.**
+**10. Job briefs are empty and there is no HTTP way to fill one in.** `role_brief`,
+`briefFor()` and `reviseBrief()` exist. **`reviseBrief()` is reachable only from tests**
+(`src/hiring/owner.pg.test.mjs`, `src/hiring/zoho.pg.test.mjs`). The careers page reads
+`hiring_roles.role_brief` and renders "No written description yet" for every role.
+`src/hiring/zoho.mjs postJob()` refuses to post when the brief is empty.
 
 **11. Scorecards and pay have structure but no numbers.** `052_config_defaults.sql`
-gave the closer and setter roles a scorecard shape and a comp shape in which **every
-target and every figure is `null`**, with a note in the row saying the real documents
-were not available. `v_hiring_config_gaps` reports these. **Absence noted, not filled:
-no targets, no base, no commission percentage and no OTE exist for any role, and I have
-not invented any.** An offer cannot be generated until a human supplies them.
+seeded closer and setter scorecard and comp shapes with **every target and figure `null`**.
+`v_hiring_config_gaps` reports these. **Absence noted, not filled.**
 
 **12. The bias-audit tables are unused.** `053_eeo_selfid.sql` builds voluntary
-self-identification with a token so the answers can never be joined back to a person.
-**No code anywhere reads or writes any of those tables.** The survey is never sent, so
-the demographic side of an adverse-impact review has no data in it.
+self-identification with a token so answers cannot be joined back to a person.
+**No code anywhere reads or writes any of those tables.**
 
-**13. Three states exist that nothing enters.** `withdrawn` (a stage, a status value
-and a `withdraw` decision type), and the decision types `offer_accepted`,
-`offer_declined` and `hold`. `api/hiring/decisions.mjs:27` offers all of them as
-filters. Nothing writes any of them.
+**13. Three states exist that nothing enters.** `withdrawn`, and the decision types
+`offer_accepted`, `offer_declined` and `hold`. `api/hiring/decisions.mjs:27` offers all
+of them as filters. Nothing writes any of them.
 
 **14. `advance()` will move an application backwards.** It accepts any forward-stage
-key with no check that the new stage is later than the current one, so an offer can be
-sent back to screening through the endpoint. The screen never offers it, but the
-endpoint allows it.
+key with no check that the new stage is later than the current one. The screen never
+offers it, but the endpoint allows it.
+
+**15. Zoho Recruit is built but not scheduled.** `src/hiring/zoho.mjs` (`postJob`,
+`closeJob`, `syncCandidates`) is tested against Postgres. **It is not registered in
+`src/workflows/index.mjs` and has no API route.** Owner-set 2026-09-05: Zoho is the
+LinkedIn pipeline; `src/hiring/linkedin.mjs` is dead code kept as a record.
+
+**16. Nobody is told an application arrived.** `apply()` opens the row and stops. No
+task, no message. `src/hiring/apply-public.mjs` documents this as a deliberate gap.
+
+**17. Per-IP apply burst limit is in-memory only.** `src/hiring/apply-public.mjs`
+`checkIpRate()` resets on cold start and is not shared between function instances.
+Per-email and org-wide limits are durable.
 
 ## Marked `UNVERIFIED`
 
-* **The LinkedIn advert actually posting.** `postJob()` builds and sends a request, but
-  `051_hiring.sql:575` says the payload shapes have never been checked against a real
-  Talent Solutions account, and `postCloserLinkedIn()` returns `not_configured`
-  whenever no connection row exists. I could not verify from the code that a real
-  advert has ever gone up, only that the code path is complete.
-* **Whether the hiring screen is reachable from the live navigation for an admin.** I
-  read the screen and its calls; I did not sign in and click.
+* **Whether outreach messages actually leave the building once the gate is fixed.**
+  The cadence queues `messages` rows; `src/messaging/dispatch.mjs` sends them under
+  `messaging_settings.outbound_enabled`. I traced the queue path; I did not send a live
+  candidate message.
+* **Whether the hiring screen is reachable from the live navigation for an admin.**
+  `public/app/sidebar.fragment.html` lists `hiring.html` under Admin.
+  `src/http/app-nav-reachability.test.mjs` pins it to owner/admin. I did not sign in
+  and click.
+* **LinkedIn posting through `POST /api/ops/hire-closer`.** `postCloserLinkedIn()`
+  returns `not_configured` when no connection row exists. Owner-set: LinkedIn API access
+  is closed; this path is legacy.
 
+## Related journey pages
+
+* [hiring-flow.md](./hiring-flow.md) — state diagram only
+* [candidate-outreach-flow.md](./candidate-outreach-flow.md) — outreach cadence detail
+  (generated 2026-09-05; note that `ensureOutreach` is still unwired from apply)
 
 ---
 
-## Addendum — the public apply door landed (2026-09-05, careers lane)
+## Addendum — Google Calendar free/busy (2026-09-05, post-PR-336 Lane 1)
 
-Appended rather than woven in, so the trace above stays a record of what was true at
-16:30 and this stays a record of what changed after it. **The page above is otherwise
-accurate; only the two items named here moved.**
+`src/hiring/calendar-freebusy.mjs` reads the host's Google Workspace primary calendar
+via `POST calendar/v3/freeBusy` (scope `calendar.readonly`, service account +
+domain-wide delegation, outbound through `transmit()` INTERNAL fence).
 
-`api/hiring/apply.mjs`, `src/hiring/apply-public.mjs` and `public/careers.html` are now
-on disk, routed, and proved against a real Postgres (36 tests, 36 pass, 0 skipped) and
-through the real Netlify handler on a local server.
+`bookInterview()` in `src/hiring/booking.mjs` now refuses a 1:1 booking unless **both**
+hold:
 
-**Finding 5 is now closed.** `apply()` has a live caller. The path is:
+1. No overlapping row in `hiring_interviews` for that host (unchanged), and
+2. Google Calendar returns no busy block for `[scheduled_for, scheduled_for + duration)`.
 
-```
-Stranger on /careers.html
-  → GET  /api/hiring/apply        lists open roles (key, name, role_brief) — no auth
-  → POST /api/hiring/apply        one application — no auth
-  → src/hiring/apply-public.mjs   validate, cap, throttle, drop bots, refuse
-                                  protected characteristics
-  → src/hiring/pipeline.mjs apply()
-  → candidates + candidate_applications, stage `applied`, status `open`
-  → STOPS.
-```
+**Fail closed:** if credentials are missing, the token exchange fails, or freeBusy is
+unreadable → `CALENDAR_UNREADABLE` (503) and nothing is written. If the calendar shows
+busy → `HOST_BUSY` (409) with `detail.calendarBusy`.
 
-So the diagram's `NOT WIRED - only linkedin.mjs and tests call it` note on `APPLYFN` is
-out of date; everything else in that diagram still holds.
+**Still blind:** client sales calls in `bookings` (no staff column), working hours/time
+off tables, and events on calendars outside the host's Google primary calendar.
 
-**Finding 10 is partly addressed and mostly not.** The careers page reads
-`hiring_roles.role_brief` and renders it. Every brief is still empty, so what the page
-actually shows under each job title is "No written description yet." That is the honest
-render of an empty column, not a fix for it.
+**Live dependency:** Workspace Admin must add `https://www.googleapis.com/auth/calendar.readonly`
+to the existing Company Brain service account client ID (domain-wide delegation). Env:
+`GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` (already on Netlify).
 
-**Findings 1, 2, 3 and 7 are untouched by this lane.** Nothing here contacts a
-candidate, books an interview, produces a score, or puts anything on a timer. An
-application arrives and sits in `applied` until a person opens the hiring board — there
-is no task and no message, deliberately, because wiring one was outside this lane.
+`joinInterview()` is unchanged — it joins a session the host already committed to in
+`hiring_interviews`, so no free/busy check there.
 
-`npm run journeys` HAS now been run: the eight generated pages and `README.md` are
-regenerated at 218 routes and `scripts/journeys/generate.test.mjs` is green again.
+Manifest: `docs/workflows/hiring-post-336-2026-09-05.md`.
 
-Full write-up, including the four gaps this lane found and could not close without
-inventing something: `docs/workflows/careers-lane-2026-09-05.md`.
+---
+
+## Addendum — Google Calendar free/busy (2026-09-05, post-PR-336 Lane 1)
+
+`src/hiring/calendar-freebusy.mjs` reads the host's Google Workspace primary calendar
+via `POST calendar/v3/freeBusy` (scope `calendar.readonly`, service account +
+domain-wide delegation, outbound through `transmit()` INTERNAL fence).
+
+`bookInterview()` in `src/hiring/booking.mjs` now refuses a 1:1 booking unless **both**
+the `hiring_interviews` exclusion constraint would allow it **and** the host's calendar
+has no busy block in that window. **Fail closed:** if the calendar cannot be read
+(`CALENDAR_UNREADABLE`, HTTP 503), nothing is written. Joining a pre-scheduled group
+session (`joinInterview`) still does not free/busy check — the host already committed.
+
+**Finding 2 is partly addressed:** booking logic exists and now respects real calendar
+busy time, but there is still no HTTP endpoint or screen caller for `bookInterview`
+outside tests.
+
+**Workspace admin step (live prove):** add
+`https://www.googleapis.com/auth/calendar.readonly` to the existing Company Brain
+service account in Domain-wide delegation. Manifest:
+`docs/workflows/hiring-post-336-2026-09-05.md`.

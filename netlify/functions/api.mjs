@@ -180,6 +180,7 @@ import publicDeclineAutopsy from "../../api/public/decline-autopsy.mjs";
 import publicDeclineAutopsyUpload from "../../api/public/decline-autopsy-upload.mjs";
 import publicDeclineAutopsyReport from "../../api/public/decline-autopsy-report.mjs";
 import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
+import publicEeoSurvey from "../../api/public/eeo-survey.mjs";
 import publicAffiliateClick from "../../api/public/affiliate-click.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
@@ -252,6 +253,7 @@ import readLenders from "../../api/read/lenders.mjs";
 import readLenderMatches from "../../api/read/lender-matches.mjs";
 import readLenderObservations from "../../api/read/lender-observations.mjs";
 import readInquiryCases from "../../api/read/inquiry-cases.mjs";
+import readEeoAggregate from "../../api/read/eeo-aggregate.mjs";
 import readRepairCases from "../../api/read/repair-cases.mjs";
 import readAiBureauConfig from "../../api/read/ai-bureau-config.mjs";
 import proxyLaunch from "../../api/proxy/launch.mjs";
@@ -376,6 +378,9 @@ export const ROUTES = {
   "read/lender-matches": readLenderMatches,
   "read/lender-observations": readLenderObservations,
   "read/inquiry-cases": readInquiryCases,
+  /* Bias-audit aggregates — v_eeo_aggregate only, ROLE_SETS.COMPLIANCE. Not
+     api/hiring/* because that directory carries applicant PII. */
+  "read/eeo-aggregate": readEeoAggregate,
   "read/repair-cases": readRepairCases,
   "read/ai-bureau-config": readAiBureauConfig,
   "read/proxy-sessions": readProxySessions,
@@ -712,6 +717,10 @@ export const ROUTES = {
      and a person getting out of a mailing list must never be asked to sign in.
      GET reports state, POST is the act; see the handler's header for why. */
   "public/unsubscribe": publicUnsubscribe,
+  /* Voluntary EEO self-ID survey — separate from careers apply (053_eeo_selfid.sql).
+     Token in URL is the credential. GET loads the form schema; POST severs the
+     application link in Postgres. COMPLIANCE REVIEW REQUIRED. */
+  "public/eeo-survey": publicEeoSurvey,
   /* Records one visit to an affiliate referral link. No auth — it fires from
      the /start redirect in a stranger's browser. Write-only, and it answers the
      same whether the code resolved to an affiliate or to nobody, so it cannot

@@ -44,6 +44,7 @@
 import { isProtected } from "./grading.mjs";
 import { apply } from "./pipeline.mjs";
 import { withTransaction } from "../db/with-transaction.mjs";
+import { normalizeIp } from "../auth/session.mjs";
 
 /* Length caps. Every one of these is a column this text lands in or sits beside;
    the cap is here so an over-long value is a 400 rather than a Postgres error
@@ -77,18 +78,14 @@ export const HOW_HEARD = Object.freeze([
 
 const HOW_HEARD_KEYS = new Set(HOW_HEARD.map((h) => h.key));
 
-/* THE LIMITS.
-   windowMinutes/maxPerEmail are checked against real rows and therefore hold
-   across processes and restarts. The per-IP numbers are checked in memory and
-   do NOT — see checkApplyRate's header for exactly what that buys and what it
-   does not. */
+/* THE LIMITS — all checked against real rows and therefore hold across processes
+   and restarts. Per-email and org-wide flood from candidate_applications; per-IP
+   burst and sustained from hiring_apply_attempts (299). */
 export const APPLY_LIMITS = Object.freeze({
-  // Durable, counted from candidate_applications.
   emailWindowHours: 24,
   maxPerEmail: 5,
   floodWindowMinutes: 5,
   maxOrgPerFloodWindow: 30,
-  // Best-effort, in this process only.
   ipShortWindowMinutes: 10,
   maxPerIpShortWindow: 5,
   ipLongWindowMinutes: 60,
@@ -267,55 +264,63 @@ export async function listOpenRoles(db, { orgId } = {}) {
 // Rate limiting
 // ---------------------------------------------------------------------------
 
-/* THE IN-MEMORY HALF, AND WHAT IT IS AND IS NOT.
+/* THE PER-IP HALF — hiring_apply_attempts (299).
 
-   There is no durable per-request store in this schema — no table records an
-   attempt that was refused — and adding one is a migration this unit does not
-   own. So the per-IP limit lives in this process: it stops a burst from one
-   source against one warm function instance, and it resets on a cold start and
-   is not shared between instances.
-
-   It also does nothing at all when the source address cannot be resolved.
+   Counted from real rows, so it holds across cold starts and warm instances.
    checkIpRate() returns "not limited" for a null ip ON PURPOSE — the alternative
    is one shared bucket that every applicant behind an unresolvable address falls
    into together, which locks out real people to slow down nobody. On Netlify the
    address always resolves (the adapter reads context.ip); anywhere it does not,
-   only the durable limits below are in force.
+   only the per-email and org-wide limits below are in force. */
 
-   That is a real limitation and it is written down rather than papered over.
-   The DURABLE half below (per-email and the org-wide flood cap) is counted from
-   candidate_applications rows and holds everywhere, which is why both exist. */
-const ipHits = new Map();
-
-function prune(now, keepMs) {
-  for (const [key, times] of ipHits) {
-    const live = times.filter((t) => now - t < keepMs);
-    if (live.length) ipHits.set(key, live);
-    else ipHits.delete(key);
-  }
+function asOf(now) {
+  return now instanceof Date ? now : new Date(now ?? Date.now());
 }
 
 /* recordAttempt — called for every submission that got as far as the limiter,
    accepted or not, so a refused flood still counts against the source. */
-export function recordAttempt(ip, { now = Date.now() } = {}) {
-  if (!ip) return;
-  const keepMs = APPLY_LIMITS.ipLongWindowMinutes * 60_000;
-  prune(now, keepMs);
-  const times = ipHits.get(ip) || [];
-  times.push(now);
-  ipHits.set(ip, times);
+export async function recordAttempt(db, { orgId, ip, now } = {}) {
+  const normIp = normalizeIp(ip);
+  if (!orgId || !normIp) return;
+  const at = asOf(now);
+  await db.query(
+    `INSERT INTO hiring_apply_attempts (org_id, ip, created_at) VALUES ($1, $2::inet, $3)`,
+    [orgId, normIp, at]
+  );
 }
 
-/* resetAttempts — test seam. The map is module state, and a test that trips the
-   limiter would otherwise poison every test after it. */
-export function resetAttempts() { ipHits.clear(); }
+/* resetAttempts — test seam. A test that trips the limiter would otherwise poison
+   every test after it. */
+export async function resetAttempts(db, { orgId, ip } = {}) {
+  if (!db || !orgId) return;
+  const normIp = normalizeIp(ip);
+  if (normIp) {
+    await db.query(
+      `DELETE FROM hiring_apply_attempts WHERE org_id = $1 AND ip = $2::inet`,
+      [orgId, normIp]
+    );
+  } else {
+    await db.query(`DELETE FROM hiring_apply_attempts WHERE org_id = $1`, [orgId]);
+  }
+}
 
-export function checkIpRate(ip, { now = Date.now(), limits = APPLY_LIMITS } = {}) {
-  if (!ip) return { limited: false, reason: null };
-  const times = ipHits.get(ip) || [];
-  const shortCount = times.filter((t) => now - t < limits.ipShortWindowMinutes * 60_000).length;
+export async function checkIpRate(db, { orgId, ip, now, limits = APPLY_LIMITS } = {}) {
+  const normIp = normalizeIp(ip);
+  if (!orgId || !normIp) return { limited: false, reason: null };
+  const at = asOf(now);
+  const { rows } = await db.query(
+    `SELECT
+       (SELECT count(*) FROM hiring_apply_attempts a
+         WHERE a.org_id = $1 AND a.ip = $2::inet
+           AND a.created_at > $5::timestamptz - ($3::int * interval '1 minute'))::int AS short_count,
+       (SELECT count(*) FROM hiring_apply_attempts a
+         WHERE a.org_id = $1 AND a.ip = $2::inet
+           AND a.created_at > $5::timestamptz - ($4::int * interval '1 minute'))::int AS long_count`,
+    [orgId, normIp, limits.ipShortWindowMinutes, limits.ipLongWindowMinutes, at]
+  );
+  const shortCount = Number(rows[0].short_count);
+  const longCount = Number(rows[0].long_count);
   if (shortCount >= limits.maxPerIpShortWindow) return { limited: true, reason: "ip_burst" };
-  const longCount = times.filter((t) => now - t < limits.ipLongWindowMinutes * 60_000).length;
   if (longCount >= limits.maxPerIpLongWindow) return { limited: true, reason: "ip_sustained" };
   return { limited: false, reason: null };
 }
@@ -334,8 +339,8 @@ export function checkIpRate(ip, { now = Date.now(), limits = APPLY_LIMITS } = {}
                    across many addresses and many instances. It is set well above
                    any real careers-page volume, because the cost of it firing is
                    a real applicant being told to come back later. */
-export async function checkApplyRate(db, { orgId, email, ip, limits = APPLY_LIMITS } = {}) {
-  const byIp = checkIpRate(ip, { limits });
+export async function checkApplyRate(db, { orgId, email, ip, now, limits = APPLY_LIMITS } = {}) {
+  const byIp = await checkIpRate(db, { orgId, ip, now, limits });
   if (byIp.limited) {
     return { limited: true, reason: byIp.reason, retryAfterMinutes: limits.retryAfterMinutes };
   }
@@ -420,6 +425,13 @@ export async function submitApplication(db, parsed, { orgId } = {}) {
         [result.candidate.id, parsed.linkedinProfileUrl]);
     }
 
+    /* Voluntary EEO self-ID — separate submission path (053_eeo_selfid.sql).
+       Invite + email queue here; answers never touch the apply form. */
+    if (result.application?.id) {
+      const { sendInviteForApplication } = await import("./eeo-selfid.mjs");
+      await sendInviteForApplication(tx, { orgId, applicationId: result.application.id });
+    }
+
     return {
       stored: true,
       outcome: result.created ? "created" : "already_open",
@@ -453,6 +465,5 @@ export async function submitApplication(db, parsed, { orgId } = {}) {
 //    unlinkability the whole table is built around. Until the invite path is
 //    built, the adverse-impact analysis 053 exists to enable has no data.
 //
-// 4. THE PER-IP LIMIT IS PER-PROCESS. See checkApplyRate's header. A durable one
-//    needs a table to record refused attempts, which is a migration this unit
-//    does not own.
+// 4. (CLOSED 299) THE PER-IP LIMIT IS DURABLE. hiring_apply_attempts holds burst
+//    state across cold starts and instances — see checkIpRate's header.

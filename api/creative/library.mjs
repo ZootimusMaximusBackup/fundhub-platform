@@ -9,6 +9,12 @@
 // the first place means it never enters the process. The screens get
 // has_storage_key instead, which is all they need to decide whether to render a
 // thumbnail.
+//
+// copy_text IS selected, and that is not a contradiction. A storage key is a
+// capability — hand it out and the holder can reach the file. Copy text is the
+// asset itself: the words of the ad. A library that will not show you the ad it
+// generated is not a library. It is NULL for pictures and videos, which have no
+// words. See 301_creative_copy_text.sql.
 import { db } from "../../src/db.mjs";
 import { partnerReadHandler, stateFilter } from "../../src/http/partner-read-api.mjs";
 
@@ -35,6 +41,7 @@ export const fetchRows = (tx, { limit, offset, query }) => {
 
   return tx.query(
     `SELECT a.id, a.brand_kit_id, a.kind, a.format, a.provider, a.duration_sec,
+            a.copy_text,
             a.ai_generated, a.synthetic_performer, a.compliance_state, a.blocked_reasons,
             a.parent_asset_id, a.archived_at, a.created_at,
             (a.storage_key IS NOT NULL) AS has_storage_key,

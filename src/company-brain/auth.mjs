@@ -52,11 +52,12 @@ export async function fetchAccessToken({
   clientEmail,
   privateKey,
   delegateEmail,
+  scope,
   fetchImpl = globalThis.fetch,
   nowSec
 } = {}) {
   const assertion = buildServiceAccountJwt({
-    clientEmail, privateKey, delegateEmail, nowSec
+    clientEmail, privateKey, delegateEmail, scope, nowSec
   });
   const body = new URLSearchParams({
     grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",

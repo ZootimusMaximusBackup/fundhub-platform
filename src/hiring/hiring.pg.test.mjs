@@ -135,6 +135,28 @@ describe("hiring pipeline", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =
     assert.strictEqual(candidate.source, "linkedin");
   });
 
+  test("a new application notifies the req owner via a task", async () => {
+    const { application, created } = await mkApplication("notify-me");
+    assert.strictEqual(created, true);
+    const task = (await db.query(
+      `SELECT id, assignee_role FROM tasks
+        WHERE source_workflow = 'hiring-new-application' AND body = $1`,
+      [`hiring:applied:${application.id}`])).rows[0];
+    assert.ok(task, "a new application must queue review");
+    assert.strictEqual(task.assignee_role, "sales_manager",
+      "closer routes to sales_manager per migration 294");
+  });
+
+  test("re-applying does not stack duplicate review tasks", async () => {
+    const first = await mkApplication("no-dup-task");
+    await mkApplication("no-dup-task");
+    const n = (await db.query(
+      `SELECT count(*)::int AS n FROM tasks
+        WHERE source_workflow = 'hiring-new-application' AND body = $1`,
+      [`hiring:applied:${first.application.id}`])).rows[0].n;
+    assert.strictEqual(n, 1);
+  });
+
   test("re-applying while open is idempotent — no duplicate application", async () => {
     await mkApplication("bob");
     const second = await mkApplication("bob");
@@ -542,7 +564,8 @@ describe("hiring pipeline", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =
       await tx.query(`DELETE FROM staff WHERE email LIKE $1`, [`${TAG}-%`]);
       await tx.query(
         `DELETE FROM tasks WHERE source_workflow IN
-          ('hiring-candidate-feedback','hiring-group-interview-review','hiring-bench-monitor','hiring-ramp-review')`);
+          ('hiring-candidate-feedback','hiring-group-interview-review','hiring-bench-monitor',
+           'hiring-ramp-review','hiring-new-application')`);
       await tx.query(`ALTER TABLE candidate_applications ENABLE TRIGGER trg_application_terminal`);
       for (const [t, trg] of [["application_scores", "trg_application_scores_no_delete"],
                               ["hiring_decisions", "trg_hiring_decisions_no_delete"]]) {

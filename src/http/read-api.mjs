@@ -146,6 +146,10 @@ export const ROLE_SETS = {
   // material a closer has no reason to see and real exposure if it circulates.
   // Widen this only by naming a recruiting role, never by reusing STAFF.
   HIRING: new Set(["owner", "admin"]),
+  /* Bias-audit aggregates — v_eeo_aggregate only. Same people as HIRING today but
+     a separate gate from api/hiring/* so demographic summaries never ride alongside
+     applicant PII and scoring trails (053_eeo_selfid.sql). */
+  COMPLIANCE: new Set(["owner", "admin"]),
   /* The lender database. Chris's call, 2026-08-17: the Lenders list is
      commercial relationship data the funding advisor maintains — who each
      lender is, what they pull, the terms and the insider notes — and it is not
