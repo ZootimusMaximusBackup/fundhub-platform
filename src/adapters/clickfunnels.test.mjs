@@ -803,7 +803,7 @@ function funnelDb({ existingClient = { id: "cl-77", email: "runaway@example.com"
       // resolveClient: find by email
       if (/SELECT id, ghl_contact_id FROM clients/.test(sql)) {
         const c = clients.find((c) => String(c.email).toLowerCase() === params[1]);
-        return { rows: c ? [{ id: c.id, ghl_contact_id: "ghl-1" }] : [] };
+        return { rows: c ? [{ id: c.id, ghl_contact_id: "crm-1" }] : [] };
       }
       if (/INSERT INTO clients/.test(sql)) {
         const id = "cl-new-" + ++n;
@@ -812,7 +812,7 @@ function funnelDb({ existingClient = { id: "cl-77", email: "runaway@example.com"
       }
       if (/SELECT id, ghl_contact_id, email, phone, first_name, last_name/.test(sql)) {
         const c = clients.find((c) => c.id === params[0]);
-        return { rows: c ? [{ ...c, ghl_contact_id: "ghl-1" }] : [] };
+        return { rows: c ? [{ ...c, ghl_contact_id: "crm-1" }] : [] };
       }
       if (/UPDATE clients/.test(sql)) return { rows: [] };
       // the repeat look-back

@@ -139,7 +139,7 @@ flowchart LR
 | `round.funded` | journey spine | `onRoundFundedInsights`, `onRoundFundedMoney` | 4 |
 | `round.closeout` | journey spine | `onRoundCloseoutGate` | 1 |
 | `file.finalized` | journey spine | — | 0 |
-| `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedMoney`, `onPaymentReceivedForAddOn`, `onPaymentReceivedForLink` | 2 |
+| `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedMoney`, `onPaidServicePaymentReceived`, `onPaymentReceivedForAddOn`, `onPaymentReceivedForLink` | 2 |
 | `payment.failed` | side events | `onPaymentFailed` | 0 |
 | `payment.expired` | side events | — | 0 |
 | `payment.canceled` | side events | — | 0 |

@@ -1,5 +1,5 @@
 // DPC-01 — Analyzer Lock.
-// Source: GHL-System-Map.md DECISION & PROGRESS CONTROL section.
+// Source: the CRM system map DECISION & PROGRESS CONTROL section.
 // Trigger: analysis.completed. Locks in the analyzer path + progress markers.
 
 import { inngest } from "./client.mjs";

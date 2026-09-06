@@ -92,9 +92,78 @@ export const DISPUTE_AUTH_DISCLOSURES = Object.freeze({
 /** The version new dispute-authorization captures default to. */
 export const CURRENT_DISPUTE_AUTH_VERSION = "dispute-auth-v1";
 
+/* CALL RECORDING. Added 2026-09-05 with the CSM role (db/migrations/290).
+   Append-only like the rest of this file: new wording is a NEW version key.
+
+   DELIBERATELY NARROW. This permits recording and nothing else. It does not
+   permit advertising — that is marketing_use below, a separate consent a
+   client can refuse while still agreeing to be recorded. Collapsing the two
+   would make the second one unaskable, which is the whole reason 291 added
+   two kinds instead of one. */
+export const CALL_RECORDING_DISCLOSURES = Object.freeze({
+  "call-recording-v1": Object.freeze({
+    version: "call-recording-v1",
+    title: "Permission to record this call",
+    text: [
+      "I agree that Fundhub may record this call, including my voice and what I say on it.",
+      "",
+      "Fundhub uses the recording to keep an accurate record of the conversation and to improve how it serves clients.",
+      "",
+      "This permission is only about recording. It does not allow Fundhub to use the recording, my voice, or my likeness in advertising or marketing. That is a separate permission I would be asked for on its own.",
+      "",
+      "I may tell Fundhub to stop recording at any time, and I may withdraw this permission at any time, for any reason, without giving a reason.",
+      "",
+      "I understand that withdrawing it does not erase a recording already made."
+    ].join("\n")
+  })
+});
+
+/** The version new call-recording captures default to. */
+export const CURRENT_CALL_RECORDING_VERSION = "call-recording-v1";
+
+/* MARKETING USE. Added 2026-09-05 with the CSM role.
+
+   This is the one that lets a clip become an ad, and it is the one a client is
+   most likely to refuse, so it is asked separately and plainly.
+
+   NO CLAIM ABOUT OUTCOMES anywhere in it (CLAUDE.md §7), and no suggestion
+   that agreeing affects the service they receive. It also states the payment
+   position rather than leaving it unsaid, because a right-of-publicity release
+   that is silent on compensation is the one people dispute later. */
+export const MARKETING_USE_DISCLOSURES = Object.freeze({
+  "marketing-use-v1": Object.freeze({
+    version: "marketing-use-v1",
+    title: "Permission to use what I said in advertising",
+    text: [
+      "I allow Fundhub to use my name, my voice, my picture, and what I said in this conversation in its advertising and marketing.",
+      "",
+      "This includes paid ads, its website, social media, and material shown to other people who are considering Fundhub.",
+      "",
+      "I understand people who see it may recognise me.",
+      "",
+      "I will not be paid for this unless Fundhub and I agree otherwise in writing.",
+      "",
+      "Saying no changes nothing about the service I receive, and I may say no now or withdraw this permission later, at any time, for any reason, without giving a reason.",
+      "",
+      "I understand that withdrawing it stops Fundhub using my words in anything new, but does not pull back material already published or already running."
+    ].join("\n")
+  })
+});
+
+/** The version new marketing-use captures default to. */
+export const CURRENT_MARKETING_USE_VERSION = "marketing-use-v1";
+
 /** Which disclosure applies to which consent kind. The map exists so a second
  *  kind cannot quietly reuse the first one's words. */
 const BY_KIND = Object.freeze({
+  call_recording: Object.freeze({
+    versions: CALL_RECORDING_DISCLOSURES,
+    current: CURRENT_CALL_RECORDING_VERSION
+  }),
+  marketing_use: Object.freeze({
+    versions: MARKETING_USE_DISCLOSURES,
+    current: CURRENT_MARKETING_USE_VERSION
+  }),
   soft_pull_consent: Object.freeze({
     versions: SOFT_PULL_DISCLOSURES,
     current: CURRENT_SOFT_PULL_VERSION

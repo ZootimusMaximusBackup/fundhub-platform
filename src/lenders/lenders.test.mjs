@@ -144,6 +144,69 @@ test("matchForClient reads the newest credit pull and screens on it", async () =
   assert.equal(r.skipped.find((x) => x.id === "hi").reason, "score_below_minimum");
 });
 
+/* TWO LANES, END TO END from the database shapes matchForClient really reads:
+   the personal address the soft-pull consent form stores on pii_identity, and
+   the business row the same form writes. Lives in Arizona, business in
+   Florida — both lanes must open. */
+test("matchForClient opens both lanes: home state from the stored personal address", async () => {
+  const lenders = [
+    { id: "n", name: "National", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "All States", is_demo: false },
+    { id: "a", name: "Arizona Local", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "AZ", is_demo: false },
+    { id: "f", name: "Florida Local", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "FL", is_demo: false },
+    { id: "t", name: "Texas Local", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "TX", is_demo: false }
+  ];
+  const db = {
+    async query(sql) {
+      const s = String(sql);
+      if (s.includes("FROM clients")) return { rows: [{ id: "c1", custom_fields: {} }] };
+      if (s.includes("FROM businesses")) return { rows: [{ entity_data: { state: "FL", city: "Miami" } }] };
+      if (s.includes("FROM pii_identity")) {
+        return { rows: [{ addresses: [{ addressLine1: "1 Main St", city: "Phoenix", state: "AZ" }] }] };
+      }
+      if (s.includes("FROM crs_results")) return { rows: [] };
+      if (s.includes("FROM inquiry_log")) return { rows: [] };
+      if (s.includes("FROM inquiry_removal_cases")) return { rows: [] };
+      if (s.includes("demo_mode_enabled")) return { rows: [{ demo_mode_enabled: false }] };
+      if (s.includes("FROM lenders")) return { rows: lenders };
+      throw new Error("unexpected sql: " + s);
+    }
+  };
+  const r = await matchForClient(db, { orgId: "o1", clientId: "c1" });
+  assert.equal(r.summary.home_state, "AZ");
+  assert.equal(r.summary.business_state, "FL");
+  assert.deepEqual(
+    r.matches.map((m) => m.name).sort(),
+    ["Arizona Local", "Florida Local", "National"]
+  );
+  assert.equal(r.skipped.find((x) => x.id === "t").reason, "state_ineligible");
+  assert.deepEqual(r.lanes.home.lenders.map((m) => m.name), ["Arizona Local"]);
+  assert.deepEqual(r.lanes.business.lenders.map((m) => m.name), ["Florida Local"]);
+});
+
+test("matchForClient with no identity row loses no lender — unknown home is not a block", async () => {
+  const lenders = [
+    { id: "f", name: "Florida Local", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "FL", is_demo: false }
+  ];
+  const db = {
+    async query(sql) {
+      const s = String(sql);
+      if (s.includes("FROM clients")) return { rows: [{ id: "c1", custom_fields: {} }] };
+      if (s.includes("FROM businesses")) return { rows: [{ entity_data: { state: "FL" } }] };
+      if (s.includes("FROM pii_identity")) return { rows: [] };
+      if (s.includes("FROM crs_results")) return { rows: [] };
+      if (s.includes("FROM inquiry_log")) return { rows: [] };
+      if (s.includes("FROM inquiry_removal_cases")) return { rows: [] };
+      if (s.includes("demo_mode_enabled")) return { rows: [{ demo_mode_enabled: false }] };
+      if (s.includes("FROM lenders")) return { rows: lenders };
+      throw new Error("unexpected sql: " + s);
+    }
+  };
+  const r = await matchForClient(db, { orgId: "o1", clientId: "c1" });
+  assert.equal(r.summary.home_state, null, "unknown stays unknown");
+  assert.equal(r.summary.client_state, "FL");
+  assert.deepEqual(r.matches.map((m) => m.name), ["Florida Local"]);
+});
+
 test("CSV round-trip keeps lender_table and name", () => {
   const csv = serializeLenderCsv([
     {

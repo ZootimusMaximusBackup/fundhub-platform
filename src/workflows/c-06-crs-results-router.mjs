@@ -1,5 +1,5 @@
 // C-06 — CRS Results Router.
-// Source: GHL-System-Map.md CREDIT OPS WORKFLOWS section.
+// Source: the CRM system map CREDIT OPS WORKFLOWS section.
 // Trigger: analysis.completed, gated on source === "crs" (same gate as U-03/U-04 —
 // this reacts to the CRS pull specifically, not the analyzer estimate). Missing
 // results (no scores at all) holds on a missing-snapshot tag instead of routing.

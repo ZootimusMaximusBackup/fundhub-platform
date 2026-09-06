@@ -211,10 +211,16 @@ async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generat
     const client = buildBlackReportClient({ crsResult: source, personal, business });
     const printed = await printBlackReports({ client });
     const files = printed.files || [];
-    if (!files.length) return { files: [], skip: printed.skip || "render_empty" };
-    return { files, skip: null };
+    // Which printer actually ran, carried out of here on purpose. For six weeks
+    // the WeasyPrint printer was silently replaced by the short pdf-lib one and
+    // nothing recorded it, so nobody could tell a client who got the designed
+    // documents from one who did not. See src/underwrite/black-report-pdf.mjs.
+    const engine = printed.engine || null;
+    const engineReason = printed.engineReason || null;
+    if (!files.length) return { files: [], skip: printed.skip || "render_empty", engine, engineReason };
+    return { files, skip: null, engine, engineReason };
   } catch (err) {
-    return { files: [], skip: String(err && err.message || err).slice(0, 240) };
+    return { files: [], skip: String(err && err.message || err).slice(0, 240), engine: null, engineReason: null };
   }
 }
 
@@ -487,6 +493,12 @@ export async function buildLetterPack({
     reason,
     deliverableCount: uiq.files.length,
     deliverableSkip: uiq.skip,
+    // Which printer made the four analysis documents: "weasyprint" (local
+    // Python), "weasyprint-remote" (render-service), or "pdf-lib" (the short
+    // fallback set). "pdf-lib" on a real client means the render service was
+    // unreachable and that client's documents are degraded.
+    deliverableEngine: uiq.engine || null,
+    deliverableEngineReason: uiq.engineReason || null,
     summarySkip,
     complaintCount: escalation.files.length,
     complaintSkip: escalation.skip,

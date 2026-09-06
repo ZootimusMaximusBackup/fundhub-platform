@@ -1,5 +1,5 @@
 // C-05 — Pre-Funding Review Logic.
-// Source: GHL-System-Map.md CREDIT OPS WORKFLOWS section.
+// Source: the CRM system map CREDIT OPS WORKFLOWS section.
 // Trigger: round.started. If CRS is already complete, raises the pre-funding review
 // task; otherwise flags that CRS still needs to be pulled before funding can start.
 

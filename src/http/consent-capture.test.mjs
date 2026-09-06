@@ -216,6 +216,34 @@ describe("the role gate", () => {
     });
   }
 
+  /* THE CSM IS DELIBERATELY NOT IN THE PULL-EQUIVALENT SET. They run the
+     recorded calls, so they record the two conversation consents — and a
+     credit-pull consent is not one of them. Widening CONSENT_ROLES to include
+     them was the first attempt at this and it would have handed the CSM the
+     key that unlocks a pull. These two tests are why that cannot come back. */
+
+  test("a csm may capture a call_recording consent", async () => {
+    stubDb({ session: { role: "csm" }, answers: [[INSERT, { rows: [consentRow()] }]] });
+    const res = mkRes();
+    await handler(mkReq({
+      method: "POST",
+      body: { client_id: CLIENT, kind: "call_recording", capture_method: "typed", granted_name: "Dana Client" }
+    }), res);
+    assert.equal(res.statusCode, 200, `csm was refused: ${JSON.stringify(res.body)}`);
+  });
+
+  test("a csm may NOT capture a soft-pull consent — that is the key to a credit pull", async () => {
+    stubDb({ session: { role: "csm" }, answers: [[INSERT, { rows: [consentRow()] }]] });
+    const res = mkRes();
+    await handler(mkReq({
+      method: "POST",
+      body: { client_id: CLIENT, kind: "soft_pull_consent", capture_method: "typed", granted_name: "Dana Client" }
+    }), res);
+    assert.equal(res.statusCode, 403,
+      "a csm capturing a soft-pull consent is a way around the narrower role set on the pull endpoint");
+    assert.equal(res.body.code, "role_may_not_capture_this_kind");
+  });
+
   test("the capture role set matches the soft-pull role set exactly", async () => {
     // A wider set here would be a way around the narrower one on the pull
     // endpoint, because a consent is the thing that unlocks the pull.

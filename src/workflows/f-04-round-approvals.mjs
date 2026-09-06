@@ -1,5 +1,5 @@
 // F-04 — Round Approvals (F3/F5/F7...F21).
-// Source: GHL workflow 79c4a7b9-5875-40b6-bfc4-fbbd5f740410 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 79c4a7b9-5875-40b6-bfc4-fbbd5f740410 (the CRM source-of-truth export).
 // Audit fix applied: real ready-to-paste SMS/email copy (workflow-coherence-audit.md),
 // seeded via src/workflows/templates-seed.mjs — not the original blank SMS + subject.
 //

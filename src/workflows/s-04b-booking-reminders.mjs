@@ -1,8 +1,8 @@
 // S-04B — Booking confirmation + reminders.
-// Source: GHL S-04B (confirm / T-24h / T-2h). Owner 2026-08-15: port SMS leg
+// Source: the CRM S-04B (confirm / T-24h / T-2h). Owner 2026-08-15: port SMS leg
 // only — no video links. Stops if the call is already held before a reminder.
 // Owner 2026-08-22: S-04B also owns the single immediate booking-confirm EMAIL
-// (GHL S-04 "Appointment Confirmation"), written fresh — the old copy was
+// (the CRM S-04 "Appointment Confirmation"), written fresh — the old copy was
 // Analyzer-era and was never wired.
 //
 // Trigger: booking.created. Spec 4.10: booking.rescheduled cancels the in-flight

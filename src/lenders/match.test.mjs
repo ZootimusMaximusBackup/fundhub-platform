@@ -4,6 +4,12 @@ import {
   parseBureaus,
   stateEligible,
   resolveMatchState,
+  resolveMatchStates,
+  resolveHomeState,
+  resolveBusinessState,
+  eligibleForAnyState,
+  lenderFootprint,
+  laneForLender,
   resolveCreditProfile,
   lenderMinScore,
   mentionsCreditScore,
@@ -294,6 +300,158 @@ test("a state-refused lender is never also reported as a credit refusal", () => 
   const r = matchLenders({ lenders, clientState: "AZ", credit: CREDIT_588 });
   assert.equal(r.skipped.length, 1);
   assert.equal(r.skipped[0].reason, "state_ineligible");
+});
+
+/* ─────────────── TWO STATES, TWO LANES (owner rule 2026-09-04) ───────────────
+   Lives in Arizona, has a business in Florida. Both lanes open. */
+
+const TWO_LANE_BOOK = [
+  { id: "n", name: "National Bank", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "All States", is_demo: false },
+  { id: "a", name: "Arizona Local", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "AZ", is_demo: false },
+  { id: "f", name: "Florida Local", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "FL", is_demo: false },
+  { id: "t", name: "Texas Local", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "TX", is_demo: false }
+];
+
+test("resolveMatchStates returns BOTH states — a business no longer hides the home state", () => {
+  const r = resolveMatchStates(
+    { home_state: "AZ" },
+    [{ entity_data: { state: "FL" } }]
+  );
+  assert.equal(r.home, "AZ");
+  assert.equal(r.business, "FL");
+  assert.deepEqual(r.states, ["AZ", "FL"]);
+});
+
+test("resolveHomeState falls back to the personal address the soft-pull form stores", () => {
+  assert.equal(resolveHomeState({}, [{ state: "AZ", city: "Phoenix" }]), "AZ");
+  assert.equal(resolveHomeState({}, [{ address_state: "AZ" }]), "AZ");
+  // A person field still wins over the stored address.
+  assert.equal(resolveHomeState({ home_state: "NV" }, [{ state: "AZ" }]), "NV");
+  assert.equal(resolveHomeState({}, []), null, "unknown stays unknown");
+});
+
+test("resolveBusinessState reads the business row, then the old person field", () => {
+  assert.equal(resolveBusinessState({}, [{ entity_data: { state: "FL" } }]), "FL");
+  assert.equal(resolveBusinessState({ business_state: "FL" }, []), "FL");
+  assert.equal(resolveBusinessState({ home_state: "AZ" }, []), null, "home is not business");
+});
+
+test("one state twice is one lane, not two", () => {
+  const r = resolveMatchStates({ home_state: "az" }, [{ entity_data: { state: "AZ" } }]);
+  assert.deepEqual(r.states, ["az"]);
+});
+
+test("Arizona home + Florida business matches national, Arizona AND Florida; Texas is excluded", () => {
+  const r = matchLenders({
+    lenders: TWO_LANE_BOOK,
+    homeState: "AZ",
+    businessState: "FL"
+  });
+  assert.deepEqual(
+    r.matches.map((m) => m.name).sort(),
+    ["Arizona Local", "Florida Local", "National Bank"]
+  );
+  const texas = r.skipped.find((s) => s.name === "Texas Local");
+  assert.equal(texas.reason, "state_ineligible");
+  assert.deepEqual(texas.client_states, ["AZ", "FL"]);
+});
+
+test("the old single-state matcher is what dropped the Arizona bank", () => {
+  // resolveMatchState() still answers with one state, business first. Feed
+  // that one answer to the matcher and the home-state bank disappears — this
+  // is the exact defect, pinned so it cannot come back.
+  const single = resolveMatchState({ home_state: "AZ" }, [{ entity_data: { state: "FL" } }]);
+  assert.equal(single, "FL");
+  const oneLane = matchLenders({ lenders: TWO_LANE_BOOK, clientState: single });
+  assert.equal(
+    oneLane.matches.some((m) => m.name === "Arizona Local"), false,
+    "one state cannot see the home-state bank"
+  );
+});
+
+test("lanes group the way a closer reads them: national, home, business", () => {
+  const r = matchLenders({
+    lenders: TWO_LANE_BOOK,
+    homeState: "AZ",
+    businessState: "FL"
+  });
+  assert.deepEqual(r.lanes.national.map((m) => m.name), ["National Bank"]);
+  assert.equal(r.lanes.home.state, "AZ");
+  assert.deepEqual(r.lanes.home.lenders.map((m) => m.name), ["Arizona Local"]);
+  assert.equal(r.lanes.business.state, "FL");
+  assert.deepEqual(r.lanes.business.lenders.map((m) => m.name), ["Florida Local"]);
+  assert.deepEqual(r.lanes.unclassified, []);
+  assert.deepEqual(r.summary.lane_counts, {
+    national: 1, home: 1, business: 1, unclassified: 0
+  });
+  assert.equal(r.summary.home_state, "AZ");
+  assert.equal(r.summary.business_state, "FL");
+  assert.deepEqual(r.summary.client_states, ["AZ", "FL"]);
+});
+
+test("a lender covering both states is listed once, in the home lane", () => {
+  const both = [{
+    id: "b", name: "AZ+FL Bank", lender_table: "OnlineBizCC", active: true,
+    priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "AZ, FL", is_demo: false
+  }];
+  const r = matchLenders({ lenders: both, homeState: "AZ", businessState: "FL" });
+  assert.equal(r.matches.length, 1);
+  assert.deepEqual(r.lanes.home.lenders.map((m) => m.name), ["AZ+FL Bank"]);
+  assert.deepEqual(r.lanes.business.lenders, []);
+  assert.deepEqual(r.matches[0].covers_states, ["AZ", "FL"]);
+});
+
+test("an unknown state blocks nobody — every lender still matches", () => {
+  const r = matchLenders({ lenders: TWO_LANE_BOOK });
+  assert.equal(r.matches.length, 4, "no known state is not a refusal");
+  assert.deepEqual(r.skipped, []);
+  assert.deepEqual(r.summary.client_states, []);
+  assert.equal(r.summary.home_state, null);
+  assert.equal(r.summary.business_state, null);
+  // Nothing can be attributed to a lane we do not know, and nothing pretends.
+  assert.deepEqual(r.lanes.unclassified.map((m) => m.name).sort(), ["Arizona Local", "Florida Local", "Texas Local"]);
+});
+
+test("half known is half a block: home only still opens the national lane", () => {
+  const r = matchLenders({ lenders: TWO_LANE_BOOK, homeState: "AZ" });
+  assert.deepEqual(
+    r.matches.map((m) => m.name).sort(), ["Arizona Local", "National Bank"]
+  );
+  assert.equal(r.lanes.business.state, null);
+  assert.deepEqual(r.lanes.business.lenders, []);
+});
+
+test("a legacy caller passing one clientState keeps the answer it had", () => {
+  const r = matchLenders({ lenders: TWO_LANE_BOOK, clientState: "AZ" });
+  assert.deepEqual(r.matches.map((m) => m.name).sort(), ["Arizona Local", "National Bank"]);
+  assert.equal(r.summary.client_state, "AZ");
+});
+
+test("eligibleForAnyState is OR across the client's states, and unknown never blocks", () => {
+  assert.equal(eligibleForAnyState("AZ", ["AZ", "FL"]), true);
+  assert.equal(eligibleForAnyState("FL", ["AZ", "FL"]), true);
+  assert.equal(eligibleForAnyState("TX", ["AZ", "FL"]), false);
+  assert.equal(eligibleForAnyState("TX", []), true, "unknown client state does not block");
+  assert.equal(eligibleForAnyState("", ["AZ"]), true, "unknown lender footprint does not block");
+  assert.equal(eligibleForAnyState("All States", ["AZ", "FL"]), true);
+});
+
+test("lenderFootprint separates a stated national from a blank cell", () => {
+  assert.equal(lenderFootprint("All States"), "national");
+  assert.equal(lenderFootprint("*"), "national");
+  assert.equal(lenderFootprint(""), "unknown");
+  assert.equal(lenderFootprint(null), "unknown");
+  assert.equal(lenderFootprint("AZ, FL"), "states");
+});
+
+test("laneForLender puts a blank footprint in the top group, not in a state lane", () => {
+  const s = { home: "AZ", business: "FL" };
+  assert.equal(laneForLender("All States", s), "national");
+  assert.equal(laneForLender("", s), "national");
+  assert.equal(laneForLender("AZ", s), "home");
+  assert.equal(laneForLender("FL", s), "business");
+  assert.equal(laneForLender("AZ, FL", s), "home", "covers both — home lane, once");
+  assert.equal(laneForLender("TX", { home: null, business: null }), "unclassified");
 });
 
 test("isBureauMismatch flags observed outside expected", () => {

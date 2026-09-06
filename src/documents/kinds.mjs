@@ -44,7 +44,6 @@ export const SUBTYPES = Object.freeze({
     "credit_optimization_roadmap",  // Credit Optimization Roadmap
     "funding_snapshot",             // Funding Snapshot
     "bank_lender_match_list",       // Bank and Lender Match List
-    "capital_readiness_summary",    // Capital Readiness Summary (the fifth; F46)
     // Between-rounds / funding mail stack (discriminator = EX|EQ|TU)
     "funding_inquiry_removal",
     "funding_personal_info",
@@ -92,7 +91,6 @@ export const SUBTYPE_TITLES = Object.freeze({
   credit_optimization_roadmap: "Credit Optimization Roadmap",
   funding_snapshot: "Funding Snapshot",
   bank_lender_match_list: "Bank and Lender Match List",
-  capital_readiness_summary: "Capital Readiness Summary",
   funding_inquiry_removal: "Funding Inquiry Removal Letter",
   funding_personal_info: "Funding Personal Info Letter",
   cfpb_complaint: "CFPB Complaint",

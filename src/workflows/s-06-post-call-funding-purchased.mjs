@@ -1,5 +1,5 @@
 // S-06 — Post-Call Outcome: Funding Purchased.
-// Source: GHL-System-Map.md SALES WORKFLOWS section.
+// Source: the CRM system map SALES WORKFLOWS section.
 // Trigger: deposit.paid — the real funding-deposit signal (Chris-confirmed 2026-07-27;
 // sale.closed is the DIY downsell, not funding). Gated on the funding path (outcome_tier
 // already set by decision.rendered, which precedes the deposit in the canonical spine).

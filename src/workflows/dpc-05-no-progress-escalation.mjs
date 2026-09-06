@@ -1,5 +1,5 @@
 // DPC-05 — 72-Hour No-Progress Escalation.
-// Source: GHL-System-Map.md DECISION & PROGRESS CONTROL section.
+// Source: the CRM system map DECISION & PROGRESS CONTROL section.
 // Audit fix applied (workflow-coherence-audit.md: "{{booking_link}} renders blank —
 // use {{contact.calendar_booking_link}}") — real copy below uses the corrected
 // merge field. Seeded via src/workflows/templates-seed.mjs.

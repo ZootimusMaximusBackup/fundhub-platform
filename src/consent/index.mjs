@@ -63,7 +63,15 @@ export class ConsentError extends Error {
  *
  *  A new kind here needs a migration, because the database constrains this
  *  column — see 099's header for why that set is closed rather than free text. */
-export const CONSENT_KINDS = Object.freeze(["soft_pull_consent", "dispute_authorization"]);
+export const CONSENT_KINDS = Object.freeze([
+  "soft_pull_consent",
+  "dispute_authorization",
+  // Added 2026-09-05 with the CSM role. Two, not one: agreeing to be
+  // recorded is not agreeing to be advertised, and a client may grant the
+  // first and refuse the second. db/migrations/291 widens the CHECK.
+  "call_recording",
+  "marketing_use"
+]);
 
 /** How a consent was captured. Closed set of three, CHECKed in 099. */
 export const CAPTURE_METHODS = Object.freeze(["typed", "checkbox", "signature"]);

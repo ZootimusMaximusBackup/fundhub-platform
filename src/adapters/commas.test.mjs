@@ -84,7 +84,7 @@ function fakeDb({ dedupEvents = false, store = [], inbox = [], links = [], clien
         if (clients.some((c) => c.org_id === orgId && String(c.email || "").toLowerCase() === lower)) {
           return { rows: [] };
         }
-        const row = { id: `client-${++clientN}`, org_id: orgId, email: lower, ghl_contact_id: "ghl-x" };
+        const row = { id: `client-${++clientN}`, org_id: orgId, email: lower, ghl_contact_id: "crm-x" };
         clients.push(row);
         return { rows: [{ id: row.id }] };
       }

@@ -1,4 +1,4 @@
-// moveCardToStage — GHL's "Move Opportunity to Stage X" action, ported as a
+// moveCardToStage — the CRM's "Move Opportunity to Stage X" action, ported as a
 // find-or-create against cards/pipelines/pipeline_stages (seeded in
 // db/seed/002_pipelines.sql — pipeline/stage keys must match that seed exactly).
 // Idempotent: find-or-create + a plain UPDATE, safe to run twice.

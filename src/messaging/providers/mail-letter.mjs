@@ -142,8 +142,28 @@ function contactPayload(addr) {
   };
 }
 
+/* preTransmission — EVERY FAILURE OUT OF sendLetter CARRIES THIS, AND IT IS A
+   FACT, NOT A GUESS.
+
+   true  — nothing left this process. Either a check below refused above the
+           postJson call, or the chokepoint itself reported transmitted:false
+           (the dry-run fence held it, no fence was declared, or there is no
+           fetch implementation). Whatever was going to be mailed was not.
+   false — a request was handed to fetch. A 500, a timeout, a dropped socket:
+           the letter may be in PostGrid's queue and may already be printed.
+
+   Callers that must not mail the same letter twice read THIS and not the error
+   text. src/repair/send.mjs used to string-match the message to decide whether
+   to release its claim, so a fence hold — which says outright that nothing was
+   transmitted — kept the claim and permanently destroyed the letter. Handing a
+   fact up the stack is the fix; the string list there survives only as a
+   fallback for callers that drop this field. */
+
 /**
  * Send a dispute letter via PostGrid.
+ *
+ * Every `{ ok: false }` return also carries `preTransmission: boolean` — see
+ * the note above.
  *
  * @param {{
  *   to?: object,
@@ -162,21 +182,21 @@ export async function sendLetter(opts = {}) {
   const env = opts.env || process.env;
   const key = env.POSTGRID_API_KEY;
   if (!key) {
-    return { ok: false, error: "POSTGRID_API_KEY unset — letter not sent" };
+    return { ok: false, preTransmission: true, error: "POSTGRID_API_KEY unset — letter not sent" };
   }
 
   const serviceLevel = normalizeMailServiceLevel(opts.serviceLevel);
   const mailingClass = toPostgridMailingClass(serviceLevel);
   if (/ups|fedex/i.test(mailingClass)) {
-    return { ok: false, error: "private_carrier_forbidden_for_po_box", serviceLevel };
+    return { ok: false, preTransmission: true, error: "private_carrier_forbidden_for_po_box", serviceLevel };
   }
 
   const toAddr = opts.to || bureauMailAddress(opts.bureau);
   if (!toAddr) {
-    return { ok: false, error: "bureau_mail_address_missing", serviceLevel };
+    return { ok: false, preTransmission: true, error: "bureau_mail_address_missing", serviceLevel };
   }
   if (!opts.from) {
-    return { ok: false, error: "return_address_required — use client name and address, not Fundhub", serviceLevel };
+    return { ok: false, preTransmission: true, error: "return_address_required — use client name and address, not Fundhub", serviceLevel };
   }
 
   const body = {
@@ -195,6 +215,7 @@ export async function sendLetter(opts = {}) {
   if (!body.to || !body.from) {
     return {
       ok: false,
+      preTransmission: true,
       error: !body.to ? "bureau_mail_address_incomplete" : "return_address_incomplete",
       serviceLevel
     };
@@ -205,7 +226,7 @@ export async function sendLetter(opts = {}) {
   } else if (opts.html || opts.file) {
     body.html = opts.html || opts.file;
   } else {
-    return { ok: false, error: "pdf_or_html_required", serviceLevel };
+    return { ok: false, preTransmission: true, error: "pdf_or_html_required", serviceLevel };
   }
 
   const base = env.POSTGRID_API_BASE || DEFAULT_BASE;
@@ -222,6 +243,11 @@ export async function sendLetter(opts = {}) {
   if (!res.ok) {
     return {
       ok: false,
+      // The chokepoint knows whether a request was actually handed to fetch.
+      // Carry that up rather than throwing it away and leaving the caller to
+      // guess from the message. Absent (an old stand-in transport in a test),
+      // assume it MAY have gone: never invent permission to re-send.
+      preTransmission: res.transmitted === false,
       error: redact(res.error || res.body?.error?.message || `postgrid_http_${res.status}`),
       serviceLevel,
       mailingClass,

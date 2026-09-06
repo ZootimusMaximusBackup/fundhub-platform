@@ -1,5 +1,5 @@
 // F-05 — Inquiry Cleanup Gate (Between Rounds).
-// Source: GHL workflow 51d0d34f-7750-4f1e-a3e6-8a0bfb0ce282 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 51d0d34f-7750-4f1e-a3e6-8a0bfb0ce282 (the CRM source-of-truth export).
 //
 // Trigger: round.approved (same trigger stage as F-04 — "Stage = Round Approvals").
 // Gate: "new inquiries exist" — checked directly against inquiry_log rows that

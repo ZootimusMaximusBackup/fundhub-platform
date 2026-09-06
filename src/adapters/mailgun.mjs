@@ -1,7 +1,7 @@
 // Mailgun inbound-email adapter — Master Rebuild Spec Phase 1.
 //
 // Receives bank-forwarded emails from Mailgun, classifies them, and emits
-// `mail.response` onto the canonical event bus. No Airtable/GHL side-effects
+// `mail.response` onto the canonical event bus. No the old spreadsheet and CRM side-effects
 // here — handlers registered on `mail.response` perform those reactions.
 //
 // Classification is a direct port of inquiry-removal-ai/src/lib/email-classifier.js
@@ -563,7 +563,7 @@ export async function resolveClientFromRecipient(db, recipient) {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Outbound delivery events — GHL cutover Ticket 2
+// 5. Outbound delivery events — the CRM cutover Ticket 2
 //
 // The return path: what Mailgun tells us about a message WE sent. A different
 // payload shape from the inbound bank email above, and it must never be
@@ -852,7 +852,7 @@ async function resolveClientByEmail(db, recipient) {
 //   → { ok, status, emitted: [{name, id, deduped}], reason? }
 // ---------------------------------------------------------------------------
 export async function handleMailgunWebhook({ db, body, signingKey }) {
-  /* OUTBOUND EVENT ROUTING — GHL cutover Ticket 2.
+  /* OUTBOUND EVENT ROUTING — the CRM cutover Ticket 2.
 
      Mailgun posts two completely different payloads and this adapter used to
      assume every one of them was a forwarded bank email. A delivery receipt has

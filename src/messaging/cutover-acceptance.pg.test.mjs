@@ -87,7 +87,7 @@ const ENV = {
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
-  GHL_RELAY_API_KEY: "ghl-token"
+  GHL_RELAY_API_KEY: "crm-token"
 };
 
 const opts = (fetchImpl, now = MIDDAY) => ({ fetchImpl, env: ENV, now, orgId, limit: 50 });
@@ -98,7 +98,7 @@ before(async () => {
 
   clientId = (await db.query(
     `INSERT INTO clients (org_id, first_name, last_name, email, phone, ghl_contact_id)
-     VALUES ($1,'Acceptance','Case','acceptance-case@example.com','+15550000001','ghlAcceptance')
+     VALUES ($1,'Acceptance','Case','acceptance-case@example.com','+15550000001','crmAcceptance')
      RETURNING id`,
     [orgId]
   )).rows[0].id;

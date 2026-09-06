@@ -45,6 +45,18 @@ import { isSyntheticRow } from "./synthetic.mjs";
    hole to paper over. It is exercised directly by
    src/workflows/subscription-billing-sweeper.test.mjs and, against a real
    Postgres, by src/subscriptions/billing-replay.pg.test.mjs. */
+/* Bumped 68 -> 69 on 2026-09-05. src/workflows/hiring-bench-sweeper.mjs was
+   registered — the first thing in this repo that asks "should we be recruiting"
+   without a human asking it first. src/hiring/bench.mjs had made the always-on
+   argument since 051 and nothing ran it. It writes TASKS ONLY, routed through
+   src/hiring/owner.mjs; it contacts, advances, ranks and rejects nobody, and it
+   posts no job.
+
+   Like the two sweepers and the floor review below it, it is a cron with no
+   event trigger, so no journey can ever reach it and it will always appear in
+   neverFired. It is exercised directly by
+   src/workflows/hiring-bench-sweeper.test.mjs and, against a real Postgres, by
+   src/workflows/hiring-bench-sweeper.pg.test.mjs. */
 /* Bumped 67 -> 68 on 2026-08-31. src/workflows/partner-production-floor.mjs (the
    only filter on the partner base — ten funding clients a month, W0-decisions.md
    and W1-money-model.md §6) was registered; this pin moves with it.
@@ -54,7 +66,14 @@ import { isSyntheticRow } from "./synthetic.mjs";
    the correct outcome for a scheduled job rather than a coverage hole. It is
    exercised directly by src/workflows/partner-production-floor.test.mjs and,
    against a real Postgres, by src/partners/floors.pg.test.mjs. */
-const REGISTERED = 68;
+/* 70 since the hiring outreach cadence (2026-09-05) was registered — candidate
+   follow-up on a 30-minute clock, the first thing here that ever contacts a
+   candidate.
+
+   It is a cron with no event trigger, so no journey can ever reach it and it
+   will always appear in neverFired — the same note the sweepers above carry,
+   and the correct outcome for a scheduled job rather than a coverage hole. */
+const REGISTERED = 70;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

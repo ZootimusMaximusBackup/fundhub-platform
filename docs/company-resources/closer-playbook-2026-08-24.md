@@ -516,7 +516,7 @@ If they paid: they move to the next seat (funding advisor or repair). You are no
 
 **[Fundhub]**
 
-- The **setter is AI**. You do not hire a setter. You do not reroute books in GoHighLevel the way Alec did.
+- The **setter is AI**. You do not hire a setter. You do not reroute books in the CRM the way Alec did.
 - You **may** still send a short, human note after a book, the night before, and the morning of. One job: they show up, they know who you are, they have the time right.
 - You do **not** auto-cancel people for “wants under $50K.” That rule existed because Alec charged $8,000+. **[Alec — do not use]**
 - You do **not** auto-cancel on “bankruptcy” unless a manager has given you that rule in writing. The scrape is not our policy. **[Alec — not Fundhub law]**

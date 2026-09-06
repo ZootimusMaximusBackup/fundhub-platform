@@ -135,6 +135,9 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .status-line .sb-main{font-size:var(--fs-title);font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums}
 .status-line .sb-main b{font-family:var(--mono)}
 .prog-card .stepper{padding:18px 22px 16px}
+.prog-link{padding:0 22px 18px}
+.prog-link a{font-size:var(--fs-body);font-weight:500;color:inherit;text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px}
+.prog-link a:hover{border-color:currentColor}
 .score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
 @media(min-width:640px){.score-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .score-grid .sb-eyebrow{font-family:var(--mono);font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:4px}
@@ -503,17 +506,59 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <div class="sb-eyebrow" id="sb-eyebrow">Current Status</div>
           <div class="sb-main" id="sb-main">Your funding file is open. Amounts show here when a round is approved on your file.</div>
         </div>
-        <div class="stepper" id="stepper">
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Booked</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Diagnostic Paid</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Docs Received</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Started</div></div>
-          <div class="step done"><span class="line"></span><div class="dot">✓</div><div class="lbl">Round Submitted</div></div>
-          <div class="step current" data-step="approved"><span class="line"></span><div class="dot">●</div><div class="lbl">Round Approved</div></div>
-          <div class="step future" data-step="funded"><span class="line"></span><div class="dot">6</div><div class="lbl">Round Funded</div></div>
-          <div class="step future" data-step="final"><span class="line"></span><div class="dot">7</div><div class="lbl">File Finalized</div></div>
-        </div>
+        <!-- THE POST-CALL STEPPER IS RETIRED. It is not corrected, and here is
+             why it could not be.
+
+             It was EIGHT HARDCODED TICKS and nothing painted it. Five were
+             stamped `done`, and the sixth — Round Approved — was stamped
+             `current`, on every file, forever. So a client whose round had not
+             been submitted, let alone approved, was shown five completed steps
+             and told an approval was in progress. Nothing in this screen's
+             payload said any of that was true.
+
+             The sister stepper above (#stepper-pre) shows what an honest one
+             costs: paintPreStepper() moves exactly TWO steps, because Booked and
+             Diagnostic Paid are the only two this payload can prove, and it
+             leaves the other six alone rather than guessing. There is no fact
+             here for docs received, round started, submitted, approved, funded
+             or finalized — so a corrected version of this stepper would be eight
+             grey circles that never move, which tells a client less than the
+             status line above it already does.
+
+             The status line stays; it is painted from real data. The link below
+             goes to the page that DOES know where a file stands.
+
+             The labels were also the FUNDING journey. This card is inside
+             .funding-only, so body.no-funding hides it from a client with no
+             funding entitlement — but that gate is about what they bought, not
+             about which journey they are on, and it never made the eight ticks
+             true for the funding clients who did see them.
+
+             THE LINK ITSELF IS NOT IN THIS CARD, and that is deliberate. See
+             the block immediately after this section. -->
       </section>
+
+      <!-- ══ 2b · THE LINK TO THE PROGRESS PAGE ═══════════════════════════
+           OUTSIDE .funding-only ON PURPOSE. It used to sit inside the funding
+           card above, and body starts with class="no-funding" (:386), so every
+           client who had not bought funding — which includes every repair
+           client, the people the progress page is mostly FOR — could not see
+           the only link to it that exists anywhere.
+
+           IT ALSO HAD TO SURVIVE THE LINK GATE IN shell.js. progress.html is a
+           customer page at the SITE ROOT, like contract.html and
+           portal-login.html; it is not an /app/ screen, has no sidebar row and
+           is in no role's tab list. screenOf() used to call it a screen anyway,
+           which meant gateLinks() hid whatever card it was in AND the
+           capture-phase click interceptor cancelled the click — measured in
+           Chromium on 2026-09-05: pressing it did nothing, the address bar
+           never changed. screenOf() now returns "" for an absolute href that is
+           not under /app/, so both gates leave this link alone.
+           e2e/progress-page.spec.mjs clicks it and asserts the address bar
+           moved; a visibility check cannot see that failure. -->
+      <div class="prog-link" id="prog-link">
+        <a href="/progress.html">See exactly where your file stands →</a>
+      </div>
 
       <section class="card" id="sb-scores-card" hidden>
         <div class="card-title">Your credit scores</div>
@@ -543,14 +588,14 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <div class="promo-bd">
           <div class="promo-main">
             <div class="eyebrow">CP-00 <span class="sep">/</span> RECOMMENDED NEXT</div>
-            <div class="pt" id="promo-title">Credit repair, done-for-you</div>
-            <div class="pd">Your round funded. If you want repair work before the next round, talk to your
+            <div class="pt" id="promo-title">Capital readiness, done-for-you</div>
+            <div class="pd">Your round funded. If you want capital-readiness work before the next round, talk to your
               advisor — the price is set on the call.</div>
             <div class="pwhy"><span class="pulse"></span> Next step after funding — not included yet</div>
           </div>
           <div class="promo-side">
             <div class="promo-price">On your call<span class="pu">ask your advisor</span></div>
-            <button class="btn-book" type="button" data-book="Credit repair, done-for-you">Ask about this</button>
+            <button class="btn-book" type="button" data-book="Capital readiness, done-for-you">Ask about this</button>
             <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY" hidden>Unlock now</button>
           </div>
         </div>
@@ -563,7 +608,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <div id="doc-agent-note" class="action-sub" hidden></div>
         <div id="upload-doors" class="upload-doors">
           <div class="upload-door door-funding" data-kind="client_upload">
-            <div class="door-title">Funding documents</div>
+            <div class="door-title">ID and personal documents</div>
             <select class="door-type" data-subtype aria-label="What kind of document is this?">
               <option value="">What is this? (helps us file it)</option>
               <option value="id_document">Photo ID</option>
@@ -575,7 +620,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
               <option value="additional_fraud_docs">Fraud / identity theft papers</option>
               <option value="other">Something else</option>
             </select>
-            <button class="upload-btn" type="button" data-upload-btn>Upload funding docs</button>
+            <button class="upload-btn" type="button" data-upload-btn>Upload documents</button>
             <input type="file" data-file-input multiple hidden accept=".pdf,.png,.jpg,.jpeg,.heic">
           </div>
           <div class="upload-door door-inquiry" data-kind="inquiry_doc">
@@ -654,23 +699,23 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 
           <article class="tile locked" data-tile="REPAIR_DFY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
-            <div class="tt">Credit repair, done-for-you</div>
-            <div class="td">Repair work run for you. Pricing is set on your call.</div>
+            <div class="tt">Capital readiness, done-for-you</div>
+            <div class="td">We run your capital-readiness work for you. Pricing is set on your call.</div>
             <div class="tp">On your call</div>
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY" hidden>Unlock</button>
-              <button class="btn-advise" type="button" data-book="Credit repair, done-for-you">Talk to an advisor</button>
+              <button class="btn-advise" type="button" data-book="Capital readiness, done-for-you">Talk to an advisor</button>
             </div>
           </article>
 
           <article class="tile locked" data-tile="REPAIR_TRIAL">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
-            <div class="tt">Repair test run (first round, done for you)</div>
+            <div class="tt">Capital readiness test run (first round, done for you)</div>
             <div class="td">One round to start. Pricing is set on your call.</div>
             <div class="tp">On your call</div>
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="REPAIR_TRIAL" hidden>Unlock</button>
-              <button class="btn-advise" type="button" data-book="Repair test run (first round, done for you)">Talk to an advisor</button>
+              <button class="btn-advise" type="button" data-book="Capital readiness test run (first round, done for you)">Talk to an advisor</button>
             </div>
           </article>
 
@@ -903,12 +948,12 @@ var PRODUCTS = {
     desc:'We run the funding round with you. Plus 10% of what funds, due when the money lands. Pricing is set on your call.'
   },
   REPAIR_DFY:{
-    name:'Credit repair, done-for-you',
+    name:'Capital readiness, done-for-you',
     price:'On your call',
-    desc:'Repair work run for you. Pricing is set on your call.'
+    desc:'We run your capital-readiness work for you. Pricing is set on your call.'
   },
   REPAIR_TRIAL:{
-    name:'Repair test run (first round, done for you)',
+    name:'Capital readiness test run (first round, done for you)',
     price:'On your call',
     desc:'One round to start. Pricing is set on your call.'
   },
@@ -1325,11 +1370,18 @@ document.addEventListener("DOMContentLoaded", async function () {
     inquiryCaseOpen = !!open;
     applyDoors();
   }
+  /* Mirrors activeUploadDoors() in src/repair/upload-doors.mjs — keep the two
+     in step. The `funding` door is the IDENTITY door: it is the only one that
+     carries photo ID and proof of address, and a repair client cannot start
+     their program without sending both. Gating it on funding-snapshot alone
+     left every repair-trial client (metro2-letter-pack) with nowhere to put
+     their ID. No price belongs in this file, not even inside a comment —
+     src/http/crm-html.test.mjs greps the whole page for one. */
   function doorsFromEntitlementCodes(codes) {
     var set={}; (codes||[]).forEach(function(c){set[String(c||"").toLowerCase()]=1;});
     var funding=!!set["funding-snapshot"], repair=!!set["metro2-letter-pack"];
     var inquiry=funding || !!set["credit-analysis-report"];
-    return { funding: funding, inquiry: inquiry, bureau_response: repair };
+    return { funding: funding || repair, inquiry: inquiry, bureau_response: repair };
   }
 
   function setOwnVisible(hasOwn) {
@@ -2258,6 +2310,137 @@ document.addEventListener("DOMContentLoaded", async function () {
      tells a signed-in client to sign in — the wording never arrives and the
      signature can never be recorded. */
   whenClientId(load);
+})();
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE ACTIVITY TAB, WHICH HAS NEVER SHOWN ANYTHING.
+
+   #tp-act ships one row reading "No activity recorded on this file yet" and no
+   code in this file has ever touched it. Every other tab on this card has a
+   painter — paintMessages, paintPays, paintDocs — and this one was left out, so
+   the sentence was not an empty state, it was the only state.
+
+   IT IS PAINTED FROM /api/read/client-progress, whose `timeline` field is
+   described in docs/workflows/portal-progress-contract.md. Those rows come from
+   repair_decision_log through TIMELINE_SQL and are already rendered into plain
+   English for a client by timelineLine() (src/repair/lens.mjs:206) — written,
+   tested, and staff-only until now. Nothing new is being written here; a read
+   that existed is being pointed at a tab that existed.
+
+   THE ENDPOINT MAY NOT BE THERE YET. It is built by a separate lane against the
+   same written contract, and until that lane merges this read 404s.
+
+   WHAT A FAILED READ SAYS, AND WHY IT CHANGED. It used to leave the shipped
+   sentence — "No activity recorded on this file yet." — standing. That sentence
+   is a STATEMENT ABOUT THE FILE, and a read that never answered proves nothing
+   about the file. A client with a year of history would have been told nothing
+   had happened. So a failed read now says the read failed, in those words, and
+   the "nothing yet" sentence is kept for the one case that earns it: the
+   endpoint answered, and answered with an empty list.
+
+   IT DOES NOT CLAIM A COMPLAINT WAS LODGED. The text comes from the server and
+   is printed as given; this block adds no words of its own. That matters because
+   nothing in this system records whether a CFPB or state attorney general
+   complaint was ever actually submitted (src/metro2/letters/catalog.mjs:57-65).
+
+   SEPARATE FROM THE BLOCK ABOVE ON PURPOSE. That one goes through FHData and the
+   screen's own client-id resolution; this one asks a single endpoint that pins a
+   client to their own file, so it needs neither and cannot break either.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+
+  function escape2(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function when(iso) {
+    if (!iso) return null;
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    return d.getUTCDate() + " " + MONTHS[d.getUTCMonth()];
+  }
+
+  /* ONE DATE PER ROW. timeline[].text ALREADY BEGINS WITH A DATE — timelineLine()
+     (src/repair/lens.mjs:206) returns "Mar 3 · letters mailed to all three
+     bureaus", formatted in America/Los_Angeles — and this tab was printing its
+     own UTC date beside it. Two dates on every row, disagreeing by a day
+     whenever the event was stored near midnight (the endpoint lane watched `at`
+     say 2026-03-04T00:00:00.000Z against a text of "Mar 3").
+
+     `at` owns the date, because it is the authoritative field and because the
+     progress page at /progress.html formats the same event from the same field.
+     The duplicate is stripped off the words. If the prefix is not in the shape
+     expected, or `at` is unusable, this adds no date of its own and the string
+     keeps whatever it carries — so exactly one date reaches the client either
+     way. Kept deliberately identical to timelineParts() in public/progress.html;
+     these two files share no script and each carries its own copy. */
+  var TL_DATE_PREFIX = /^[A-Za-z]{3,9}\.?\s+\d{1,2}\s*·\s*/;
+
+  function parts(e) {
+    e = e || {};
+    var raw = String(e.text == null ? "" : e.text);
+    var d = when(e.at);
+    if (d && TL_DATE_PREFIX.test(raw)) {
+      var words = raw.replace(TL_DATE_PREFIX, "");
+      if (words) return { when: d, words: words };
+    }
+    return { when: TL_DATE_PREFIX.test(raw) ? null : d, words: raw };
+  }
+
+  function token() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+
+  function row(dateText, words) {
+    return '<div class="timeline-item"><span class="td">' + escape2(dateText || "—") +
+           "</span><span>" + escape2(words) + "</span></div>";
+  }
+
+  function paint(rows) {
+    var pane = document.getElementById("tp-act");
+    if (!pane) return;
+    if (!rows.length) return;               // answered, and empty: the shipped sentence is true
+    pane.innerHTML = rows.slice(0, 40).map(function (e) {
+      var p = parts(e);
+      return row(p.when, p.words);
+    }).join("");
+  }
+
+  /* THE READ DID NOT ANSWER. Say that, and only that. This must never leave
+     "No activity recorded on this file yet." on screen, because that sentence
+     claims something about the file that a failed read cannot know. */
+  function unavailable() {
+    var pane = document.getElementById("tp-act");
+    if (!pane) return;
+    pane.innerHTML = row(null,
+      "We could not load your activity just now. Nothing is wrong with your file — " +
+      "this list did not load. Please refresh in a few minutes.");
+  }
+
+  function load() {
+    var t = token();
+    if (!t) return;                          // signed out: not this block's message to write
+    fetch("/api/read/client-progress", {
+      headers: { authorization: "Bearer " + t, accept: "application/json" },
+      credentials: "same-origin"
+    }).then(function (r) {
+      return r.ok ? r.json() : null;
+    }).then(function (d) {
+      if (!d || d.ok !== true || !Array.isArray(d.timeline)) return unavailable();
+      paint(d.timeline);
+    }).catch(function () { unavailable(); });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", load);
+  } else {
+    load();
+  }
 })();
 </script>
 </body>
