@@ -1037,3 +1037,46 @@ Chris asks for it.
 added to it, because a report about ads is worth nothing until there are enough ads to
 report on. These become the next batch, and the order is: show the report that already
 exists, then map the two ad ids together, then measure the survey steps.
+
+---
+
+# Data sources Chris is providing — 2026-09-06
+
+Two arriving, both aimed at the page-level blind spot named above.
+
+**Microsoft Clarity.** Session recordings and heatmaps. Fills the biggest gap in the
+funnel: the homepage survey has 8 steps and phones home once, at the end, so a person who
+quits on step 6 is invisible today. Clarity makes that watchable.
+
+- The snippet goes on the pages this repo owns: the homepage survey, `/start`,
+  `/optimize`, education, affiliate and white-label.
+- Field masking is set on by default. That is the shipped default, not a discussion.
+- The paid funnel pages are not in this repo, so their snippet is pasted into the
+  ClickFunnels editor by Chris or Paul.
+- Its export interface gives aggregate numbers only. The rich part is the recordings, and
+  those are watched by a person. Do not promise an agent will summarise a video.
+
+**ClickFunnels analytics interface.** Chris is providing access. This is the more valuable
+of the two, because it closes a real hole: `/watch`, `/apply`, `/book` and `/thank-you`
+are hosted at ClickFunnels and this repo currently sees nothing that happens on them. With
+it, page-level drop-off on the paid funnel becomes readable, and it can be joined to the
+existing ad attribution by the same tags that already ride the URL.
+
+**Ordering, owner-set:** add both now so data accumulates, and wire an agent to read them
+only after a few weeks of traffic. A recommendation built on four sessions is noise.
+
+**Not added to Tuesday.** Tuesday builds the generator and nothing else. These are the
+batch after, and they arrive in this order: show the report that already exists, map the
+Meta ad id to Chris's ad number, add Clarity, then read ClickFunnels.
+
+## Compliance, owner-set 2026-09-06
+
+Chris: **"i dont give a fuck on compliance."** Logged as an owner decision and not
+re-raised. Per the unnumbered "Owner decisions are final" section of `CLAUDE.md`, what
+stops is the advice, not the marker: the `COMPLIANCE REVIEW REQUIRED` label stays on the
+changes section 7 lists, because Chris asked for that label himself. No agent adds a
+recommendation to get counsel, and no summary carries a rider suggesting he revisit it.
+
+The compliance screener in `src/compliance/screen.mjs` is untouched. It was never a
+recommendation; it is shipped code that already runs, and nobody asked for it to be
+removed.
