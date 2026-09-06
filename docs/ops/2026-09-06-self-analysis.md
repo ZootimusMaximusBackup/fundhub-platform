@@ -714,3 +714,53 @@ that every line in it is there on merit.
 **The rule underneath, worth keeping:** a voice file is seeded from work that won, not
 from work that exists. Volume is what made the model sound like a robot in the first
 place.
+
+---
+
+# Alignment check — 2026-09-06
+
+Chris: **"THIS WILL EVENTUALLY BE A FUNDHUB FEATURE AND PAGE."**
+
+Agreed, and it is further along than "eventually". The feature exists.
+
+## What is already built
+
+- **The screen.** `public/app/creative-factory.html`, 2,484 lines.
+- **Seven routed endpoints**, `netlify/functions/api.mjs` lines 705-711:
+  `creative/generate`, `library`, `brand-kits`, `jobs`, `approvals`, `actions`, `run`.
+- **Five tables**, `db/migrations/045_creative_factory.sql`: `brand_kits`,
+  `brand_kit_sources`, `creative_assets`, `generation_jobs`, `generation_job_assets`.
+  `creative_assets` already carries `kind` (static / video / copy), `format`,
+  `duration_sec`, `compliance_state`, `blocked_reasons`, `ai_generated`,
+  `synthetic_performer`, `created_by_agent_id` and `parent_asset_id` for resize lineage.
+- **A working generate-and-screen path.** `src/brand/copy-generate.mjs` already calls a
+  model through `src/agents/model.mjs` with five hard rules in the system prompt, then
+  passes the result through `src/compliance/screen.mjs`. That is the same shape the ad
+  generator needs.
+
+## The one design decision that makes both versions the same build
+
+**The generator must never read a file directly.** It takes two things as input: the
+rules text, and the voice pairs. A thin loader supplies them.
+
+- **Today, for Chris:** the loader reads `docs/ads/RULES.md` and `docs/ads/VOICE.md`.
+  Simple, no schema, no migration, works in a chat session.
+- **Later, as a tenant feature:** the loader reads a `brand_kits` row and a voice table
+  instead. One file changes. The generator, the checker and the format logic do not.
+
+This costs nothing extra now and it is the difference between shipping the product half
+and rewriting it. It also satisfies `CLAUDE.md` section 3a in spirit: the shape is right
+even though the storage starts flat.
+
+## No new page
+
+The surface exists. Chris's standing rule is that no page, screen, tab or menu row gets
+added unless he asks for it. The ad generator belongs inside Creative Factory.
+
+## Not verified, and worth an hour before assuming
+
+**Whether `creative-factory.html` actually works end to end**, or is a shell over wiring.
+The file exists, the routes exist and the tables exist. That was all that was checked.
+Three separate claims today that something was "not built" turned out to be wrong, so the
+opposite mistake is just as available: a screen that is present is not a screen that
+works. A read-only pass over that one journey answers it.
