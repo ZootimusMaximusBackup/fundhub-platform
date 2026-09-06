@@ -145,6 +145,9 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .status-line .sb-eyebrow{font-family:var(--mono);font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.14em;color:var(--dark-text-dim);margin-bottom:6px}
 .status-line .sb-main{font-size:var(--fs-title);font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums}
 .status-line .sb-main b{font-family:var(--mono)}
+/* The pre-qual amount. Everything .sb-main actually paints, minus the
+   font-size, which UI-STANDARDS §12.7 discards inside .shell anyway. */
+.status-line .sb-amount{font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums}
 .prog-card .stepper{padding:18px 22px 16px}
 .prog-link{padding:0 22px 18px}
 .prog-link a{font-size:var(--fs-body);font-weight:500;color:inherit;text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px}
@@ -160,6 +163,10 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .own .on-t{font-weight:700;font-size:var(--fs-body)}
 .own .on-d{font-size:var(--fs-caption);color:var(--text-faint)}
 .own-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+/* Same pill as .doc-row .dr-s, which is scoped to that row and so never
+   reached this one. No font-size: UI-STANDARDS §12.7 — .shell throws one away,
+   and this screen spends no escape hatch on a badge. */
+.own-actions .dr-s{font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:9px;white-space:nowrap;text-decoration:none}
 .dl-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;font-size:var(--fs-body);font-weight:700;color:var(--blue);transition:background .12s,border-color .12s}
 .dl-btn:hover{background:var(--blue-bg);border-color:var(--blue-line)}
 .own-foot{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);font-size:var(--fs-caption);color:var(--text-faint)}
@@ -525,6 +532,30 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <div class="sb-eyebrow" id="sb-eyebrow">Current Status</div>
           <div class="sb-main" id="sb-main">Your funding file is open. Amounts show here when a round is approved on your file.</div>
         </div>
+        <!-- THE FUNDING NUMBER, ON THE CARD THE FUNDING CLIENT ACTUALLY SEES.
+             Walk finding 16, 2026-09-06: a client with a $212,000 estimate on
+             her file read "Your funding file is open." and no number anywhere.
+             The amount was already in this page's own portal-summary payload
+             and already had a row to sit in — #sb-prequal-row — but that row
+             lives inside the .precall-only card above, and a funding client is
+             exactly the person for whom .precall-only is hidden. So the number
+             existed, was fetched, and could never paint.
+
+             This is the same row, in the card that stays visible after the
+             entitlement lands. Both are filled from the SAME field,
+             `prequal_display`, by paintPrequal() below — one value, two homes,
+             never two readings. It is hidden until that field has a value; a
+             missing estimate must not become a dash a client reads as zero. -->
+        <div class="status-line" id="sb-prequal-row-f" hidden style="margin-top:14px">
+          <div class="sb-eyebrow">Pre-qualified for</div>
+          <!-- .sb-amount, NOT .sb-main, and the difference is not cosmetic.
+               `.prog-card.funding-only .sb-main` is how two tests identify the
+               ONE status sentence in this card; a second .sb-main inside it
+               makes that selector ambiguous and both tests fail on the match,
+               not on the meaning. Same rendered result — see the rule beside
+               .sb-main, whose font-size the shell throws away either way. -->
+          <div class="sb-amount" id="sb-prequal-amt-f">—</div>
+        </div>
         <!-- THE POST-CALL STEPPER IS RETIRED. It is not corrected, and here is
              why it could not be.
 
@@ -670,7 +701,10 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <section class="card" aria-labelledby="own-t">
         <div class="sec-hd">
           <div class="card-title" id="own-t">What You Own</div>
-          <span class="sec-note">Yours to keep — always here, always downloadable</span>
+          <!-- "always downloadable" was a promise this list could not keep —
+               walk finding 19. It now says what is true of every row: you keep
+               it, and it is here to download the moment it is built. -->
+          <span class="sec-note">Yours to keep — each one downloads here as soon as it is ready</span>
         </div>
         <div id="own-list">
         </div>
@@ -690,7 +724,10 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <section class="card" aria-labelledby="unlock-t">
         <div class="sec-hd">
           <div class="card-title" id="unlock-t">Unlock More</div>
-          <span class="sec-note">Soft pull is $32. Everything else — book a call for pricing</span>
+          <!-- The soft-pull half of this line is repainted away once the pull
+               has run — see repaintTiles(). Quoting a price for something she
+               has already had is the same mistake as locking it. -->
+          <span class="sec-note" id="unlock-note">Soft pull is $32. Everything else — book a call for pricing</span>
         </div>
         <div class="tiles" id="tiles">
 
@@ -871,7 +908,11 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <section class="card book-card" aria-labelledby="book-t">
           <div class="card-title" id="book-t">Want More Funding?</div>
           <div class="book-copy">
-            <span class="sales-tag">Sales conversation</span>
+            <!-- OWNER-SET 2026-09-06 (TODO 12a). This label read "SALES
+                 CONVERSATION" on the client's own portal, which announced the
+                 pitch before the card got a word in. The body copy below
+                 already says exactly what the call is and how long it takes. -->
+            <span class="sales-tag">Talk it through</span>
             <div class="bd">20 minutes on what a bigger approval would take, and what it would cost.</div>
           </div>
           <button class="btn-book" type="button" data-book="More funding — strategy call"
@@ -908,7 +949,13 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
     <span class="pulse"></span>
     <span>fundhub client portal</span>
     <span>·</span>
-    <span>questions? text us anytime</span>
+    <!-- OWNER-SET 2026-09-06 (TODO 12b). This said "questions? text us
+         anytime". Outbound text messages are OFF, and an inbound text is
+         filed as an event that waits for a human to open Messaging — so the
+         footer invited every client to do the one thing nothing answers.
+         Chat is the contact route that works, and it is the same one the
+         advisor card points at (see setAdvisor below). -->
+    <span>questions? use the chat button in the corner</span>
   </footer>
 
 </div>
@@ -1352,14 +1399,34 @@ document.addEventListener("DOMContentLoaded", async function () {
   };
   /* Only these two open a course accordion. Other included tiles keep View status. */
   var COURSE_TILES = { UWIQ_DELIVERABLES: 1, FUNDING_MASTERY: 1 };
+  /* `subtype` is the documents-table name for the same thing the entitlement
+     code names — src/documents/kinds.mjs SUBTYPES.deliverable. It is what turns
+     "you own a Funding Snapshot" into "here is your Funding Snapshot", because
+     portal-summary already returns the client's real documents with a signed
+     download link on each one. Keep these five in step with that list. */
   var OWN_CODES = [
-    { code: "credit-analysis-report", name: "Credit Analysis Report" },
-    { code: "credit-optimization-roadmap", name: "Credit Optimization Roadmap" },
-    { code: "funding-snapshot", name: "Funding Snapshot" },
-    { code: "bank-lender-match-list", name: "Bank and Lender Match List" },
-    { code: "metro2-letter-pack", name: "Metro 2 Dispute Letter Pack" }
+    { code: "credit-analysis-report", name: "Credit Analysis Report", subtype: "credit_analysis_report" },
+    { code: "credit-optimization-roadmap", name: "Credit Optimization Roadmap", subtype: "credit_optimization_roadmap" },
+    { code: "funding-snapshot", name: "Funding Snapshot", subtype: "funding_snapshot" },
+    { code: "bank-lender-match-list", name: "Bank and Lender Match List", subtype: "bank_lender_match_list" },
+    { code: "metro2-letter-pack", name: "Metro 2 Dispute Letter Pack", subtype: "metro2_dispute_letter_pack" }
   ];
   var FUNDING_CODE = "funding-snapshot";
+
+  /* ── WHAT EACH READ LEARNED ────────────────────────────────────────────────
+     Entitlements and portal-summary are two independent requests and either can
+     land first. Three things on this screen need an answer from BOTH of them —
+     which downloads exist (entitlement + document), whether the soft-pull tile
+     is still an offer (entitlement + pull actually run), and which identity
+     documents are still missing (open case + documents on file). So each read
+     records what it learned and asks for a repaint, instead of painting once
+     and being overwritten by whichever answer arrived second. */
+  var entActive = null;      // entitlements: active code -> row
+  var softPullDone = false;  // portal-summary: the pull has really run
+  var docsOnFile = [];       // portal-summary: the client's real documents
+  // Whether an inquiry-removal case is open is already tracked, one screenful
+  // down, as `inquiryCaseOpen` — the doors read it and so does the note below.
+
   var STAFF_ROLES = {
     owner: 1, admin: 1, sales_manager: 1, closer: 1,
     funding_advisor: 1, inquiry_specialist: 1, setter: 1
@@ -1392,6 +1459,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     /* The whole "Send a file" card hides with the last door — an empty card
        titled "Use the door that matches what you have" is worse than none. */
     document.body.classList.toggle("no-docs", !(f||i||b));
+    /* Which doors are open decides which one the missing-document note may
+       point at, so the note is redrawn every time they change. */
+    paintDocNote();
   }
   function setUploadDoors(active) {
     doorLanes = {
@@ -1429,9 +1499,36 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.body.classList.toggle("no-own", !hasOwn);
   }
 
+  /* THE NEWEST REAL DOCUMENT BEHIND A DELIVERABLE, or null.
+     portal-summary's `documents` are already ordered newest first and already
+     carry `download` — a signed, client-authorized link, or null when the
+     document has expired. Matching is on `subtype`, which is the documents
+     table's own name for the thing (src/documents/kinds.mjs), not on the title
+     a human typed. */
+  function ownedDocument(subtype) {
+    for (var i = 0; i < docsOnFile.length; i++) {
+      var d = docsOnFile[i];
+      if (d && d.subtype === subtype) return d;
+    }
+    return null;
+  }
+
+  /* WHAT YOU OWN — and whether you can actually have it.
+     Walk finding 19, 2026-09-06: this list promised "always downloadable" and
+     then offered a Funding Snapshot with no link and no button, under a line
+     telling the client to ask an advisor — on a page whose advisor card says
+     nobody is assigned. Three dead ends in one row.
+
+     So each row now says which of the two true states it is in:
+       · the document exists and we can hand it over  → a Download link
+       · it is owned but not built yet                → said plainly, no chase
+     Neither row asks the client to go and find a person. Nothing invents a
+     link: a deliverable with no document, or a document whose signed link has
+     expired, falls to the second state rather than rendering a control that
+     cannot finish. */
   function paintOwn(active) {
     var list = document.getElementById("own-list");
-    if (!list) return;
+    if (!list || !active) return;
     var rows = [];
     for (var i = 0; i < OWN_CODES.length; i++) {
       if (active[OWN_CODES[i].code]) rows.push(OWN_CODES[i]);
@@ -1441,14 +1538,99 @@ document.addEventListener("DOMContentLoaded", async function () {
       return;
     }
     setOwnVisible(true);
-    /* Portal summary returns client-safe file metadata, not a download URL.
-       Keep the honest On file state until a client-authorized signed download
-       exists; never render a control that cannot finish. */
     list.innerHTML = rows.map(function (r) {
-      return '<div class="own own-real"><div><div class="on-t">' + r.name +
-        '</div><div class="on-d">On your account · ask your advisor in chat for a copy</div></div>' +
-        '<div class="own-actions"><span class="dr-s">On file</span></div></div>';
+      var doc = ownedDocument(r.subtype);
+      var url = doc && doc.download && doc.download.url;
+      if (url) {
+        return '<div class="own own-real"><div><div class="on-t">' + esc(r.name) +
+          '</div><div class="on-d">Ready. It is yours to keep.</div></div>' +
+          '<div class="own-actions"><a class="dr-s have" href="' + esc(url) +
+          '" target="_blank" rel="noopener">Download</a></div></div>';
+      }
+      return '<div class="own own-real"><div><div class="on-t">' + esc(r.name) +
+        '</div><div class="on-d">Part of your package. It is not built yet — ' +
+        'it appears here, ready to download, as soon as it is.</div></div>' +
+        '<div class="own-actions"><span class="dr-s want">Not ready yet</span></div></div>';
     }).join("");
+  }
+
+  /* ══ NAME THE DOCUMENT THAT IS MISSING ═══════════════════════════════════
+     Walk finding 20, 2026-09-06: two document requests had gone out to this
+     client and the portal never said WHICH document. She got three generic
+     boxes and a dropdown of every document type we have ever asked anybody
+     for. The slot for naming it — #doc-agent-note — was built and only ever
+     filled in one narrow case: a file she had already sent that the checking
+     agent turned down.
+
+     THE ANSWER WAS ALREADY IN THIS PAGE'S OWN PAYLOAD. An open inquiry-removal
+     case needs an identity packet, and portal-summary returns both the open
+     case (`inquiry_open`) and every document on her file with its `kind` and
+     `subtype`. So which items are outstanding is a subtraction this page can
+     already do, with no new endpoint and no new field.
+
+     THE RULE IS MIRRORED FROM checkDocPacket() in src/inquiry-ops/doc-gate.mjs
+     — keep the two in step. Same three kinds count (a client upload, an
+     authorization, or a file sent through the inquiry door), and proof of
+     address is satisfied by a bank statement, exactly as it is there.
+
+     TWO DELIBERATE NARROWINGS, so this never asks for something wrong:
+       · The SSN card is not mentioned. doc-gate only requires it when the
+         dispute touches SSN data, and this page cannot see that.
+       · The signed authorization is not mentioned. It is not something she can
+         put through an upload door, and pointing her at one would send her
+         somewhere that cannot finish the job.
+     Both stay silent rather than guess. If the only outstanding item is one of
+     those two, this note does not appear — the same as before this change.
+
+     A REAL MESSAGE ALWAYS WINS. doc_agent_message is a specific human-readable
+     reason a specific file was turned down ("Need a clearer ID photo"). That
+     beats a computed list every time, so it is checked first. */
+  var PACKET_KINDS = { client_upload: 1, authorization: 1, inquiry_doc: 1 };
+
+  function missingPacketItems() {
+    var seen = {};
+    for (var i = 0; i < docsOnFile.length; i++) {
+      var d = docsOnFile[i] || {};
+      if (PACKET_KINDS[d.kind] && d.subtype) seen[d.subtype] = 1;
+    }
+    var out = [];
+    if (!seen.id_document) out.push("a photo ID");
+    if (!seen.proof_of_address && !seen.bank_statement) {
+      out.push("proof of your address — a bank statement counts");
+    }
+    return out;
+  }
+
+  /* The message, once it is known, kept so the note can be repainted.
+     Which door to point at depends on the entitlements read and the words
+     depend on the summary read, and those two race — so this is stored and the
+     note is drawn again whenever either answer changes. Sending somebody to a
+     door that is not on their screen is worse than not naming one. */
+  var docAgentMessage = null;
+
+  function paintDocNote(agentMessage) {
+    if (agentMessage !== undefined) docAgentMessage = agentMessage || null;
+    var note = document.getElementById("doc-agent-note");
+    if (!note) return;
+    if (docAgentMessage) {
+      note.hidden = false;
+      note.textContent = docAgentMessage;
+      return;
+    }
+    var missing = inquiryCaseOpen ? missingPacketItems() : [];
+    if (!missing.length) {
+      note.hidden = true;
+      note.textContent = "";
+      return;
+    }
+    var list = missing.length === 1
+      ? missing[0]
+      : missing.slice(0, -1).join(", ") + " and " + missing[missing.length - 1];
+    var door = doorLanes.funding
+      ? "the ID and personal documents door below"
+      : "the inquiry documents door below";
+    note.hidden = false;
+    note.textContent = "We still need " + list + ". Send them through " + door + ".";
   }
 
   function setCourseOpen(tile, open) {
@@ -1475,23 +1657,25 @@ document.addEventListener("DOMContentLoaded", async function () {
      Academy saw their own product priced as a thing to ask an advisor about.
      Walk finding F37, 2026-09-03. The original price is kept on the element so
      the tile can go back to being an upsell if a grant is ever revoked. */
-  function setTilePrice(tile, included) {
+  function setTilePrice(tile, included, priceWords) {
     var el = tile.querySelector(".tp");
     if (!el) return;
     if (!el.hasAttribute("data-price")) el.setAttribute("data-price", el.textContent);
-    el.textContent = included ? "Included — you own this" : el.getAttribute("data-price");
+    el.textContent = included
+      ? (priceWords || "Included — you own this")
+      : el.getAttribute("data-price");
   }
 
-  function paintTile(tile, included) {
+  function paintTile(tile, included, words) {
     var lockrow = tile.querySelector(".lockrow");
     var unlockBtn = tile.querySelector("[data-unlock], [data-status], [data-course-toggle]");
     var key = tile.getAttribute("data-tile");
     var canBuy = !!(key && PRODUCTS[key] && PRODUCTS[key].checkoutUrl);
     var isCourse = !!(key && COURSE_TILES[key]);
-    setTilePrice(tile, included);
+    setTilePrice(tile, included, words && words.price);
     if (included) {
       tile.classList.remove("locked");
-      if (lockrow) lockrow.textContent = isCourse ? "Unlocked" : "Included";
+      if (lockrow) lockrow.textContent = (words && words.badge) || (isCourse ? "Unlocked" : "Included");
       if (unlockBtn && key) {
         if (isCourse) {
           unlockBtn.textContent = tile.classList.contains("is-open") ? "Close" : "Open";
@@ -1531,6 +1715,56 @@ document.addEventListener("DOMContentLoaded", async function () {
         unlockBtn.hidden = !canBuy;
       }
     }
+  }
+
+  /* ══ NOTHING SHE ALREADY HAS IS EVER SOLD TO HER AGAIN ═══════════════════
+     Walk finding 18, 2026-09-06: the portal offered a $32 soft-pull assessment,
+     locked, with an Unlock button — a few inches under the three credit scores
+     that very pull produced. It is the worst thing this screen can do: it tells
+     a paying client we do not know what we have already done for her.
+
+     WHY THE TILE DID NOT KNOW. It was painted from ENTITLEMENTS alone, and the
+     soft pull grants none of the five deliverable codes on its own. The fact
+     that the pull ran lives somewhere else entirely — portal-summary's
+     `soft_pull_complete`, which is true when the payment flag is set, when the
+     analyzer finished, OR when a real crs_results row exists. That last one is
+     the same row the scores above are drawn from, so if she can see a score,
+     this tile can see the pull.
+
+     Owner rule: anything already owned must never appear as locked. So a
+     completed pull unlocks the tile whether or not an entitlement was written,
+     and it says "Done" rather than "Included", because "included" would be a
+     claim about her package and "done" is a claim about her file — and it is
+     the file we can prove.
+
+     REPAINTABLE ON PURPOSE. Entitlements and portal-summary race, so this runs
+     again whenever either answer changes; painting once would let the loser of
+     the race decide. */
+  function repaintTiles() {
+    var out = { unlocked: 0, locked: 0 };
+    if (!entActive) return out;
+    var tiles = document.querySelectorAll("[data-tile]");
+    for (var i = 0; i < tiles.length; i++) {
+      var key = tiles[i].getAttribute("data-tile");
+      var code = MAP[key];
+      var owned = !!(code && entActive[code]);
+      var words = null;
+      if (key === "SOFT_PULL" && !owned && softPullDone) {
+        owned = true;
+        words = { badge: "Done", price: "Already run — this is where your scores came from" };
+      }
+      paintTile(tiles[i], owned, words);
+      if (owned) out.unlocked++; else out.locked++;
+    }
+    if (entActive["metro2-letter-pack"]) {
+      var trial = document.querySelector('[data-tile="REPAIR_TRIAL"]');
+      if (trial) trial.classList.add("hidden");
+    }
+    if (softPullDone) {
+      var note = document.getElementById("unlock-note");
+      if (note) note.textContent = "Everything here — book a call for pricing";
+    }
+    return out;
   }
 
   document.addEventListener("click", function (e) {
@@ -1586,6 +1820,31 @@ document.addEventListener("DOMContentLoaded", async function () {
     setText("sb-score-eq", scoreText(scores.equifax));
     setText("sb-score-tu", scoreText(scores.transunion));
     setText("sb-score-ex-biz", scoreText(scores.experian_business));
+  }
+  /* ONE AMOUNT, BOTH CARDS (walk finding 16, 2026-09-06).
+     The pre-call card and the funding card each carry a "Pre-qualified for"
+     row, and only one of the two is ever on screen — .precall-only and
+     .funding-only are opposites. Painting only the pre-call one meant every
+     funding client, the people the number matters most to, never saw it.
+
+     BOTH ROWS READ THE SAME `prequal_display` STRING the server already
+     formatted, so the two cards cannot disagree and neither can disagree with
+     the Client Control Panel, which reads the same field off the same client
+     record. Nothing is formatted here.
+
+     NO AMOUNT MEANS THE ROWS STAY HIDDEN. An estimate we do not have must not
+     appear as a dash — a dash in a money row reads as zero. */
+  function paintPrequal(amt) {
+    var pairs = [
+      ["sb-prequal-row", "sb-prequal-amt"],
+      ["sb-prequal-row-f", "sb-prequal-amt-f"]
+    ];
+    for (var i = 0; i < pairs.length; i++) {
+      var row = document.getElementById(pairs[i][0]);
+      var el = document.getElementById(pairs[i][1]);
+      if (row) row.hidden = !amt;
+      if (el && amt) el.textContent = amt;
+    }
   }
   /* WHERE THIS CLIENT ACTUALLY IS, from /api/read/portal-summary.
      This screen used to work its whole stage out from one entitlement code, so a
@@ -1948,6 +2207,31 @@ document.addEventListener("DOMContentLoaded", async function () {
     return;
   }
 
+  /* ══ THE PROGRESS LINK HAS TO SAY WHOSE FILE IT MEANS ════════════════════
+     Walk finding 15, 2026-09-06: "See exactly where your file stands" opened a
+     page that said "We could not load your file just now. Please refresh in a
+     moment." and never recovered. It is the customer's main "where am I" link
+     and it was dead for everyone on staff.
+
+     WHY. /progress.html sends whatever token is in localStorage under
+     `fh_token`, and staff and clients share that key (public/login.html:230 and
+     public/portal-login.html:147 both write it). For a CLIENT the server pins
+     the file to the session and the page works. For STAFF the server has no way
+     to know which client is meant, so it answers 400 client_id_required — and
+     the page lumped that in with every other failure and told them to refresh.
+     No amount of refreshing supplies a client id.
+
+     So a staff viewer's link carries the id they are already looking at. A
+     client's link is left exactly as it ships: a client principal is pinned to
+     their own file and the server never reads client_id from them, so adding
+     one would be noise on the URL that changes nothing. */
+  if (STAFF_ROLES[roleHint()]) {
+    var progA = document.querySelector("#prog-link a");
+    if (progA) {
+      progA.setAttribute("href", "/progress.html?client_id=" + encodeURIComponent(clientId));
+    }
+  }
+
   setFundingVisible(false);
   /* Doors stay hidden via body.no-upload-doors until entitlements paint.
      Do not force no-docs here — that hid Send a file even after unlock. */
@@ -1993,10 +2277,19 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   FHData.wire(FHData.portalSummary(clientId ? { client_id: clientId } : {}),
     "portal-summary", function (data) {
-      if (!STAFF_ROLES[roleHint()]) paintDocs(data.documents || []);
+      docsOnFile = Array.isArray(data.documents) ? data.documents : [];
+      softPullDone = data.soft_pull_complete === true;
+      if (!STAFF_ROLES[roleHint()]) paintDocs(docsOnFile);
       setInquiryCaseOpen(data.inquiry_open);
       stage = data.stage || null;
       paintStage();
+      /* THIS READ CHANGES THREE THINGS THE OTHER READ ALREADY PAINTED.
+         Which deliverables can be handed over, whether the soft-pull tile is
+         still an offer, and which identity documents are still missing. If
+         entitlements landed first, repaint with what we now know; if they land
+         second, their own handler runs these. Either order, same screen. */
+      paintOwn(entActive);
+      repaintTiles();
       setAdvisorFromFile(data.advisor || null);
       /* THE DISPUTE CARD OPENS FOR REPAIR AND FOR THE FUNDING OFFER, AND FOR
          NOBODY ELSE (F35, owner-set 2026-09-03). Absent or false keeps it shut,
@@ -2011,22 +2304,11 @@ document.addEventListener("DOMContentLoaded", async function () {
          and api/consent/capture.mjs refuses a signature by the same rule, so
          this class only hides a form that would be refused anyway. */
       document.body.classList.toggle("no-dispute-consent", data.dispute_consent !== true);
-      var note = document.getElementById("doc-agent-note");
-      if (note) {
-        var msg = data.doc_agent_message;
-        if (msg) { note.hidden = false; note.textContent = msg; }
-        else { note.hidden = true; note.textContent = ""; }
-      }
+      paintDocNote(data.doc_agent_message);
       var amt = data.prequal_display;
-      var row = document.getElementById("sb-prequal-row");
-      var el = document.getElementById("sb-prequal-amt");
       paintPortalScores(data.scores || {});
-      if (!amt) {
-        if (row) row.hidden = true;
-        return "live pre-qual · none yet";
-      }
-      if (row) row.hidden = false;
-      if (el) el.textContent = amt;
+      paintPrequal(amt);
+      if (!amt) return "live pre-qual · none yet";
       var preMain = document.getElementById("sb-pre-main");
       if (preMain) {
         preMain.textContent = "Your soft-pull assessment is in. You're pre-qualified for approximately " + amt + ".";
@@ -2044,6 +2326,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       var active = {};
       rows.forEach(function (e) { if (e.active) active[e.entitlement_code] = e; });
 
+      entActive = active;
       setFundingVisible(!!active[FUNDING_CODE]);
       setUploadDoors(doorsFromEntitlementCodes(Object.keys(active)));
       paintOwn(active);
@@ -2054,30 +2337,9 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
       }
 
-      var unlocked = 0, locked = 0;
-      var tiles = document.querySelectorAll("[data-tile]");
-      for (var i = 0; i < tiles.length; i++) {
-        var key = tiles[i].getAttribute("data-tile");
-        var code = MAP[key];
-        if (!code) {
-          paintTile(tiles[i], false);
-          locked++;
-          continue;
-        }
-        if (active[code]) {
-          paintTile(tiles[i], true);
-          unlocked++;
-        } else {
-          paintTile(tiles[i], false);
-          locked++;
-        }
-      }
-      if (active["metro2-letter-pack"]) {
-        var trial = document.querySelector('[data-tile="REPAIR_TRIAL"]');
-        if (trial) trial.classList.add("hidden");
-      }
-      if (!unlocked && !locked) return null;
-      return "live entitlements · " + unlocked + " unlocked · " + locked + " locked";
+      var counts = repaintTiles();
+      if (!counts.unlocked && !counts.locked) return null;
+      return "live entitlements · " + counts.unlocked + " unlocked · " + counts.locked + " locked";
     });
 });
 </script>
@@ -2460,13 +2722,35 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (!pane) return;
     pane.innerHTML = row(null,
       "We could not load your activity just now. Nothing is wrong with your file — " +
-      "this list did not load. Please refresh in a few minutes.");
+      "this list did not load. Try again in a few minutes, and if it is still empty " +
+      "say so in chat and we will look.");
+  }
+
+  /* ══ WHOSE ACTIVITY ══════════════════════════════════════════════════════
+     Walk finding 17, 2026-09-06: this tab said "We could not load your activity
+     just now." permanently. Same cause as the dead progress page beside it —
+     /api/read/client-progress pins a CLIENT to their own file and requires
+     STAFF to name a client, and this read named nobody. So for a client it
+     worked and for anyone on staff it was a permanent failure message sitting
+     on the client's own screen.
+
+     Staff are the only ones who reach this page with an id in the address bar,
+     and the server ignores the parameter for a client principal, so passing it
+     when it is there is both necessary and harmless. */
+  function progressPath() {
+    var id = "";
+    try {
+      var q = new URLSearchParams(location.search);
+      id = q.get("id") || q.get("client_id") || "";
+    } catch (e) { id = ""; }
+    return "/api/read/client-progress" +
+      (id ? "?client_id=" + encodeURIComponent(id) : "");
   }
 
   function load() {
     var t = token();
     if (!t) return;                          // signed out: not this block's message to write
-    fetch("/api/read/client-progress", {
+    fetch(progressPath(), {
       headers: { authorization: "Bearer " + t, accept: "application/json" },
       credentials: "same-origin"
     }).then(function (r) {

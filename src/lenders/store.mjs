@@ -454,10 +454,20 @@ export async function matchForClient(db, {
     [orgId, clientId, ["Queued", "Scheduled", "In Progress", "Escalated", "Blocked"]]
   );
 
+  /* IS THERE A COMPANY? Owner rule 2026-09-06: no business on file, no
+     business credit cards. Two things count as a business being on file — a
+     row in `businesses`, or a business state written on the client record.
+     Either one is enough; requiring both would hold back cards from a client
+     who does have a company we only half recorded. This is a real false, not
+     an unknown: the query above returns every business row this client has,
+     so an empty result plus no business state IS "no company". */
+  const businessOnFile = bizR.rows.length > 0 || !!business;
+
   return matchLenders({
     lenders,
     homeState: home,
     businessState: business,
+    businessOnFile,
     clientStates: states,
     inquiryLog: inq.rows,
     cases: cases.rows,
