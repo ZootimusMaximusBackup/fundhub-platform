@@ -196,6 +196,7 @@ import hiringDecisions from "../../api/hiring/decisions.mjs";
 import hiringFunnel from "../../api/hiring/funnel.mjs";
 import hiringBench from "../../api/hiring/bench.mjs";
 import hiringDecide from "../../api/hiring/decide.mjs";
+import hiringApply from "../../api/hiring/apply.mjs";
 import financeSoftPull from "../../api/finance/soft-pull.mjs";
 import financeCrsPull from "../../api/finance/crs-pull.mjs";
 import bankingRevoke from "../../api/banking/revoke.mjs";
@@ -727,6 +728,14 @@ export const ROUTES = {
   "hiring/funnel": hiringFunnel,
   "hiring/bench": hiringBench,
   "hiring/decide": hiringDecide,
+  /* THE ONE EXCEPTION TO THE GATE ABOVE, and it is deliberate. public/careers.html
+     is a page for strangers, so /api/hiring/apply is UNAUTHENTICATED: GET lists
+     the open reqs (key, name and the human-written brief — nothing else from
+     hiring_roles), POST takes one application and calls pipeline.mjs's apply().
+     It cannot score, advance or reject anything. Read the header of
+     api/hiring/apply.mjs before adding anything beside it — a second public file
+     under this prefix needs the same argument made again, in writing. */
+  "hiring/apply": hiringApply,
 
   // Finance. The one-tap soft pull for a client already on file. Routed in the
   // same commit that adds the handler, deliberately: this is the third time a
