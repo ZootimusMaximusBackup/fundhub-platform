@@ -66,7 +66,19 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 69 since the hiring bench sweeper (2026-09-05) — the first thing in this
+  /* 70 since the hiring outreach cadence (2026-09-05) — the first thing in this
+     platform that ever contacts a CANDIDATE. Until the same day's public apply
+     door, nothing did: candidate_notified_at was read by two endpoints and
+     written by none, and a rejection only ever queued a to-do for a person to
+     write the email themselves. An applicant who hears nothing is how a bench
+     goes cold, so the follow-up runs on a clock rather than on somebody
+     remembering.
+     Registering it sends nothing by itself. sendTemplated writes a 'queued' row
+     and stops; src/messaging/dispatch.mjs hands those to a provider under
+     messaging_settings.outbound_enabled per company and the MESSAGING_DRY_RUN
+     fence, neither of which this touches. The cadence exits on a reply, a
+     booking and an opt-out — a sequence with no exit is a complaint generator.
+     Was 69 since the hiring bench sweeper (2026-09-05) — the first thing in this
      repo that asks "should we be recruiting" without a human asking it first.
      src/hiring/bench.mjs has made the always-on argument since 051 and nothing
      ran it: its only door was GET /api/hiring/bench, a read-only screen
@@ -112,7 +124,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 69, `expected 69, got ${functions.length}`);
+  assert.equal(functions.length, 70, `expected 70, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);

@@ -15,6 +15,7 @@ import { contractChaser } from './contract-chaser.mjs';
 import { dailyPulse } from './daily-pulse.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
+import { hiringOutreachCadence } from './hiring-outreach-cadence.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { partnerProductionFloorReview } from './partner-production-floor.mjs';
@@ -132,6 +133,20 @@ export const functions = [
      POST /api/ops/hire-closer where a human presses it. The sweeper's header
      carries the full reasoning. */
   hiringBenchSweeper,
+
+  /* Candidate follow-up, every 30 minutes. Registered 2026-09-05, the same day
+     the public apply door opened — an applicant who hears nothing is the whole
+     reason a bench goes cold, and until now nothing in this platform ever
+     contacted a candidate at all.
+
+     REGISTERING IT IS NOT THE SEND SWITCH. sendTemplated only writes a
+     'queued' row; src/messaging/dispatch.mjs hands those to a provider, and it
+     is governed by messaging_settings.outbound_enabled per company plus the
+     MESSAGING_DRY_RUN fence, both of which sit underneath this and neither of
+     which this changes. The cadence also stops itself on a reply, on a booking
+     and on an opt-out — a follow-up sequence with no exit is a complaint
+     generator, so the exits are tested rather than assumed. */
+  hiringOutreachCadence,
   meetTranscriptSweeper,
 
   /* THE RECURRING BILLING RAIL. Registered 2026-08-31. Until it, nothing in

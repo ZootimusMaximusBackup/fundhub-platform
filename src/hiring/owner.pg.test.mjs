@@ -12,6 +12,7 @@ import { test, before, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { ownerFor, assigneeFor, briefFor, reviseBrief } from "./owner.mjs";
+import { checkBench } from "./bench.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const TAG = "ownertest";
@@ -186,7 +187,52 @@ describe("hiring req ownership", { skip: !HAVE_DB ? "no DATABASE_URL" : false },
     assert.ok(rows.every((r) => /no role brief written for/.test(r.detail)));
   });
 
+  // ------------------------------------------------- the rule, end to end
+
+  test("a bench alert goes to the sales manager, not to the admin pile", async () => {
+    // The whole point of 294. checkBench used to hardcode assigneeRole 'admin'
+    // for every role, so a short closer bench and a short bookkeeper bench
+    // landed in the same queue and neither named an owner.
+    const out = await checkBench(db, { orgId: org, today: "2026-09-05" });
+
+    const sales = out.shortfalls.filter(
+      (s) => ["closer", "setter", "sales_coordinator", "csm"].includes(s.role_key));
+    assert.ok(sales.length > 0, "the seeded sales benches start empty, so they are short");
+
+    for (const s of sales) {
+      assert.equal(s.assignee_role, "sales_manager",
+        `${s.role_key} should route to the sales manager, not admin`);
+    }
+
+    // The other half of the rule: this file's own fixture req has no sales
+    // lane, so it must land on the owner. Both branches in one pass is the
+    // point — a routing rule that only ever produces one answer is not routing.
+    const fallback = out.shortfalls.find((s) => s.role_key === `${TAG}_default`);
+    assert.ok(fallback, "the no-rule fixture req should also be short");
+    assert.equal(fallback.assignee_role, "owner");
+
+    /* And the tasks really carry it — not just the return value.
+       Checked against each role's OWN owner_role rather than a hardcoded list
+       of role names: the rule is "the task matches the column", and pinning it
+       to today's role names would fail the moment someone adds a req. */
+    const { rows } = await db.query(
+      `SELECT t.body, t.assignee_role, r.key, r.owner_role
+         FROM tasks t
+         JOIN hiring_roles r
+           ON t.body = 'hiring:bench:' || r.key || ':2026-09-05'
+        WHERE t.source_workflow = 'hiring-bench-monitor'
+          AND r.org_id = $1`, [org]);
+    assert.ok(rows.length > 0, "a task should have been written");
+    for (const row of rows) {
+      assert.equal(row.assignee_role, row.owner_role,
+        `${row.key} routed to ${row.assignee_role} but its rule says ${row.owner_role}`);
+    }
+  });
+
   async function cleanup() {
+    await db.query(
+      `DELETE FROM tasks WHERE source_workflow = 'hiring-bench-monitor'
+        AND body LIKE '%2026-09-05'`);
     await db.query(
       `DELETE FROM hiring_roles WHERE org_id = $1 AND key LIKE $2`, [org, `${TAG}%`]);
     await db.query(
