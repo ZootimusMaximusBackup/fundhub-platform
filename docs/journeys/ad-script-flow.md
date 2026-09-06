@@ -41,8 +41,7 @@ flowchart TD
     H -->|Chris cuts it| J["archived_at set<br/>the row is never deleted"]
     I -->|Chris rewrites a line first| K["the pair is added to<br/>docs/ads/VOICE.md"]
     K --> I
-    I -->|Chris films it| L["filmed_at set<br/>THIS IS THE NEW COLUMN"]
-    L -->|Paul builds the ad in Meta| M["ads row<br/>approval_state = draft"]
+    I -->|Chris films it, Paul builds it in Meta| M["ads row<br/>asset_id points back at this script<br/>approval_state = draft"]
     M --> N["approval_state = live<br/>spend starts"]
     N -->|utm_content carries the ad id| O["client_ad_attribution<br/>joins the ad to a booked call"]
 ```
@@ -62,8 +61,8 @@ flowchart TD
 | `blocked` | `pending` | Chris rewrites the offending line | a person |
 | `passed` | `approved` | Chris keeps it | **a person only.** Nothing in the generate path can approve |
 | `passed` | archived | Chris cuts it | `api/creative/actions.mjs` |
-| `approved` | filmed | Chris films it | **a person only** |
-| filmed | an `ads` row | Paul builds it in the ad account | outside this system |
+| `approved` | filmed | Chris films it | **a person only.** Not recorded, and does not need to be |
+| filmed | an `ads` row with `asset_id` set | Paul builds it in the ad account | outside this system. This row IS the proof it was filmed |
 
 ---
 
@@ -83,38 +82,46 @@ what was not saved.
 name contains a forbidden substring, which is why `has_storage_key` is eaten today.
 `copy_text` contains none of them.
 
-**2. `filmed_at` on `creative_assets`.** Nullable timestamp. Null means not filmed.
+**2. There is no second column. `filmed_at` was specced here and has been dropped.**
 
-This is the one genuine gap on the page. `approved` means Chris kept the words.
-`ads.approval_state` starts when the ad exists in the ad account. **Nothing today records
-the step in between: that it was shot.** Chris films once a week, about six creatives,
-going to ten. No file in this repo carries a shoot date, which is why the audit could name
-five filmed assets and could not produce a filming rate.
+Chris's call, 2026-09-06: "seems a bit overengineering." He was right, and the code agrees.
 
-Follows the shape already used at `046_ad_platforms.sql:191`, where `approved_at` is tied
-to its state by a CHECK.
+`db/migrations/046_ad_platforms.sql:291` already carries `asset_id uuid REFERENCES
+creative_assets(id) ON DELETE RESTRICT` on the `ads` table, with an index at line 318. So
+the moment a script becomes an ad in the ad account, that row points straight back at the
+script it came from.
+
+**Which means "was it filmed" is already answerable and does not need recording.** A script
+whose `creative_assets.id` appears as an `asset_id` on a live ad was filmed. That is the
+proof, and it arrives on its own through the Meta sync. A hand-set `filmed_at` would be a
+second, weaker copy of a fact the system already gets for free, and it would rot the first
+week somebody forgot to tick it.
+
+The transition table above keeps the filmed hop, because it is a real thing that happens.
+It is just not a column.
 
 **Nothing else changes.** No new table, no new state value, no new enum. Both columns are
 nullable, so every row that exists today stays valid.
 
 ---
 
-## The one decision that is mine, not the code's
+## Teleprompter and editing apps — checked, and the answer is no integration
 
-**Should filming be tracked here at all?**
+Chris asked whether this should talk to BigVu, CapCut, or another teleprompter app.
 
-Chris's system walkthroughs stay manual by his own decision, and filming is the most
-manual thing he does. `filmed_at` is specced above because without it "which scripts turned
-into ads" has no answer inside FundHub, and every performance question downstream needs it.
+**Nothing in this repo mentions any of them**, and none is needed. CapCut has no public
+developer interface to build against. Whether BigVu offers one was not verified and should
+not be assumed.
 
-But it is a column a person has to remember to set. If nobody sets it, it is a lie by
-omission dressed as data.
+**A teleprompter takes pasted text, so the integration is the format.** Look at
+`docs/ads/CONTROLS.md` — Ad 1 is plain paragraphs, spoken as written, with no camera
+directions mixed into the words. That already pastes into any teleprompter as-is.
 
-**Specced as: one column, nullable, set from the library screen with a single click on an
-approved script.** If Chris would rather keep the shoot list on paper, delete `filmed_at`
-and this page stays true; only the filmed hop disappears.
-
----
+**So the rule for the generator is a formatting rule, not a build:** the words Chris reads
+to camera stay clean and unbroken, and everything that is not spoken — the runtime band,
+the outfit and location note, the origin_angle tag — sits in its own block, clearly
+separated, never inside the script body. That costs nothing and it is the whole of what an
+integration would have bought.
 
 ## What this page does NOT cover
 
