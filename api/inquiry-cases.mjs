@@ -238,10 +238,14 @@ export default async function handler(req, res, deps = {}) {
         return res.status(200).json({ ok: true, ...result });
       } catch (err) {
         if (err instanceof SendGateError) {
+          /* `missing` names the papers still outstanding, so the screen can say
+             WHICH ones rather than the word "incomplete". Null on every refusal
+             that is not the document gate. */
           return res.status(err.status || 400).json({
             ok: false,
             error: err.code || "send_gate",
-            message: err.message
+            message: err.message,
+            ...(err.missing ? { missing: err.missing } : {})
           });
         }
         throw err;

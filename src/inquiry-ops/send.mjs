@@ -11,12 +11,33 @@ import { moveCardToStage } from "../workflows/cards.mjs";
 import { scheduleFromDelivery } from "./call-scheduler.mjs";
 
 export class SendGateError extends Error {
-  constructor(message, { status = 400, code = "send_gate" } = {}) {
+  constructor(message, { status = 400, code = "send_gate", missing = null } = {}) {
     super(message);
     this.name = "SendGateError";
     this.status = status;
     this.code = code;
+    /* What is still needed, when the refusal is the doc gate. Null on every
+       other refusal. The screen prints these words; "incomplete" on its own
+       tells the person nothing they can act on. */
+    this.missing = missing;
   }
+}
+
+/** Plain words for the papers still missing. Never a code, never a dash. */
+const DOC_WORDS = Object.freeze({
+  id_document: "government photo identification",
+  proof_of_address: "proof of address",
+  authorization: "signed authorization",
+  ssn_card: "Social Security card"
+});
+
+export function missingPacketMessage(missing) {
+  const words = (Array.isArray(missing) ? missing : [])
+    .filter(Boolean)
+    .map((m) => DOC_WORDS[m] || String(m).replace(/_/g, " "));
+  if (!words.length) return "Identity packet incomplete — send disabled.";
+  return "Send disabled — this client's identity packet is still missing: "
+    + words.join(", ") + ".";
 }
 
 /**
@@ -150,13 +171,22 @@ export async function sendCase(db, {
     }
   }
 
-  if (caseRow.case_status === "Blocked") {
-    throw new SendGateError("identity packet incomplete — send disabled", {
-      status: 409,
-      code: "docs_blocked"
-    });
-  }
+  /* ── BLOCKED IS A READING, NOT A SENTENCE ────────────────────────────────
+     Until 2026-09-06 this refused on `case_status === "Blocked"` BEFORE it
+     looked at the packet, and nothing else in the send path ever wrote the
+     status back down. So a case blocked once was blocked forever: an agent
+     watched the "still needed" list fall from three items to one as the client
+     uploaded, and Send stayed grey. The only unblock in the codebase is
+     src/handlers/inquiry-docs.mjs, which runs off a `docs.received` event — and
+     a signature captured through api/consent/capture.mjs raises no such event,
+     so the paper that arrived by the signing door never reached it at all.
 
+     Blocked only ever MEANS "the packet was short the last time somebody
+     looked" — src/handlers/inquiry-gate.mjs writes it from exactly this same
+     check, and nothing else writes it. So the packet is what decides, and the
+     stored status is refreshed to match whichever way it comes out. Short
+     packet still refuses, and still refuses with 409 docs_blocked; the
+     difference is that a complete one is now allowed to clear the block. */
   const packet = await evaluateDocGate(db, {
     orgId,
     clientId: caseRow.client_id,
@@ -169,10 +199,22 @@ export async function sendCase(db, {
         WHERE id = $1`,
       [caseId]
     );
-    throw new SendGateError("identity packet incomplete — send disabled", {
-      status: 409,
-      code: "docs_blocked"
-    });
+    throw new SendGateError(
+      missingPacketMessage(packet.missing),
+      { status: 409, code: "docs_blocked", missing: packet.missing }
+    );
+  }
+  if (caseRow.case_status === "Blocked") {
+    /* The papers are all in. Lift the block in its own statement so the trail
+       shows the case unblocking, rather than jumping straight to In Progress
+       from a status that no longer described it. */
+    await db.query(
+      `UPDATE inquiry_removal_cases
+          SET case_status = 'Queued'::inquiry_case_status, updated_at = now()
+        WHERE id = $1
+          AND case_status = 'Blocked'::inquiry_case_status`,
+      [caseId]
+    );
   }
 
   const inquiryIds = await ensureCaseInquiries(db, caseRow);

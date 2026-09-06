@@ -193,18 +193,113 @@ describe("purchase-routing", { skip: !HAS_DB ? "no DATABASE_URL" : false }, () =
     assert.ok(!row.custom_fields?.round_hold_reason, "a funding-only buyer was put on hold");
   });
 
-  test("bought repair: the card lands on optimization / intake and no funding card exists", async () => {
+  /* WHERE A REPAIR CARD ACTUALLY COMES TO REST, since 2026-09-06.
+     placeCard still drops it on intake. Enrolment then runs, and enrolment asks
+     the client for their identity documents (repair.docs.needed), which walks
+     the card on to awaiting_documents. A seeded client has no documents on
+     file, so this is deterministic — and it is the whole point of the fix: a
+     repair card parked on intake with nothing behind it was the defect. */
+  const ENROLLED_STAGE = "awaiting_documents";
+
+  async function repairProgramRow(clientId) {
+    const r = await db.query(
+      `SELECT program, rounds_cap, price_total, status FROM repair_programs
+        WHERE org_id = $1 AND client_id = $2`,
+      [org, clientId]
+    );
+    return r.rows[0] || null;
+  }
+
+  test("bought repair: the card lands on the optimization board and no funding card exists", async () => {
     const c = await seedClient("repair", { outcomeTier: "REPAIR_ONLY" });
     await emit(db, "sale.closed", { email: c.email, product: "repair", amount: 1000 }, {
       orgId: org, clientId: c.id, idempotencyKey: `${MARK}:repair:1`
     });
 
-    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), REPAIR_STAGE);
+    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), ENROLLED_STAGE);
     assert.equal(await cardStage(c.id, FUNDING_PIPELINE), null, "a repair-only buyer got a funding card");
 
     // REPAIR_ONLY is not a funding path, so no funding is owed and no tag is set.
     const row = await clientRow(c.id);
     assert.ok(!(row.tags || []).includes(FUNDING_TAG), "a repair-only buyer was tagged as owing funding");
+  });
+
+  /* ── the repair program itself ─────────────────────────────────────────────
+     Before 2026-09-06 a repair purchase placed a card and stopped. The $1,000
+     buyer measured on production had no program, no rounds, no document
+     request, no email and no task, while a $200 trial buyer who happened to be
+     enrolled by hand had all of them. These pin the automatic version. */
+
+  test("the six-round bundle enrols on six rounds, not the button's two", async () => {
+    const c = await seedClient("bundlerounds", { outcomeTier: "REPAIR_ONLY" });
+    await emit(db, "sale.closed", { email: c.email, product: "repair", amount: 1000 }, {
+      orgId: org, clientId: c.id, idempotencyKey: `${MARK}:bundlerounds:1`
+    });
+
+    const prog = await repairProgramRow(c.id);
+    assert.ok(prog, "a paid repair client was left with no program at all");
+    assert.equal(prog.program, "full");
+    assert.equal(prog.rounds_cap, 6, "the full program was capped at the trial's rounds");
+    assert.equal(Number(prog.price_total), 1000, "the price was not the price they agreed");
+    assert.equal(prog.status, "active");
+  });
+
+  test("enrolling tells somebody to do something", async () => {
+    const c = await seedClient("repairtasks", { outcomeTier: "REPAIR_ONLY" });
+    await emit(db, "sale.closed", { email: c.email, product: "repair", amount: 1000 }, {
+      orgId: org, clientId: c.id, idempotencyKey: `${MARK}:repairtasks:1`
+    });
+
+    const t = await db.query(
+      `SELECT title, assignee_role, due_at FROM tasks
+        WHERE client_id = $1 AND source_workflow = 'repair-enrollment' ORDER BY title`,
+      [c.id]
+    );
+    assert.equal(t.rows.length, 2, "a paid repair client had nobody told to do anything");
+    for (const row of t.rows) {
+      assert.equal(row.assignee_role, "inquiry_specialist");
+      assert.ok(row.due_at, "a repair task with no date is a task nobody chases");
+    }
+  });
+
+  test("one repair purchase grants the letter pack once, not twice", async () => {
+    const c = await seedClient("onegrant", { outcomeTier: "REPAIR_ONLY" });
+    await emit(db, "sale.closed", { email: c.email, product: "repair", amount: 1000 }, {
+      orgId: org, clientId: c.id, idempotencyKey: `${MARK}:onegrant:1`
+    });
+
+    const g = await db.query(
+      `SELECT count(*)::int AS n FROM v_client_entitlements
+        WHERE client_id = $1 AND entitlement_code = 'metro2-letter-pack' AND active`,
+      [c.id]
+    );
+    assert.equal(g.rows[0].n, 1,
+      "the payment and the enrolment behind it each granted the letter pack");
+  });
+
+  test("a replayed payment does not open a second program or a second set of tasks", async () => {
+    const c = await seedClient("repairreplay", { outcomeTier: "REPAIR_ONLY" });
+    for (const key of ["a", "b"]) {
+      await emit(db, "sale.closed", { email: c.email, product: "repair", amount: 1000 }, {
+        orgId: org, clientId: c.id, idempotencyKey: `${MARK}:repairreplay:${key}`
+      });
+    }
+    const progs = await db.query(
+      `SELECT count(*)::int AS n FROM repair_programs WHERE client_id = $1`, [c.id]);
+    assert.equal(progs.rows[0].n, 1);
+    const t = await db.query(
+      `SELECT count(*)::int AS n FROM tasks WHERE client_id = $1 AND source_workflow = 'repair-enrollment'`,
+      [c.id]);
+    assert.equal(t.rows[0].n, 2);
+  });
+
+  test("a funding-only buyer is never enrolled in repair", async () => {
+    const c = await seedClient("fundingnoprog", { outcomeTier: "FULL_FUNDING" });
+    await emit(db, "deposit.paid", { email: c.email, amount: 3000 }, {
+      orgId: org, clientId: c.id, idempotencyKey: `${MARK}:fundingnoprog:1`
+    });
+    assert.equal(await repairProgramRow(c.id), null,
+      "a card-stacking buyer was opened a credit repair program");
   });
 
   test("both active: both boards, and the funding card starts held", async () => {
@@ -213,7 +308,7 @@ describe("purchase-routing", { skip: !HAS_DB ? "no DATABASE_URL" : false }, () =
     await emit(db, "sale.closed", { email: c.email, product: "repair", amount: 1000 }, {
       orgId: org, clientId: c.id, idempotencyKey: `${MARK}:both:repair`
     });
-    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), REPAIR_STAGE);
+    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), ENROLLED_STAGE);
     assert.equal(await cardStage(c.id, FUNDING_PIPELINE), null);
 
     // Now they buy funding too.
@@ -221,7 +316,7 @@ describe("purchase-routing", { skip: !HAS_DB ? "no DATABASE_URL" : false }, () =
       orgId: org, clientId: c.id, idempotencyKey: `${MARK}:both:funding`
     });
 
-    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), REPAIR_STAGE, "the repair card moved");
+    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), ENROLLED_STAGE, "the repair card moved");
     assert.equal(await cardStage(c.id, FUNDING_PIPELINE), FUNDING_STAGE);
 
     const row = await clientRow(c.id);
@@ -237,7 +332,7 @@ describe("purchase-routing", { skip: !HAS_DB ? "no DATABASE_URL" : false }, () =
       orgId: org, clientId: c.id, idempotencyKey: `${MARK}:later:repair`
     });
 
-    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), REPAIR_STAGE);
+    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), ENROLLED_STAGE);
     assert.equal(await cardStage(c.id, FUNDING_PIPELINE), null,
       "funding was only signed for, not bought — there must be no funding card");
 
@@ -309,7 +404,7 @@ describe("purchase-routing", { skip: !HAS_DB ? "no DATABASE_URL" : false }, () =
       orgId: org, clientId: c.id, idempotencyKey: `${MARK}:mid:repair`
     });
 
-    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), REPAIR_STAGE);
+    assert.equal(await cardStage(c.id, REPAIR_PIPELINE), ENROLLED_STAGE);
     assert.equal(await cardStage(c.id, FUNDING_PIPELINE), "round_submitted",
       "buying repair reset a funding round that was already running");
     const row = await clientRow(c.id);
