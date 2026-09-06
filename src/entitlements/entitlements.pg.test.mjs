@@ -146,6 +146,52 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
     assert.equal(b.granted, false);
   });
 
+  /* ONE PURCHASE, ONE GRANT. Measured on production 2026-09-06: a $200 repair
+     client held metro2-letter-pack twice — once from the payment, carrying a
+     transaction id, and once from the enrolment behind it, carrying none.
+     Because the unique index treats NULL as distinct from every real id,
+     nothing collided and the portal drew the letter pack twice. */
+
+  test("a sourceless grant adds nothing to a code the client already holds", async () => {
+    await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txA });
+    const second = await grant(db, { orgId: org, clientId, code: CODE, reason: "repair_enroll:full" });
+    assert.equal(second.granted, false);
+    assert.equal(second.reason, "already_active");
+    const { rows } = await db.query(
+      `SELECT count(*)::int AS n FROM entitlements WHERE client_id = $1 AND entitlement_code = $2`,
+      [clientId, CODE]);
+    assert.equal(rows[0].n, 1, "the enrolment granted the letter pack a second time");
+  });
+
+  test("a sourceless grant still works when they do not hold it yet", async () => {
+    const g = await grant(db, { orgId: org, clientId, code: CODE, grantedBy: staffId, reason: "comped" });
+    assert.equal(g.granted, true);
+    assert.equal(await has(db, { orgId: org, clientId, code: CODE }), true);
+  });
+
+  test("a sourceless grant is not blocked by a REVOKED one — that is the reinstate path", async () => {
+    await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txA });
+    await revoke(db, { orgId: org, clientId, code: CODE, by: staffId, reason: "chargeback" });
+    const g = await grant(db, { orgId: org, clientId, code: CODE, reason: "re-enrolled by hand" });
+    assert.equal(g.granted, true, "a revoked client could never be re-granted by hand");
+  });
+
+  test("the portal shows one tile per code even when two live grants exist", async () => {
+    // Force the shape production was in: two live rows, one code.
+    await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txA });
+    await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txB });
+    const { rows } = await db.query(
+      `SELECT count(*)::int AS n FROM entitlements WHERE client_id = $1 AND entitlement_code = $2`,
+      [clientId, CODE]);
+    assert.equal(rows[0].n, 2, "the ledger rule changed — two purchases must still be two rows");
+
+    const r = await forClient(db, { orgId: org, clientId });
+    assert.equal(r.all.filter((x) => x.code === CODE).length, 1,
+      "the client's screen listed the same entitlement twice");
+    assert.equal(r.held.filter((x) => x.code === CODE).length, 1);
+    assert.equal(r.all.length, 6);
+  });
+
   test("grants are scoped per client", async () => {
     await grant(db, { orgId: org, clientId, code: CODE, sourceTransactionId: txA });
     assert.equal(await has(db, { orgId: org, clientId, code: CODE }), true);

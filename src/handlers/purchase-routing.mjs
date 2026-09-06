@@ -47,6 +47,13 @@
 // Never funding_altfin (cards move there only from Lendflow webhooks) and never
 // inquiry_removal (it starts itself — src/handlers/inquiry-gate.mjs).
 //
+// AND, SINCE 2026-09-06, THE REPAIR PROGRAM ITSELF. A funding card lands on
+// apply_now and round.started fans out from there into an advisor, an inbox and
+// a message to the client. The repair card landed on intake and fanned out into
+// nothing, so a repair buyer got a card and silence — no rounds, no document
+// request, no welcome, no task. src/workflows/repair-enrollment.mjs is that
+// missing fan-out and this handler calls it last.
+//
 // SAFE TO FIRE TWICE. State is re-derived from the sales table on every event,
 // never from the payload, and a card is placed ONLY when the client has no card
 // on that pipeline yet. A replayed event, a duplicated webhook or a second
@@ -61,6 +68,7 @@ import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { FUNDING_PAUSED_HOLD } from "../inquiry-ops/doc-gate.mjs";
 import { PAUSED_TAG } from "../crs/snapshot-negatives.mjs";
+import { ensureRepairEnrollment } from "../workflows/repair-enrollment.mjs";
 
 /** One greppable line per bail. */
 export const NO_ROUTE = "[purchase-routing] no route";
@@ -222,6 +230,7 @@ export async function onPurchaseRoute(event, db) {
     clientId,
     bought: { funding: bought.funding, repair: bought.repair },
     repairCard: null,
+    repairProgram: null,
     fundingCard: null,
     hold: null,
     fundingTag: null,
@@ -254,7 +263,33 @@ export async function onPurchaseRoute(event, db) {
     out.outcomeTier = tier;
   }
 
-  out.routed = !!(out.repairCard?.placed || out.fundingCard?.placed || out.fundingTag);
+  /* A CARD IS NOT A PROGRAM. Placing the optimization card was, until now, the
+     whole of what a repair purchase caused: no enrolment, no rounds, no
+     document request, no email, no task. The $1,000 client measured on
+     2026-09-06 had a card and nothing else, because the only thing that has
+     ever opened a repair program is a button on a screen that lists clients who
+     are already enrolled.
+
+     LAST ON PURPOSE. Both boards and the funding tag are settled before this
+     runs, so if enrolment throws — and it is allowed to, the bus dead-letters
+     it onto /api/read/failed-events — the routing above is already durable and
+     a re-dispatch simply finds the cards in place and tries the program again.
+
+     Funding has no equivalent call because round.started already fans out into
+     F-01 and the advisor assignment. Repair had no such fan-out at all. */
+  if (bought.repair) {
+    out.repairProgram = await ensureRepairEnrollment(db, {
+      orgId, clientId, eventId: event?.id || null
+    });
+  }
+
+  out.routed = !!(
+    out.repairCard?.placed ||
+    out.fundingCard?.placed ||
+    out.fundingTag ||
+    out.repairProgram?.enrolled ||
+    out.repairProgram?.tasks?.count
+  );
   if (!out.routed) out.reason = "nothing_to_do";
   return out;
 }

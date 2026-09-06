@@ -99,29 +99,39 @@ test("checkDocPacket: SSN required only when opted in", () => {
   assert.equal(disputeNeedsSsn([{ category: "ssn", value: "xxx" }]), true);
 });
 
-/* ── loadDocPackets — the same answer, for a whole queue, in one query ──────
+/* ── loadDocPackets — the same answer, for a whole queue, in two lifts ──────
  *
  * The Specialist's case list needs the identity packet per row, and the screen
  * used to invent it: it printed "complete" for every case that was not already
  * Blocked, and Blocked is only set at send time. So a packet nobody had looked
  * at read "complete" on the screen that decides whether to press Send.
  *
- * The point of these three tests is the last one. A failed read must come back
- * as NULL, so the caller says "not checked" — never "complete".
+ * TWO LIFTS, NOT ONE, SINCE 2026-09-06, and the count matters less than what it
+ * does NOT do. A signature is not filed as a document — api/consent/capture.mjs
+ * writes a client_consents row and nothing else — so a packet read only from
+ * the documents table reported the walkthrough client's dispute authorization
+ * missing while the signature sat in the other table. Both tables are read now,
+ * and the thing these tests guard is that the cost stays FLAT: two queries for
+ * two clients, two queries for twenty. One query per row is the defect; a
+ * second constant-cost lift is not.
+ *
+ * The point of the last test is unchanged. A failed read must come back as
+ * NULL, so the caller says "not checked" — never "complete".
  */
 
-function fakeDb(rows, { fail = false } = {}) {
+function fakeDb(rows, { fail = false, consents = [] } = {}) {
   return {
     calls: [],
     async query(sql, params) {
       this.calls.push({ sql, params });
       if (fail) throw new Error("relation \"documents\" does not exist");
+      if (String(sql).includes("client_consents")) return { rows: consents };
       return { rows };
     }
   };
 }
 
-test("loadDocPackets: one query for the page, grouped per client", async () => {
+test("loadDocPackets: two lifts for the whole page, grouped per client", async () => {
   const A = "aaaaaaaa-1111-4111-8111-111111111111";
   const B = "bbbbbbbb-2222-4222-8222-222222222222";
   const db = fakeDb([
@@ -131,10 +141,38 @@ test("loadDocPackets: one query for the page, grouped per client", async () => {
     { client_id: B, kind: "client_upload", subtype: "id_document" }
   ]);
   const out = await loadDocPackets(db, { orgId: "org-1", clientIds: [A, B] });
-  assert.equal(db.calls.length, 1, "one lift for the whole page, not one per row");
+  assert.equal(db.calls.length, 2, "the documents lift and the signature lift, and nothing per row");
   assert.equal(out.get(A).complete, true);
   assert.equal(out.get(B).complete, false);
   assert.deepEqual(out.get(B).missing, ["proof_of_address", "authorization"]);
+});
+
+test("loadDocPackets: twenty clients cost the same two queries as two", async () => {
+  const ids = [];
+  for (let i = 0; i < 20; i++) {
+    ids.push("aaaaaaaa-1111-4111-8111-" + String(i).padStart(12, "0"));
+  }
+  const db = fakeDb([]);
+  await loadDocPackets(db, { orgId: "org-1", clientIds: ids });
+  assert.equal(db.calls.length, 2, "the read must not grow with the size of the queue");
+});
+
+test("loadDocPackets: a signature filed as a consent answers the packet", async () => {
+  /* The walkthrough client, 2026-09-06: identification and proof of address
+     uploaded as documents, the dispute authorization signed at 03:04 and filed
+     as a consent. The desk reported the signature missing and would have gone
+     on reporting it missing forever. */
+  const A = "aaaaaaaa-1111-4111-8111-111111111111";
+  const db = fakeDb(
+    [
+      { client_id: A, kind: "client_upload", subtype: "id_document" },
+      { client_id: A, kind: "client_upload", subtype: "proof_of_address" }
+    ],
+    { consents: [{ client_id: A }] }
+  );
+  const out = await loadDocPackets(db, { orgId: "org-1", clientIds: [A] });
+  assert.equal(out.get(A).complete, true);
+  assert.deepEqual(out.get(A).missing, []);
 });
 
 test("loadDocPackets: a client with no documents is answered, not skipped", async () => {
