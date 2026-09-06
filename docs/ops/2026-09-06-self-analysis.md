@@ -933,3 +933,107 @@ is roughly four to six hours of agent time:
 | The generator, reading both as input | 1.5 h |
 
 Two days was the safe thing to say. Four to six hours is the true thing.
+
+---
+
+# Conversion data and the suggestions layer
+
+Chris: **"Can we read all the cro as well and everything? ... We use intelligence and
+create suggestions for marketing team, Paul Tancredi at DirectRoas.com, my friend."**
+
+Three read-only lanes. Evidence: `docs/ops/_lanes/2026-09-06-cro-funnel.md`,
+`-cro-surfaces.md`, `-cro-reporting.md`.
+
+## The headline: a working report that nobody can see
+
+**`GET /api/read/ad-books` already exists, is routed, and works.** It counts leads and
+booked calls grouped by ad, by lane, by variant, or by the promise the ad made, over any
+date range.
+
+**No screen anywhere calls it.** The only way to see it is to type the web address. That
+is the single cheapest win in this whole document: the number Chris wants most is already
+being calculated and has nowhere to appear.
+
+More is built than expected. The **Campaigns** screen is real and full: campaign list,
+spend against a ceiling, an ad-fatigue table, an action log, and a per-ad daily
+drill-down with spend, clicks, click-through rate, frequency, cost per action and return
+on ad spend. **Ops and Admin** already shows close rate, show rate and cost per funded
+client. All of it sits behind the same hidden Marketing menu heading.
+
+## The chain, ad to money
+
+| Hop | State |
+|---|---|
+| Ad click | **Not recorded here.** No clicks table. Clicks, cost and impressions live only inside Meta |
+| Ad tags into the funnel | **Joined.** Five tags ride the URL; a script copies them into hidden form fields |
+| Form to a client row | **Joined.** The webhook stores them and the database works out lane, ad number and variant by itself, in `client_ad_attribution`, live 2026-09-03 |
+| Client to a booked call | **Joined**, and already reported by `/api/read/ad-books` |
+| Booked call to money | **Joinable, never written.** Payments and funded amounts all carry the client id. Nobody wrote the query |
+
+**So today Chris can ask "which ad produced booked calls" and get a real answer. He
+cannot ask "which ad produced paying clients"** — not because a link is missing, but
+because the report was never written. That is a query, not a build.
+
+## The one real join gap
+
+There is a spend table and real Meta insight code, but **its ad id is Meta's own random
+id, and Chris's ad number is `42-ringlights`. The two never meet.** So cost per booked
+call and cost per sale cannot be worked out per ad from inside FundHub. Closing that is a
+mapping between two ids, and it is the prerequisite for every cost-based suggestion.
+
+**A contained bug beside it.** `api/campaigns/sync.mjs` asks Meta for frequency, reach,
+conversions and cost per action, converts all four correctly, and then does not write
+those four columns. So those columns on the Campaigns screen stay blank forever, and the
+"this ad is worn out" rule can never fire.
+
+## Page-level conversion work: genuinely not there
+
+This is the part where the answer is no.
+
+- **No tracking on any page.** No Meta pixel, no Google Analytics, no tag manager
+  anywhere in the repo. The only tracking calls are two custom events on the thank-you
+  page.
+- **The homepage survey has 8 steps and makes one network call, at the end.** Quit on
+  step 6 and nobody ever knew you existed. That is the highest-value missing measurement
+  in the funnel.
+- **`/optimize` records nothing at all** — no visit, no click, no purchase attempt.
+- **There is no split-testing mechanism of any kind.** The `sun` / `nosun` variants label
+  the ad, not the page. Both variants see the identical page.
+- **Two funnels, and the paid one is not here.** `/watch`, `/apply`, `/book` and
+  `/thank-you` live at ClickFunnels; this repo only holds style snippets pasted into
+  them. Anything measured there has to be measured at ClickFunnels.
+- **Speed was last measured 2026-08-17.** `/apply` took 3.77 seconds against a
+  2.0-second budget. Nothing has measured since.
+
+## Paul and DirectROAS, as the repo already records it
+
+DirectROAS has full control of the ad account and Paul is the operator, at **$33 per
+booked call**. He already receives files by hand: six Sedona ad scripts, brand
+guidelines, and a VSL still to be filmed. `docs/ads/CONTROLS.md` names one DirectROAS
+asset, `VSL_Script_DirectROAS_v1`, among the five filmed and running.
+
+**He also owes FundHub a survey field that the qualification gate is waiting on.** That
+is a one-line ask Chris can make today and it unblocks something.
+
+## What a weekly brief for Paul could honestly say tomorrow
+
+**Could say:** leads and booked calls per ad, per lane, per variant, for any date range,
+straight out of `/api/read/ad-books`. Which lanes are starved. Which concepts have never
+been shot.
+
+**Would be blank:** spend, because nothing syncs it on a schedule. Cost per booked call
+from FundHub's own side. Revenue per ad. Anything about what happens on the pages.
+
+## The boundary on sending
+
+**A suggestion brief gets written into the repo for Chris to read and send. Nothing
+auto-sends to Paul.** He is outside the company, and an agent mailing a media buyer
+without Chris seeing it first is not a default worth setting. Easy to change later if
+Chris asks for it.
+
+## What this does not change
+
+**Tuesday's build stays exactly as scoped.** Copy generation first. None of the above is
+added to it, because a report about ads is worth nothing until there are enough ads to
+report on. These become the next batch, and the order is: show the report that already
+exists, then map the two ad ids together, then measure the survey steps.
