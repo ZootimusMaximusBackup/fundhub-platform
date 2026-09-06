@@ -40,16 +40,22 @@ describe("client portal — the 2026-09-03 walk findings", () => {
     assert.ok(html.includes("Not assigned yet"), "must say plainly when nobody is on the file");
   });
 
-  test("F35 — the dispute-letter card is gated on the repair path", () => {
+  test("F35 — the dispute-letter card is gated on repair AND the funding offer", () => {
+    // Owner-set 2026-09-03: repair and the funding offer sign; courses and
+    // e-products never do. The screen reads `dispute_consent`, which is the
+    // server's answer to that whole question — NOT `repair_path`, which is
+    // narrower and is false for every funding customer.
     assert.match(
       html,
-      /body\.no-repair-path\s*#dispute-auth-card\s*\{\s*display:\s*none/,
+      /body\.no-dispute-consent\s*#dispute-auth-card\s*\{\s*display:\s*none/,
       "the card must have a CSS gate"
     );
-    assert.match(html, /<body class="[^"]*\bno-repair-path\b/,
+    assert.match(html, /<body class="[^"]*\bno-dispute-consent\b/,
       "the gate must start CLOSED on the body, so an unanswered read keeps it shut");
-    assert.match(html, /data\.repair_path\s*!==\s*true/,
-      "a missing repair_path must keep the card shut, not open it");
+    assert.match(html, /data\.dispute_consent\s*!==\s*true/,
+      "a missing dispute_consent must keep the card shut, not open it");
+    assert.doesNotMatch(html, /toggle\(\s*"no-repair-path"/,
+      "the card must not be gated on repair_path — that refuses every funding client");
   });
 
   test("F36 — one empty row in the Messages tab, not two", () => {

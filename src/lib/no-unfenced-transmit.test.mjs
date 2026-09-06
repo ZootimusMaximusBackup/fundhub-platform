@@ -160,7 +160,15 @@ const ALLOWED_RAW_FETCH = {
 const INTERNAL_CALLERS = new Set([
   "src/company-brain/embed.mjs",
   "src/company-brain/transcribe.mjs",
-  "src/hiring/calendar-freebusy.mjs"
+  "src/hiring/calendar-freebusy.mjs",
+  // Added 2026-09-04. Sends a client's underwriting data to render-service/ —
+  // our own Docker container running our own scripts/black-reports/fundhub_gen.py
+  // — and gets four PDFs back. Reaches no person and changes no record at any
+  // vendor; the service holds nothing after the response. It is INTERNAL for the
+  // same reason an embedding call is: holding it behind the messaging or
+  // adapters dry-run flag would not protect a consumer, it would just silently
+  // downgrade every client's documents to the short pdf-lib set.
+  "src/underwrite/black-report-pdf.mjs"
 ]);
 
 function walk(dir, out = []) {

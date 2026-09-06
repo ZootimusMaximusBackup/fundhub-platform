@@ -31,6 +31,19 @@ export function formatAmount(amount, currency = "USD") {
   return currency === "USD" ? `$${body}` : `${body} ${currency}`;
 }
 
+/* 'funding_success_fee' → 'Funding success fee'. The stored value is a machine
+   word and a client should not be reading snake_case.
+
+   EXPORTED so the portal prints the same words as the email. The client reads
+   this label in her inbox and then again on the Payments tab of her portal
+   (api/read/portal-summary.mjs); two copies of this transform is two places for
+   the same invoice to acquire two names. */
+export function invoiceKindLabel(row = {}) {
+  return String(row.source || row.invoice_type || "invoice")
+    .replace(/_/g, " ")
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
 /* What an invoice email may say. Deliberately small, and deliberately NOT the
    whole invoice row — an internal note or a provider reference has no business
    in a client's inbox. */
@@ -49,11 +62,9 @@ export function invoiceContext({ invoice, client, orgName = "Fundhub" }) {
          `source`. Reading the migration rather than the table is how you email a
          client "undefined". */
       amount: formatAmount(invoice.amount_due, invoice.currency),
-      // 'deposit' → 'Deposit'. The stored value is a machine word; a client
-      // should not be reading snake_case.
-      kind: String(invoice.source || invoice.invoice_type || "invoice")
-        .replace(/_/g, " ")
-        .replace(/^./, (c) => c.toUpperCase()),
+      // 'deposit' → 'Deposit'. See invoiceKindLabel above — the portal shows the
+      // client the same words for the same invoice.
+      kind: invoiceKindLabel(invoice),
       due: due || "on receipt",
       reference: String(invoice.id).slice(0, 8),
       company: orgName

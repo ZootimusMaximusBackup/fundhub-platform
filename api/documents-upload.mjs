@@ -50,6 +50,8 @@ import { isPortalUploadKind } from "../src/repair/upload-doors.mjs";
 import { validateUpload, maxUploadBytes } from "../src/documents/upload-validate.mjs";
 import { emit } from "../src/events/bus.mjs";
 import { safeError } from "../src/http/health.mjs";
+import { evaluateDocGate } from "../src/inquiry-ops/doc-gate.mjs";
+import { removeTags } from "../src/workflows/tags.mjs";
 
 const DEFAULT_SUBTYPE = "other";
 const DEFAULT_KIND = KINDS.CLIENT_UPLOAD;
@@ -96,6 +98,23 @@ export default async function handler(req, res) {
   const subtypeRaw = typeof fields.subtype === "string" ? fields.subtype.trim() : "";
   const subtype = subtypeRaw && isKnownSubtype(kind, subtypeRaw) ? subtypeRaw : DEFAULT_SUBTYPE;
 
+  /* WHO SAID THIS FILE WAS A "DOCUMENT"?
+     A file lands as subtype "other" for three completely different reasons, and
+     until now the stored row could not tell them apart:
+       given       — the caller said "other", and meant it;
+       none_given  — the caller sent no label at all (the staff drop box does
+                     this: it posts the file and the client id and nothing
+                     else), so "other" is our word, not theirs;
+       unrecognised — the caller named something we do not have a name for.
+     Only the first is a real answer. The other two are a file nobody has
+     described, which is exactly the file that then reads as "photo ID missing"
+     while the correct photo ID sits on the record. The endpoint still accepts
+     all three, and still never guesses what the file is — it just stops
+     erasing the difference, so the gap is countable instead of invisible. */
+  const labelSource = !subtypeRaw
+    ? "none_given"
+    : (subtypeRaw === subtype ? "given" : "unrecognised");
+
   const maxBytes = maxUploadBytes();
   const store = storeFromEnv();
   const actor = principal.kind === "staff"
@@ -125,7 +144,12 @@ export default async function handler(req, res) {
         mimeType: verdict.mimeType,
         generatedBy: `${actor.kind}:${actor.id || "unknown"}`,
         reason: "initial",
-        metadata: { original_filename: file.filename || null, uploaded_by: actor }
+        metadata: {
+          original_filename: file.filename || null,
+          uploaded_by: actor,
+          // What the caller called this file, and whether we could use it.
+          label: { given: subtypeRaw || null, filed_as: subtype, source: labelSource }
+        }
       });
 
       await emit(db, "docs.received", {
@@ -151,7 +175,35 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: safeError(err) });
   }
 
-  return res.status(200).json({ ok: true, documents: results });
+  /* "WE STILL NEED YOUR DOCUMENTS" MUST STOP SAYING THAT ONCE THEY ARE HERE.
+     Three things could take the docs:missing flag off a client and not one of
+     them fires for an ordinary funding client who simply uploads their papers:
+     the inquiry handler needs a blocked inquiry case first, the F-02 chase only
+     re-checks after a two-day sleep, and the document agent only clears it on
+     an accept it has not produced once. So the flag stayed on while the files
+     sat on the record.
+     It is cleared HERE, on arrival, and only when nothing at all is missing —
+     the same completeness answer every other caller uses. An incomplete packet
+     keeps the flag, because a client who has sent two of the three things they
+     were asked for has not finished, and telling them otherwise is worse than
+     leaving the reminder on. Nothing here judges whether a document is genuine
+     or readable; that is the document agent's job, and it is a separate one. */
+  let docsFlag = null;
+  try {
+    const packet = await evaluateDocGate(db, { orgId, clientId, items: [] });
+    if (packet.complete) {
+      await removeTags(db, clientId, ["docs:missing"]);
+      docsFlag = "cleared";
+    } else {
+      docsFlag = "kept";
+    }
+  } catch {
+    // The files are stored and registered. A failure to tidy a flag must not
+    // turn a successful upload into an error the client sees.
+    docsFlag = null;
+  }
+
+  return res.status(200).json({ ok: true, documents: results, docs_missing: docsFlag });
 }
 
 /* ownsClient — a staff principal may act on any client in their org; a client

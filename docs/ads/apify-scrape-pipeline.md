@@ -13,7 +13,7 @@ matter for this vertical. Revisit only if the free stack hits that wall.
 | Ads running in the vertical + how long | Meta Ad Library (free, official) | Shows active ads WITH start dates — literally the Winner's Board's longevity column, no scraping, no ToS problem |
 | Reddit threads | Reddit's public JSON endpoints | Already partly working via agents |
 | Forums, Quora, Trustpilot, BBB | WebSearch + WebFetch agents | Proven: 159 sourced quotes in round 1 |
-| Best data of all | FundHub's own GHL calls, SMS, survey answers | First-party, no scraping, already being mapped |
+| Best data of all | FundHub's own CRM calls, SMS, survey answers | First-party, no scraping, already being mapped |
 | Instagram / TikTok comments | **The real gap** — no practical official path | This is the only thing Apify uniquely buys |
 
 Original spec below, kept for the day the gap matters.

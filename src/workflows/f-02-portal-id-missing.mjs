@@ -1,13 +1,13 @@
 // F-02 — Portal / ID Missing (Onboarding Nudge).
-// Source: GHL workflow 4deadbb0-4749-45e5-a1b7-59ccb3d46f4a (ghl-crm-source-of-truth.md).
-// Ports the live [AGENT DRAFT] definition (the F-02 in GHL's DECOMMISSIONED folder is
+// Source: the CRM workflow 4deadbb0-4749-45e5-a1b7-59ccb3d46f4a (the CRM source-of-truth export).
+// Ports the live [AGENT DRAFT] definition (the F-02 in the CRM's DECOMMISSIONED folder is
 // the DECOM copy per the skip list; this is the other one).
 //
 // Trigger: round.started (Stage = F1 Funding Intake). Wait 2-4 hours (doc gives a
 // range, not a single number — 3h picked as the midpoint; a timing choice, not a
 // business-logic one, logged in workflow-migration-table.md). Gate at wake: ID
 // Uploaded = false OR Portal Onboarding Status != Complete, both read from
-// clients.custom_fields (the interim holder for the carbon-copied GHL fields).
+// clients.custom_fields (the interim holder for the carbon-copied the CRM fields).
 // If still missing after a further 2-day wait, sends a follow-up touch instead of
 // repeating the first message.
 

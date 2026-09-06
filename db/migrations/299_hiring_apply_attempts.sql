@@ -22,3 +22,13 @@ CREATE TABLE IF NOT EXISTS hiring_apply_attempts (
 CREATE INDEX IF NOT EXISTS idx_hiring_apply_attempts_ip
   ON hiring_apply_attempts (org_id, ip, created_at DESC)
   WHERE ip IS NOT NULL;
+
+-- Row lock declared here, in the file that creates the table, so a switch flipped
+-- from the Supabase dashboard later has nothing to break: rls-shape.test.mjs fails
+-- any production build where a table is RLS-on with no policy, and that failed six
+-- builds on 2026-09-06 (see 364_hiring_rls_policies.sql). Per-IP rate limit, no
+-- org scope, so the policy is permissive like every other hiring table.
+ALTER TABLE hiring_apply_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hiring_apply_attempts FORCE  ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS hiring_apply_attempts_app_all ON hiring_apply_attempts;
+CREATE POLICY hiring_apply_attempts_app_all ON hiring_apply_attempts FOR ALL USING (true) WITH CHECK (true);

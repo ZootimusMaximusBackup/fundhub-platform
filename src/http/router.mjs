@@ -315,7 +315,7 @@ async function dispatchWebhook({ db, provider, rawBody, headers = {}, url, env =
     }));
   }
 
-  /* DELIVERY STATUS CALLBACKS — GHL cutover Ticket 2.
+  /* DELIVERY STATUS CALLBACKS — the CRM cutover Ticket 2.
      /api/webhooks/twilio-status and /api/webhooks/mailgun-events.
 
      Registered here rather than as their own entries in the ROUTES map in

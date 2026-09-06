@@ -158,7 +158,7 @@ for that purchase.
 |---------|-------------------------------|
 | `INNGEST_EVENT_KEY` unset (owner switch) | Most of the 47+ workflows do not run on live events |
 | Outbound provider credentials / `outbound_enabled` | Emails and many SMS stay queued or never transmit |
-| Staff SMS via GHL relay + missing `ghl_contact_id` | New clients may not get text replies (known defect) |
+| Staff SMS via CRM relay + missing `ghl_contact_id` | New clients may not get text replies (known defect) |
 | Company Brain Drive/OpenAI keys unset (intentional) | Brain search works extractively on stored chunks only; Drive sync does not run |
 | Money writers missing (sales, ledger, entitlements, funding insert) | CRM looks alive; money truth tables stay empty |
 

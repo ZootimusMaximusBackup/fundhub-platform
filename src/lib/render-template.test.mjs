@@ -31,7 +31,7 @@ test("non-string body coerced to string", () => {
 
 // --- dotted merge tags ------------------------------------------------------
 // THE BUG: TOKEN_RE was /\{\{\s*(\w+)\s*\}\}/g and `\w` excludes `.`, so no dotted tag
-// ever matched. The entire ported GHL copy is written in dotted tags, so every one of
+// ever matched. The entire ported the CRM copy is written in dotted tags, so every one of
 // them rendered literally — braces and all — into outbound SMS and email.
 
 test("REGRESSION: dotted tags resolve instead of rendering literally", () => {

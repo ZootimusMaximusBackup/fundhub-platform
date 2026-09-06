@@ -1,5 +1,5 @@
 // F-07 — Funding Locked (F22).
-// Source: GHL workflow 992e1734-3d5b-4d51-91cb-7b665650f407 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 992e1734-3d5b-4d51-91cb-7b665650f407 (the CRM source-of-truth export).
 // Audit fix applied: real ready-to-paste SMS + email-subject copy (the FR22 "Total
 // Funding Locked" body from EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md, grepped for this one
 // key only), seeded via src/workflows/templates-seed.mjs.
@@ -23,7 +23,7 @@
 //
 //   feeAmount = confirmed approved total × agreed fee percent
 //
-// GHL's "Commission Owed" field copy is still not ported, and still should not
+// CRM's "Commission Owed" field copy is still not ported, and still should not
 // be: it set Commission Owed = total_approved_amount with no multiplication
 // anywhere in the crawl. Under this decision the formula is defined in
 // src/funding/success-fee.mjs and nowhere else, and it is that module — not a

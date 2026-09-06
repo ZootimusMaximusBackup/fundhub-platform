@@ -84,4 +84,4 @@ Three things worth knowing before the first deploy:
 ## Notes
 - No `DASHBOARD_SECRET` set + `NODE_ENV=production` → dashboard endpoints return 401 (fail-closed). Always set the secret.
 - Webhook endpoints live at `POST /api/webhooks/{commas|twilio|mailgun|bland|clickfunnels}`.
-- This runs ALONGSIDE the live GHL system — nothing here touches production GHL/Airtable.
+- This runs ALONGSIDE the live CRM system — nothing here touches production the old CRM and spreadsheet.

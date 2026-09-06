@@ -170,16 +170,16 @@ Sale amount: 3000.00 (want 3000)
 Closer front commission: 500.10 (want 500)
 Advisor back commission: 125.00 (want 125)
 Closeout fee: 5000.00 (want 5000)
-GHL link: dry-ghl-8171b2392521
+The CRM link: dry-ghl-8171b2392521
 Contract: ef64a2e8-a2a5-475d-aa99-59de3c8fcc36
 Messages queued: 0
 
-Operator verdict: YES for the money spine; still check GHL link, contract send, and live webhooks separately.
+Operator verdict: YES for the money spine; still check the CRM link, contract send, and live webhooks separately.
 
 | Step | Status | Persisted |
 |---|---|---|
 | Lead captured → client row | PASS | client.id=8171b239-2521-4548-a386-2cb2d363acdd email=e2e_verify.funding.1787430715928@verify.local |
-| GHL linkage | PASS | dry-ghl-8171b2392521 |
+| The CRM linkage | PASS | dry-ghl-8171b2392521 |
 | Booking → closer task | PASS | task.id=992bfa5b-8619-4676-baaa-850b60aa9f45 title=Strategy session booked |
 | Consent captured | PASS | kind=soft_pull_consent id=2cb89735-7f2a-4473-bb32-5008689e3b09 |
 | CRS → tradelines | PASS | funding_client_tls=4 sim_tls=4 ingested=4 |

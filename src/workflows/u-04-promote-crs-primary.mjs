@@ -1,5 +1,5 @@
 // U-04 — Promote CRS as Primary Snapshot.
-// Source: GHL-System-Map.md UNDERWRITEIQ WORKFLOWS section.
+// Source: the CRM system map UNDERWRITEIQ WORKFLOWS section.
 // Trigger: analysis.completed, gated on source === "crs" (same gate as U-03 — the
 // Primary Snapshot rule is "CRS always wins over the Analyzer estimate once it
 // lands").

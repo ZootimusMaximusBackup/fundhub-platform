@@ -76,3 +76,122 @@ test("listCases still binds the org and the active-status filter", async () => {
   assert.ok(db.calls[0].params[1].includes("Queued"));
   assert.ok(!db.calls[0].params[1].includes("Completed"));
 });
+
+/* ── one client, one bureau, one open case ─────────────────────────────────
+ * Measured 2026-09-06 on the funding walkthrough client: four inquiries, SEVEN
+ * open cases. Three made at 03:06 when the deposit was paid, three more at
+ * 11:20 once a funding round existed — the same three bureaus, twice. Had they
+ * been sent, every bureau would have had the same dispute letter posted to it
+ * twice.
+ */
+import { createCase } from "./cases.mjs";
+
+const CLIENT = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const ROUND = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+
+function caseDb(existing) {
+  return {
+    inserts: [],
+    updates: [],
+    async query(sql, params) {
+      const s = String(sql).replace(/\s+/g, " ");
+      if (s.startsWith("SELECT * FROM inquiry_removal_cases")) return { rows: existing };
+      if (s.includes("INSERT INTO inquiry_removal_cases")) {
+        this.inserts.push(params);
+        return { rows: [{ id: "new-case", selected_bureaus_raw: params[5] }] };
+      }
+      if (s.includes("UPDATE inquiry_removal_cases")) {
+        this.updates.push(params);
+        const row = existing.find((c) => c.id === params[0]) || {};
+        return { rows: [{ ...row, funding_round_id: params[1] }] };
+      }
+      return { rows: [] };
+    }
+  };
+}
+
+test("createCase adopts the open case for that bureau instead of making a second one", async () => {
+  const db = caseDb([
+    { id: "case-ex", client_id: CLIENT, selected_bureaus_raw: "EX", funding_round_id: null }
+  ]);
+  const out = await createCase(db, {
+    orgId: ORG,
+    row: { client_id: CLIENT, selected_bureaus_raw: "EX", funding_round_id: ROUND }
+  });
+  assert.equal(db.inserts.length, 0, "a second Experian case was inserted");
+  assert.equal(out.id, "case-ex");
+  assert.equal(out.reused, true);
+  assert.equal(out.funding_round_id, ROUND, "the open case takes the round it did not have");
+});
+
+test("createCase does not reopen the round on a case that already has one", async () => {
+  const db = caseDb([
+    { id: "case-ex", client_id: CLIENT, selected_bureaus_raw: "EX", funding_round_id: "older" }
+  ]);
+  const out = await createCase(db, {
+    orgId: ORG,
+    row: { client_id: CLIENT, selected_bureaus_raw: "EX", funding_round_id: ROUND }
+  });
+  assert.equal(db.updates.length, 0);
+  assert.equal(out.funding_round_id, "older");
+});
+
+test("createCase still opens a case for a bureau that has none", async () => {
+  const db = caseDb([
+    { id: "case-ex", client_id: CLIENT, selected_bureaus_raw: "EX", funding_round_id: null }
+  ]);
+  await createCase(db, {
+    orgId: ORG,
+    row: { client_id: CLIENT, selected_bureaus_raw: "TU" }
+  });
+  assert.equal(db.inserts.length, 1, "TransUnion is a different bureau and needs its own case");
+});
+
+test("createCase never folds a case that names no bureau into one that does", async () => {
+  const db = caseDb([
+    { id: "case-ex", client_id: CLIENT, selected_bureaus_raw: "EX", funding_round_id: null }
+  ]);
+  await createCase(db, { orgId: ORG, row: { client_id: CLIENT } });
+  assert.equal(db.inserts.length, 1, "we cannot tell what a bureau-less case is for — do not guess");
+});
+
+test("createCase reads bureaus as a set, so 'EQ/EX' is the same case as 'EX, EQ'", async () => {
+  const db = caseDb([
+    { id: "case-both", client_id: CLIENT, selected_bureaus_raw: "EQ/EX", funding_round_id: null }
+  ]);
+  const out = await createCase(db, {
+    orgId: ORG,
+    row: { client_id: CLIENT, selected_bureaus_raw: "EX, EQ" }
+  });
+  assert.equal(db.inserts.length, 0);
+  assert.equal(out.id, "case-both");
+});
+
+test("createCase: adopting carries the item count the caller had just counted", async () => {
+  const db = caseDb([
+    { id: "case-ex", client_id: CLIENT, selected_bureaus_raw: "EX",
+      funding_round_id: null, case_status: "Blocked", open_inquiry_count: 0 }
+  ]);
+  await createCase(db, {
+    orgId: ORG,
+    row: { client_id: CLIENT, selected_bureaus_raw: "EX", case_status: "Queued", open_inquiry_count: 2 }
+  });
+  assert.equal(db.inserts.length, 0);
+  assert.equal(db.updates.length, 1, "the open case is refreshed, not left stale");
+  assert.ok(db.updates[0].includes(2), "the new item count is written");
+  assert.ok(db.updates[0].includes("Queued"), "and the gate's fresh verdict with it");
+});
+
+test("createCase never writes a sent case back to Queued", async () => {
+  const db = caseDb([
+    { id: "case-ex", client_id: CLIENT, selected_bureaus_raw: "EX",
+      funding_round_id: null, case_status: "In Progress", open_inquiry_count: 2 }
+  ]);
+  await createCase(db, {
+    orgId: ORG,
+    row: { client_id: CLIENT, selected_bureaus_raw: "EX", case_status: "Queued" }
+  });
+  assert.equal(db.inserts.length, 0);
+  assert.equal(db.updates.length, 0,
+    "a letter already in the mail must never be re-offered as ready to send");
+});

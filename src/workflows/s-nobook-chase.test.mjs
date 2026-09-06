@@ -66,3 +66,62 @@ test("nobook: stops mid-cadence when they book after msg1", async () => {
   assert.equal(res.exitedAt, "after-msg1");
   assert.equal(db.messages.length, 2);
 });
+
+/* ── F39, the half that stops the texts already in flight ─────────────────────
+ *
+ * Until 2026-09-03 every ClickFunnels booking event was saved with no client on
+ * it, so this workflow's "have they booked?" check could only ever answer no.
+ * The adapter now stamps the client on new events, but every booking event
+ * already in the database still has a null client, and every chase run asleep
+ * in production wakes against those old rows. These three tests are that case.
+ */
+test("nobook: exits on a historical booking event that has no client on it (email match)", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "Booked@Example.com", custom_fields: {} }],
+    templates: templates(),
+    events: [{
+      org_id: "org-1", client_id: null, name: "booking.created",
+      payload: { email: "booked@example.com", startTime: "2026-09-07T18:00:00Z" }
+    }]
+  });
+  const res = await handle({
+    event: ev("survey.submitted", {}, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.exitedAt, "already_booked");
+  assert.equal(db.messages.length, 0);
+});
+
+test("nobook: exits on a historical booking event matched by phone, however it is written", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+1 (555) 000-1111", custom_fields: {} }],
+    templates: templates(),
+    events: [{
+      org_id: "org-1", client_id: null, name: "booking.created",
+      payload: { email: "different-address@example.com", phone: "5550001111" }
+    }]
+  });
+  const res = await handle({
+    event: ev("survey.submitted", {}, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.exitedAt, "already_booked");
+  assert.equal(db.messages.length, 0);
+});
+
+test("nobook: another company's booking for the same address does NOT stop this chase", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "shared@example.com", custom_fields: {} }],
+    templates: templates(),
+    events: [{
+      org_id: "org-2", client_id: null, name: "booking.created",
+      payload: { email: "shared@example.com" }
+    }]
+  });
+  const res = await handle({
+    event: ev("survey.submitted", {}, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.exitedAt, "completed");
+  assert.equal(db.messages.length, 6);
+});

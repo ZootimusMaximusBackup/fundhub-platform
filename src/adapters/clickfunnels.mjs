@@ -1,8 +1,8 @@
 // ClickFunnels webhook adapter — lead capture, survey submission, appointments.
 //
 // ClickFunnels is the funnel front-end. This adapter translates opt-in / form
-// submissions into canonical bus events so downstream handlers (GHL contact
-// creation, Airtable, email journey triggers) react without coupling to CF.
+// submissions into canonical bus events so downstream handlers (the CRM contact
+// creation, the spreadsheet, email journey triggers) react without coupling to CF.
 //
 // ┌────────────────────────────────────────────────────────────────────────────┐
 // │ ⚠️ CONFIRM payload paths against a real ClickFunnels webhook.               │
@@ -16,6 +16,7 @@
 
 import crypto from "node:crypto";
 import { emit, defaultOrgId } from "../events/bus.mjs";
+import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { handleSloPaidWebhook } from "../slo/purchase.mjs";
 
 // --- 1. Signature verification (fail-closed) --------------------------------
@@ -372,6 +373,107 @@ function isFormSubmissionType(type) {
   return String(type || "").includes("form_submission");
 }
 
+/* --- 2b. Ingest-time client attachment and repeat-post suppression ----------
+ *
+ * WHY THIS EXISTS. Measured 2026-09-03: every one of the 82 `survey.submitted`,
+ * 95 `entry.captured` and 6 `booking.created` rows in `events` carried
+ * client_id = NULL, because this adapter emitted without one and the column is
+ * only ever filled by the caller. Every query in the codebase shaped
+ * `FROM events WHERE client_id = $1` was therefore blind to the whole funnel.
+ * The visible cost was 51 "you never booked" texts to clients who HAD booked
+ * (the no-book chase's exit check reads exactly that shape), but the blindness
+ * was general, not specific to that one workflow.
+ *
+ * resolveClient() is the repository's one authority on "which client is this",
+ * and it is idempotent.
+ *
+ * WHAT THIS CHANGES, EXACTLY — corrected 2026-09-04 after review, because the
+ * first version of this note said more than was true. For `entry.captured` and
+ * `survey.submitted` it really is the same work a moment earlier: the local
+ * handlers onEntryCaptured and onSurveySubmitted already call resolveClient
+ * inside this same webhook (src/handlers/client-lifecycle.mjs register()).
+ *
+ * For the three booking events it is NOT. Nothing is registered on
+ * booking.created, booking.rescheduled or booking.cancelled, so a ClickFunnels
+ * delivery that carries only an appointment now calls resolveClient where
+ * nothing used to. On a customer we have never seen that writes a new `clients`
+ * row, and — only when GHL_API_KEY is set and the dry-run fence is down — syncs
+ * that contact to the CRM. Both are the ordinary behaviour of resolveClient on
+ * every other funnel event; what is new is that a booking-only webhook reaches
+ * it. No new outbound call is written here; the existing ADAPTERS fence still
+ * governs the CRM one.
+ *
+ * It never blocks the webhook. A resolver failure means the event is written
+ * exactly as it is written today — with a null client — rather than the whole
+ * delivery 500ing and ClickFunnels retrying it.
+ */
+async function resolveIngestClientId(db, orgId, evt) {
+  if (!orgId || !evt || !evt.email) return null;
+  try {
+    return await resolveClient(db, {
+      orgId,
+      payload: {
+        email: evt.email,
+        name: evt.name,
+        phone: evt.phone,
+        source: "clickfunnels"
+      }
+    });
+  } catch (err) {
+    console.warn(
+      `[clickfunnels] could not attach a client at ingest (event kept, client_id null): ` +
+      `${String(err?.message || err)}`
+    );
+    return null;
+  }
+}
+
+/* ClickFunnels posts one webhook PER SURVEY SCREEN, plus retries — 82 events
+ * for 5 real surveys on 2026-09-03. Each carries a different CF submission id,
+ * so the `clickfunnels:<id>:<name>` idempotency key is distinct every time and
+ * the bus rightly stores all of them.
+ *
+ * They are not, however, sixteen surveys, and the durable workflows that
+ * trigger off them are what turn one survey into sixteen text-message runs.
+ * So a repeat post is still WRITTEN — its later screens carry answers the first
+ * post did not have, and `onSurveySubmitted` merges each one onto the client;
+ * dropping them would lose the survey and with it the "Survey Complete" stage —
+ * but it does NOT start a second durable run.
+ *
+ * The window is deliberately long. A person filling one survey spreads their
+ * posts over minutes; a person who genuinely starts again the same afternoon
+ * does not need a second chase.
+ */
+export const FUNNEL_REPEAT_WINDOW_MINUTES = 6 * 60;
+
+/* booking.created is left out on purpose: it already has slot-level dedupe
+   below (findBookingBySlot), and a second booking is a real second appointment
+   that its workflows must see. */
+const REPEAT_SUPPRESSED_EVENTS = new Set(["survey.submitted", "entry.captured"]);
+
+async function isRepeatFunnelPost(db, { orgId, name, email, funnel }) {
+  if (!orgId || !email) return false;
+  try {
+    const { rows } = await db.query(
+      `SELECT 1
+         FROM events
+        WHERE org_id = $1
+          AND name = $2
+          AND lower(payload->>'email') = $3
+          AND COALESCE(payload->>'funnel', '') = $4
+          AND created_at > now() - make_interval(mins => $5)
+        LIMIT 1`,
+      [orgId, name, String(email).toLowerCase(), String(funnel || ""), FUNNEL_REPEAT_WINDOW_MINUTES]
+    );
+    return rows.length > 0;
+  } catch (err) {
+    /* Never let the look-back decide the delivery. If it cannot be answered the
+       event behaves exactly as it does today. */
+    console.warn(`[clickfunnels] repeat-post check failed (treating as first): ${String(err?.message || err)}`);
+    return false;
+  }
+}
+
 /** Same calendar slot from the form post and the later appointment webhook. */
 async function findBookingBySlot(db, orgId, email, startTime) {
   if (!orgId || !email || !startTime) return null;
@@ -491,6 +593,11 @@ export async function handleClickFunnelsWebhook({
     return { ok: true, status: 200, reason: "no_canonical_events", emitted: [] };
   }
 
+  /* Resolved ONCE for the whole delivery, before the first emit, so every event
+     this webhook produces names the same client. */
+  const ingestOrgId = await defaultOrgId(db);
+  const ingestClientId = await resolveIngestClientId(db, ingestOrgId, evt);
+
   const emitted = [];
   for (const c of canonical) {
     let payload;
@@ -539,22 +646,46 @@ export async function handleClickFunnelsWebhook({
     const idKey = evt.id ? `clickfunnels:${evt.id}:${c.name}` : undefined;
 
     if (c.name === "booking.created") {
-      const orgId = await defaultOrgId(db);
-      const existing = await findBookingBySlot(db, orgId, evt.email, evt.startTime);
+      const existing = await findBookingBySlot(db, ingestOrgId, evt.email, evt.startTime);
       if (existing) {
         await promoteBookingUid(db, {
-          orgId,
+          orgId: ingestOrgId,
           existing,
           nextUid: payload.bookingUid,
           meetingUrl: payload.meetingUrl
         });
-        emitted.push({ name: c.name, id: existing.id, deduped: true });
+        emitted.push({ name: c.name, id: existing.id, deduped: true, repeat: true, startedRun: false });
         continue;
       }
     }
 
-    const res = await emit(db, c.name, payload, { idempotencyKey: idKey });
-    emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
+    /* A repeat post of a survey already in flight: still stored, still merged
+       onto the client by the local handlers, but no second durable run. */
+    const repeat = REPEAT_SUPPRESSED_EVENTS.has(c.name)
+      ? await isRepeatFunnelPost(db, {
+        orgId: ingestOrgId,
+        name: c.name,
+        email: evt.email,
+        funnel: evt.funnel
+      })
+      : false;
+
+    const res = await emit(db, c.name, payload, {
+      idempotencyKey: idKey,
+      orgId: ingestOrgId,
+      clientId: ingestClientId,
+      skipInngest: repeat
+    });
+    emitted.push({
+      name: c.name,
+      id: res.id,
+      deduped: res.deduped,
+      clientId: ingestClientId,
+      repeat,
+      // The one fact this lane exists to control: did this delivery start a
+      // durable workflow run (a text-message cadence), or only record data?
+      startedRun: !repeat && !res.deduped
+    });
   }
   return { ok: true, status: 200, emitted, purchase };
 }

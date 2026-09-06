@@ -1,6 +1,6 @@
-// Three collections: start (existing apply survey), mid check-in, ending interview.
+// Three collections: start (existing apply survey), mid accountability call, end-of-service accountability call.
 // Google Meet is only for the sales call and the ending interview.
-// Mid is a phone / AI reach-out, due one week after they pay.
+// Mid is a phone / AI reach-out, due at the halfway point of the service.
 
 import { on } from "../events/registry.mjs";
 import { createTask } from "../lib/create-task.mjs";
@@ -15,13 +15,38 @@ import { isInterviewBooking, meetBookingUrl, RECORDING_NOTE } from "../insights/
    Moving the constant moves both tasks — the mid check-in and the post
    interview — because both read it. */
 export const ASSIGNEE_ROLE = "csm";
-export const MID_DUE_DAYS = 7;
+/* HALFWAY THROUGH THE SERVICE, which is what Chris asked for (2026-09-05) and
+   is not what this was.
+
+   It was 7. A week after somebody pays, nothing has happened yet — the pull may
+   not be back, the first round may not have gone out — so "how is it going"
+   had no answer and the call was really a welcome call wearing the wrong name.
+
+   WHY A NUMBER AND NOT A COMPUTED MIDPOINT. The obvious version is
+   `contracts.signed_at + term_days/2`. It cannot be built: `term_days` is a
+   merge value for rendering one template's sentence, nothing in src/ or api/
+   ever writes it to a contract, and 287 deliberately MOVED how long the work
+   runs out of this catalogue and into the agreement text Chris supplies
+   ("Neither was ever a number this catalogue owns" — src/config/offers.mjs).
+   Measured 2026-09-05 on a database with every migration applied: zero
+   contracts carry a term. A midpoint computed from absent data is a guess with
+   a formula wrapped around it.
+
+   So: 90 days, the midpoint of the 180-day term that is the only program
+   length actually stated anywhere in this repo
+   (REPAIR-AND-FUNDING-AGREEMENT). One number, one place, change it here. */
+export const MID_DUE_DAYS = 90;
 
 export const SOURCE_WORKFLOW = "customer-insights-post";
-export const TASK_TITLE = "Post-funding Google Meet interview";
+/* ACCOUNTABILITY CALL, not "interview". Chris's word, 2026-09-05, and it is the
+   honest one: the CSM holds the client accountable to their own progress,
+   gathers what they say, and nudges toward the next product. Naming it an
+   interview when money and an offer also come up is the part that would need
+   defending later; naming it what it is does not. */
+export const TASK_TITLE = "Accountability call — results and what's next";
 
 export const MID_SOURCE_WORKFLOW = "customer-insights-mid";
-export const MID_TASK_TITLE = "Mid-journey check-in";
+export const MID_TASK_TITLE = "Accountability call — halfway check-in";
 
 export function interviewTaskBody(eventId, env = process.env) {
   const questions = formatQuestionList("post");
@@ -32,6 +57,22 @@ export function interviewTaskBody(eventId, env = process.env) {
       : "Book a Google Meet (set INSIGHT_MEET_BOOKING_URL on Netlify).",
     "Click Record in Google Meet. Ask these questions. Save answers with POST /api/customer-insights (stage=post, channel=google_meet).",
     RECORDING_NOTE,
+    "",
+    /* Owner-set 2026-09-05, after the Cole Gordon research. One call, and the
+       answers are the point of it. The CSM is paid 10% on upsells and nothing
+       on collections, deliberately: a rep paid to collect leans on the client
+       mid-conversation, and a rep paid on the next sale is motivated to make
+       this one work first.
+
+       So the offer is a NUDGE, not a pitch — Chris's words, "nothing too crazy,
+       just pushes and nudges". A client can be sold another product while still
+       halfway through this one; do not wait for the current service to finish.
+       What they already own is on the CSM queue, so this task does not repeat
+       facts that go stale before anyone reads it. */
+    "THEN, once you have their answers:",
+    "  Nudge, do not pitch. If they are in a good place, mention what they do not",
+    "  already have. Being mid-service is not a reason to hold off.",
+    "The answers are the reason this call exists. The offer rides along.",
     "",
     questions,
     "",
@@ -44,7 +85,9 @@ export function checkinTaskBody(eventId) {
   const questions = formatQuestionList("mid");
   return [
     "Call them (phone or AI reach-out). This is not a Google Meet.",
+    "An accountability call: how are they doing against what they came here for.",
     "Ask these questions. Save answers with POST /api/customer-insights (stage=mid, channel=call).",
+    "If they are in a good place, nudge toward what they do not already have. A nudge, not a pitch.",
     "",
     questions,
     "",

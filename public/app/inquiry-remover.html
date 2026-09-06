@@ -219,6 +219,11 @@
   .queue-age{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text-dim);}
   .queue-age.old{color:var(--amber);font-weight:800;}
   .queue-age .oldest{font-weight:800;color:var(--amber);}
+  /* What a chasing case is still short of, said on the row itself. Colour
+     only: this screen spends its single sizing escape hatch on the rule
+     further down (UI-STANDARDS §12.7), so this inherits the row's size and
+     reads as part of the same sentence. */
+  .doc-need{color:var(--text-dim);}
 
   .letters-list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
   .letter-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--paper-dim);font-size:var(--fs-body);}
@@ -699,7 +704,7 @@ function blankToNull(v) {
 
 /* pill — status text → the pill class the screen renders.
    Mapped ONLY where the wording is unambiguous. inquiry_log.status is free text
-   written by several producers (the external Airtable runtime among them), so an
+   written by several producers (the external spreadsheet runtime among them), so an
    unrecognised value keeps its real text on a neutral pill and is counted into
    the banner as unmapped. A complete mapping would be an invention, and 055
    deliberately declined to constrain the column for the same reason. */
@@ -1203,7 +1208,7 @@ const BUREAU_NAMES = Object.freeze({ EX: "Experian", EQ: "Equifax", TU: "TransUn
    straight onto inquiry_log.bureau, and inquiry_log.bureau is plain `text` with
    no CHECK (db/schema/001_init.sql:173). Today's writers put the two-letter code
    there — EX / EQ / TU, per the ai_bureau_config seed in migration 155 — while
-   rows that arrived from the old Airtable runtime hold the full name.
+   rows that arrived from the old spreadsheet runtime hold the full name.
 
    The screen's three bureau chips compared against the full name only. Against
    code rows every chip read 0 and "none in queue" while the queue was full, and
@@ -2386,9 +2391,62 @@ window.FHDeskHead = (function () {
   function docsLabel(C) {
     return window.FHInquiryView.docsPacketLabel(C);
   }
+  /* ── WHAT DISABLES SEND IS THE PACKET, NOT LAST WEEK'S STATUS ────────────
+     This used to read `C.case_status === "Blocked"` and nothing else, and
+     Blocked was a one-way door: it is written when a send is refused for short
+     paperwork, and until 2026-09-06 nothing in the send path ever wrote it back
+     down. An agent watched the "still needed" list fall from three items to one
+     as the client uploaded, and Send stayed grey the whole time. It would have
+     stayed grey forever.
+
+     The packet answer rides in on the case row now (api/read/inquiry-cases.mjs
+     asks src/inquiry-ops/doc-gate.mjs, which since today also counts a
+     signature filed as a consent rather than as a document — that is where the
+     walkthrough client's dispute authorization actually lives). Three states,
+     and the third is not "no":
+
+       docs_complete === false  → papers really are short. Send is off, and the
+                                  screen names WHICH papers.
+       docs_complete === true   → send is on, even on a case still marked
+                                  Blocked. Pressing it clears the block, which
+                                  src/inquiry-ops/send.mjs now does.
+       undefined                → nobody could check. Send stays available and
+                                  the server gate decides; a screen that refuses
+                                  on "we could not look" is guessing.
+
+     A case with no bureau on it is a separate, harder no: there is no address
+     to send to. It is off regardless of paperwork. */
+  function sendBlock(C) {
+    var noBureau = !window.FHInquiryView.bureauKey(C.selected_bureaus_raw);
+    var packetShort = C.docs_complete === false;
+    var missingWords = window.FHInquiryView.docsMissingWords(C.docs_missing);
+    var note = "";
+    if (noBureau) {
+      note = '<p style="font-size:var(--fs-body);color:var(--red)">'
+        + 'Send is off — this case has no credit bureau on it, so there is nowhere to send it. '
+        + 'Set the bureau on the case first.</p>';
+    } else if (packetShort) {
+      note = '<p style="font-size:var(--fs-body);color:var(--red)">'
+        + 'Send is off — this client still needs to send us '
+        + (missingWords || 'part of their identity packet') + '.</p>';
+    } else if (C.case_status === "Blocked") {
+      /* Words, not colour. shell.js paintBrand() repaints --warn off the
+         tenant's ramp, so a one-hue brand paints every state the same
+         (docs/UI-STANDARDS.md §12.6). The sentence has to carry it alone. */
+      note = '<p style="font-size:var(--fs-body);color:var(--text-dim)">'
+        + 'This case was blocked earlier for missing paperwork. Everything needed is on file now, '
+        + 'so pressing Send will clear the block.</p>';
+    } else if (C.docs_complete !== true) {
+      note = '<p style="font-size:var(--fs-body);color:var(--text-dim)">'
+        + 'The identity packet has not been checked. Send will check it before anything leaves.</p>';
+    }
+    return { off: noBureau || packetShort, note: note };
+  }
+
   function detailHtml(C) {
     var bureau = window.FHInquiryView.bureauKey(C.selected_bureaus_raw);
-    var blocked = C.case_status === "Blocked";
+    var send = sendBlock(C);
+    var blocked = send.off;
     var missingWords = window.FHInquiryView.docsMissingWords(C.docs_missing);
     var letter = C.letter_draft_html || "<p><em>No draft letter yet.</em></p>";
     var portalBlock = bureau === "EX"
@@ -2427,9 +2485,7 @@ window.FHDeskHead = (function () {
             '. SSN stays masked; reveal uses /api/pii with an audit reason.</p>' +
           '<a class="qbtn" href="documents.html?client_id=' + encodeURIComponent(C.client_id || "") + '">Open documents</a>' +
           '<h4 style="margin-top:14px">Send</h4>' +
-          (blocked
-            ? '<p style="font-size:var(--fs-body);color:var(--red)">Send disabled — identity packet incomplete. Collection is chasing uploads.</p>'
-            : '') +
+          send.note +
           '<label style="display:flex;gap:6px;align-items:center;font-size:var(--fs-body);margin:6px 0">' +
             '<input type="checkbox" class="want-mail" ' + (blocked ? "disabled" : "checked") + '> Mail letter (PostGrid)</label>' +
           '<label style="display:flex;gap:6px;align-items:center;font-size:var(--fs-body);margin:6px 0">' +
@@ -2469,7 +2525,8 @@ window.FHDeskHead = (function () {
     client_not_found: "That client record could not be found.",
     invalid_round:    "That dispute round is not one this desk can generate.",
     already_generated:"Letters for this round already exist.",
-    no_authorization: "This client has no signed repair agreement on file."
+    no_authorization: "This client has no signed repair agreement on file.",
+    no_bureau_on_case: "This case has no credit bureau on it, so there is nothing to generate. Set the bureau on the case first."
   };
 
   /* Short forms, for naming a bureau that was skipped inside a longer sentence. */
@@ -2662,6 +2719,27 @@ window.FHDeskHead = (function () {
 
   function caseBody() { return document.getElementById("caseQueueBody"); }
 
+  /* ── THE DOCS COLUMN SAYS WHAT IS MISSING ────────────────────────────────
+     Every row on this queue read the single word "chasing" and stopped there,
+     so the only way to find out what a client still owed us was to open each
+     case one at a time. The list already receives the answer — docs_missing
+     rides in beside docs_complete on every row — and nothing was printing it.
+
+     "complete" and "not checked" stay one word, because there is nothing to
+     add to either. Only "chasing" gains the list, and the words are the plain
+     ones (docsMissingWords), not the database's column names. */
+  function docsCell(C) {
+    var label = docsLabel(C);
+    if (label !== "chasing") return esc(label);
+    var words = window.FHInquiryView.docsMissingWords(C.docs_missing);
+    if (!words) {
+      /* Blocked with nothing itemised: the case was refused before this queue
+         learned to ask. Say that, rather than implying we know what is short. */
+      return 'chasing <span class="doc-need">— not yet itemised</span>';
+    }
+    return 'chasing <span class="doc-need">— ' + esc(words) + '</span>';
+  }
+
   function rowHtml(C) {
     var V = window.FHInquiryView;
     var st = uiStatus(C);
@@ -2676,7 +2754,7 @@ window.FHDeskHead = (function () {
       "<td class=\"mono\">" + esc(V.bureauLabel(C.selected_bureaus_raw)) + "</td>" +
       "<td>" + esc(C.open_inquiry_count || 0) + "</td>" +
       "<td><span class=\"status-pill " + esc(st.cls) + "\">" + esc(st.label) + "</span></td>" +
-      "<td>" + esc(docsLabel(C)) + "</td>" +
+      "<td>" + docsCell(C) + "</td>" +
       "<td>" + deliveryChips(C) + "</td>" +
       "<td>" + esc(callState(C)) + "</td>" +
       "<td class=\"mono\">" + esc(C.funding_round_id ? String(C.funding_round_id).slice(0, 8) : "—") + "</td>";
@@ -2770,8 +2848,33 @@ window.FHDeskHead = (function () {
 
   function paintHead() {
     var V = window.FHInquiryView;
-    var head = V.inquiryHeadline(allCases, { total: caseTotal });
-    var next = V.nextInquiryAction(allCases);
+    /* ── THE HEADLINE AND THE BUTTON MUST MEAN A CASE THAT CAN BE SENT ────
+       Measured 2026-09-06: the one case this desk offered as ready was an empty
+       one — no bureau, no inquiries — and the big button at the top of the
+       screen pointed straight at it, because the client's three REAL cases were
+       Blocked and did not count as ready.
+
+       A case with no bureau has no address. Nothing can be posted to it, no
+       letter can be generated for it (src/inquiry-ops/generate-from-crs.mjs
+       refuses one now), and sending it is not a piece of work anybody can do.
+       So it is not what "the next thing to do" means, and the button skips it.
+
+       The headline is fed the same set, so the number and the button agree.
+       A screen that says "1 ready to send" with nothing to press is the same
+       defect wearing different clothes.
+
+       THE CASE IS NOT HIDDEN. It stays in the list below with its own line
+       saying it has no bureau and cannot go anywhere, and the quiet line says
+       how many there are. Dropping it off the screen would be the other kind
+       of lie. */
+    var sendable = allCases.filter(function (C) {
+      return !!V.bureauKey(C.selected_bureaus_raw);
+    });
+    var unaddressed = allCases.length - sendable.length;
+    var head = V.inquiryHeadline(sendable, {
+      total: caseTotal == null ? null : caseTotal - unaddressed
+    });
+    var next = V.nextInquiryAction(sendable);
     nextCaseId = next ? next.caseId : null;
     /* THE QUIET LINE, WHEN THERE IS NO BUTTON TO PRESS.
        nextInquiryAction only ever names a case that is ready to send, so with
@@ -2779,7 +2882,7 @@ window.FHDeskHead = (function () {
        what she reads. It used to say "every open case is already sent", which
        was flatly untrue: Blocked means the send was refused and somebody has to
        chase identity documents. It counts them now instead of sending her home. */
-    var waiting = V.casesNeedingAPerson(allCases).length;
+    var waiting = V.casesNeedingAPerson(sendable).length;
     var quiet;
     if (!allCases.length) {
       quiet = "No cases are open.";
@@ -2787,8 +2890,15 @@ window.FHDeskHead = (function () {
       quiet = "Nothing is ready to send — " + (waiting === 1
         ? "1 case needs a person before it can be sent."
         : waiting + " cases need a person before they can be sent.");
-    } else {
+    } else if (sendable.length) {
       quiet = "Nothing is waiting on you — every open case is already sent.";
+    } else {
+      quiet = "Nothing here can be sent.";
+    }
+    if (unaddressed) {
+      quiet += unaddressed === 1
+        ? " One more case has no credit bureau on it, so nothing can be sent for it at all. It is in the list below."
+        : " " + unaddressed + " more cases have no credit bureau on them, so nothing can be sent for them at all. They are in the list below.";
     }
     window.FHDeskHead.put(
       "inquiries",
@@ -3116,9 +3226,26 @@ fetch("/api/auth/session", {
     });
   });
 
-  var remembered = "";
-  try { remembered = localStorage.getItem("fh_specialist_pane") || ""; } catch (e) {}
-  if (remembered === "repair") show("repair");
+  /* ── WHY THE RESTORE IS NOT DONE HERE ──────────────────────────────────
+     It used to be, and that is what made the Repair tab spin forever.
+
+     This block runs while the page is still being read top to bottom. The
+     Repair desk is a SEPARATE IIFE further down the same <script>, and
+     loadRepairDesk only becomes reachable on its very last line
+     (`window.loadRepairDesk = loadRepairDesk`). So calling show("repair") from
+     here reached for a function that did not exist yet: the browser threw
+     ReferenceError, and because the throw happened part-way through the script,
+     EVERYTHING BELOW IT — the whole Repair desk, its Retry button, its filter
+     tiles — never ran at all. The spinner had nothing left alive to replace it.
+
+     It only ever bit the person who works the Repair side, because it needs
+     "repair" in storage from a previous visit to fire. Clearing that one stored
+     value recovered the page, which is why it looked intermittent.
+
+     The restore is now the last thing on the page — see restoreRememberedPane
+     at the bottom of this script. Clicking a tab still works exactly as before;
+     only the reopen-where-you-left-off path moved. */
+  window.FHSpecialistPane = { show: show };
 })();
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -3879,6 +4006,22 @@ function loadRepairDesk() {
    this one. Everything else stays in here. */
 window.loadRepairDesk = loadRepairDesk;
 
+})();
+
+/* ── REOPEN ON THE DESK YOU WERE WORKING ───────────────────────────────────
+   Last thing on the page, and it has to stay last. Both desks are fully built
+   by this line, so show("repair") can reach loadRepairDesk. Run this any
+   earlier and the Repair pane opens on a spinner that never resolves — the
+   whole story is written above the tab handlers.
+
+   Storage being unavailable, or holding something this page does not know, is
+   simply the Inquiries pane, which is what the page already shows. */
+(function restoreRememberedPane() {
+  var remembered = "";
+  try { remembered = localStorage.getItem("fh_specialist_pane") || ""; } catch (e) {}
+  if (remembered !== "repair") return;
+  if (!window.FHSpecialistPane || typeof window.FHSpecialistPane.show !== "function") return;
+  window.FHSpecialistPane.show("repair");
 })();
 
 </script>

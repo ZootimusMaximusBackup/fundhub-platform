@@ -1,5 +1,5 @@
 // C-02 — Inquiry Created -> Assign Inquiry Specialist.
-// Source: GHL-System-Map.md CREDIT OPS WORKFLOWS section.
+// Source: the CRM system map CREDIT OPS WORKFLOWS section.
 // Trigger: analysis.completed, gated on the payload carrying newly found inquiries
 // (payload.newInquiries — an array of { bureau, inquiry } pairs). Logs each into
 // inquiry_log, flags the round on hold, and raises the specialist-assignment task.

@@ -4,7 +4,7 @@
 // Never invents copy: if `templateKey` has no row in message_templates, or the row
 // hasn't passed the compliance gate, the send is a safe no-op ({ sent: false,
 // reason: "template_pending" }). Real N-series SMS content is confirmed missing in
-// GHL itself (Chris's own tracking note) — this is how that gap surfaces instead of
+// CRM itself (Chris's own tracking note) — this is how that gap surfaces instead of
 // silently sending blank/placeholder messages.
 //
 // Idempotent via the existing messages_org_providerref_uniq index (migration 004):
@@ -31,7 +31,7 @@ import { threadMessage } from "../conversations/store.mjs";
 /* Which column on the client record is the destination for a channel.
    The destination is recorded in the terms of the CHANNEL, not of whichever
    provider happens to carry it — routing can change between queueing and
-   sending, and a provider that addresses by something else (the GHL relay
+   sending, and a provider that addresses by something else (the CRM relay
    addresses a contact id) resolves it live at dispatch. See 111_messages_address
    and addressFor() in src/messaging/dispatch.mjs. */
 const ADDRESS_BY_CHANNEL = { email: "email", sms: "phone", voice: "phone" };
@@ -80,13 +80,13 @@ function resolveAppointmentTimeZone(ctx = {}) {
   );
 }
 
-// Merge-tag context for the ported GHL copy, which merges `{{contact.*}}` — first name,
+// Merge-tag context for the ported the CRM copy, which merges `{{contact.*}}` — first name,
 // business name, the pre-approval amount. Every call site in src/workflows passes no
 // `context`, so without this those tags resolve to nothing (and before the renderer fix
 // they rendered literally, braces and all, into live SMS and email).
 //
 // Sourced from the client record: the identity columns off `clients`, plus the
-// custom_fields jsonb that holds the 252 ported GHL fields — which is where
+// custom_fields jsonb that holds the 252 ported the CRM fields — which is where
 // analyzer_prequal_amount and the rest of `contact.*` actually live. Columns are spread
 // last so a stale same-named custom field can't shadow real identity data.
 async function clientContext(db, clientId) {

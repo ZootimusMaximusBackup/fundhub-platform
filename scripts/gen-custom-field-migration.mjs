@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Generates db/schema/005_client_custom_fields.sql from the live GHL custom-field
+ * Generates db/schema/005_client_custom_fields.sql from the live CRM custom-field
  * definitions (Master Spec §B: the ~252 typed client columns, ported before the CRM
  * adapter writes). Run: GHL_PRIVATE_API_KEY=… GHL_LOCATION=… node scripts/gen-custom-field-migration.mjs
  *
- * Reads fields from GHL LeadConnector v2, maps GHL dataType → Postgres type, and emits
+ * Reads fields from the CRM LeadConnector v2, maps the CRM dataType → Postgres type, and emits
  * one column per field on a dedicated client_custom_fields table (client_id FK + org_id,
  * per Master Spec Rule 7). Column names keep the cf_* fieldKey (Rule 2) so the DB stays
  * canonical while the UI shows plain language (vision §8.3).
@@ -18,8 +18,8 @@ const KEY = process.env.GHL_PRIVATE_API_KEY;
 const LOC = process.env.GHL_LOCATION || 'ORh91GeY4acceSASSnLR';
 if (!KEY) throw new Error('GHL_PRIVATE_API_KEY required');
 
-// GHL dataType → Postgres column type. Multi-value fields become text[]; everything
-// unrecognized falls back to text (safe: GHL stores everything as strings on the wire).
+// CRM dataType → Postgres column type. Multi-value fields become text[]; everything
+// unrecognized falls back to text (safe: the CRM stores everything as strings on the wire).
 const TYPE_MAP = {
   TEXT: 'text', LARGE_TEXT: 'text', TEXTAREA: 'text', PHONE: 'text', EMAIL: 'text',
   SINGLE_OPTIONS: 'text', RADIO: 'text', DROPDOWN: 'text', FILE_UPLOAD: 'text', URL: 'text',
@@ -45,14 +45,14 @@ async function fetchFields() {
   const res = await fetch(`https://services.leadconnectorhq.com/locations/${LOC}/customFields`, {
     headers: { Authorization: `Bearer ${KEY}`, Version: '2021-07-28', Accept: 'application/json' },
   });
-  if (!res.ok) throw new Error(`GHL ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`The CRM ${res.status}: ${await res.text()}`);
   const body = await res.json();
   return body.customFields || [];
 }
 
 const fields = await fetchFields();
 
-// Dedupe column names (GHL can have colliding sanitized keys); keep first, suffix rest.
+// Dedupe column names (the CRM can have colliding sanitized keys); keep first, suffix rest.
 const seen = new Map();
 const cols = [];
 for (const f of fields) {
@@ -64,7 +64,7 @@ for (const f of fields) {
 
 const lines = [];
 lines.push('-- 005_client_custom_fields.sql');
-lines.push(`-- Auto-generated from ${fields.length} live GHL custom fields (location ${LOC}).`);
+lines.push(`-- Auto-generated from ${fields.length} live CRM custom fields (location ${LOC}).`);
 lines.push('-- Master Spec §B (252 typed client columns) + Rule 2 (cf_* names) + Rule 7 (org_id).');
 lines.push('-- Regenerate: node scripts/gen-custom-field-migration.mjs. Do NOT hand-edit.');
 lines.push('');
@@ -88,7 +88,7 @@ lines.push('');
 const outSql = resolve(__dir, '../db/schema/005_client_custom_fields.sql');
 writeFileSync(outSql, lines.join('\n'));
 
-// Also emit a machine-readable map: cf column ↔ GHL id/key/type, for the CRM adapter.
+// Also emit a machine-readable map: cf column ↔ the CRM id/key/type, for the CRM adapter.
 mkdirSync(resolve(__dir, '../db/schema/meta'), { recursive: true });
 const mapPath = resolve(__dir, '../db/schema/meta/custom-field-map.json');
 writeFileSync(mapPath, JSON.stringify({ location: LOC, count: cols.length, fields: cols }, null, 2));

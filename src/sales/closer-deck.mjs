@@ -308,11 +308,23 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
         ORDER BY created_at DESC LIMIT 1`,
       [clientId, orgId]
     ),
-    /* The columns the payload actually maps. This asked for age_months alone
-       while the response below reads id, name and incorporated_date, so every
-       company came back nameless and undated on a real database. */
+    /* The columns the payload actually maps. Two earlier goes at this were both
+       wrong: the first asked for age_months alone, so every company came back
+       nameless and undated; the second added a bare `incorporated_date`, which
+       is NOT a column on businesses and took the whole Present screen down with
+       `column "incorporated_date" does not exist` for every client in the
+       company (live outage, fixed 2026-09-06).
+
+       The incorporation month/year lives INSIDE the entity_data JSON blob —
+       that is where api/soft-pull-approve.mjs writes it, both on intake
+       (replaceSoftPullBusinesses) and on the deck's own "stamp the date"
+       action, and it is where src/http/client-detail.mjs reads it from. Read it
+       the same way here. The real columns on businesses are: id, org_id,
+       client_id, name, age_months, entity_data, created_at, updated_at. */
     db.query(
-      `SELECT id, name, age_months, incorporated_date FROM businesses
+      `SELECT id, name, age_months,
+              entity_data->>'incorporated_date' AS incorporated_date
+         FROM businesses
         WHERE client_id = $1 AND org_id = $2
         ORDER BY created_at ASC`,
       [clientId, orgId]
@@ -680,6 +692,27 @@ function paymentPurpose(offer) {
   return offer.paymentPurpose || "custom";
 }
 
+/* F48, 2026-09-03. What arrived on the customer's phone was
+ * "Hi Sim, Fundhub Capital Academy: pay $5,000 <link>" — no person, no reason,
+ * no reference to the call it came out of. Read cold, beside a dollar amount
+ * and a payment link, that is indistinguishable from a scam, which is what the
+ * owner said when he received six copies of it.
+ *
+ * So the text now says who it is from, which conversation it belongs to, and
+ * what to do if they are not ready — and it carries the same opt-out line every
+ * other text in the system carries, word for word. Same single message, same
+ * link, same amount: this changes what it says, not how often it is sent. The
+ * button that sends it belongs to another lane and is untouched here.
+ */
+export function payLinkSmsBody({ firstName, description, amount, checkoutUrl }) {
+  return (
+    `Hi ${firstName}, it's Fundhub. Here's the ${description} payment link ` +
+    `from your call — ${amount}: ${checkoutUrl}\n` +
+    `Questions before you pay? Reply here and your advisor will answer. ` +
+    `Reply STOP to opt out.`
+  );
+}
+
 export async function sendDeckPayLink(db, {
   orgId, clientId, staffId, staffRole = null, offerKey,
   saleMotion = null, checkoutBaseUrl, env = process.env
@@ -756,7 +789,9 @@ export async function sendDeckPayLink(db, {
       staffId,
       clientId,
       channel: "sms",
-      body: `Hi ${firstName}, Fundhub ${description}: pay ${amount} ${link.checkout_url}`,
+      body: payLinkSmsBody({
+        firstName, description, amount, checkoutUrl: link.checkout_url
+      }),
       idempotencyKey: `pay-link-sms:${link.id}`
     }));
   } catch {

@@ -235,6 +235,23 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/299_hiring_apply_attempts.sql",
   "migrations/300_eeo_invite_template_and_submit_outcome.sql",
   "migrations/301_creative_copy_text.sql",
+  "migrations/310_doc_check_verified_identity.sql",
+  "migrations/330_client_waypoints.sql",
+  "migrations/331_paid_service_requests.sql",
+  "migrations/332_dispute_letter_mail_guard.sql",
+  "migrations/333_dispute_letter_send_claim.sql",
+  "migrations/334_no_clear_after_mailing.sql",
+  "migrations/340_client_light_affiliate.sql",
+  "migrations/345_paid_service_one_open.sql",
+  "migrations/346_csm_upsell_commission_rate.sql",
+  "migrations/352_client_push_subscriptions.sql",
+  "migrations/360_waypoint_verification.sql",
+  "migrations/361_waypoint_definitions.sql",
+  "migrations/362_waypoint_definitions_seed.sql",
+  "migrations/363_waypoint_definitions_copy_and_grants.sql",
+  "migrations/364_hiring_rls_policies.sql",
+  "migrations/365_lenders_bureaus_from_datapoints.sql",
+  "migrations/366_creditor_bureau_map.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",
@@ -256,7 +273,8 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/021_funding_mastery_agreement.sql",
   "seed/022_partner_welcome.sql",
   "seed/023_ds02_letters_portal_copy.sql",
-  "seed/024_partner_welcome_password.sql"
+  "seed/024_partner_welcome_password.sql",
+  "seed/025_creditor_bureau_map.sql"
 ]);
 
 export default EXPECTED_MIGRATIONS;

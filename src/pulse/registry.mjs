@@ -14,6 +14,7 @@ export const ALLOWED_UNMONITORED = {
   "trials/convert": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a partner agreement or pause a partner. Day 8 is a human decision, not an uptime probe.",
   "campaigns/meta-agency": "POST only. A GET answers 405 by design, and pinging it with a body would store a Meta Business id against a partner and fire a real agency-access request at Meta on their behalf. The monitored door for this surface is campaigns/connections, which reports whether the access actually landed.",
   "training-progress": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a compliance certification against a partner nobody assessed. The monitored door for the training is read/partner-training, which is what a partner actually opens.",
+  "push/unsubscribe": "POST or DELETE only — it is the control that switches a client's notifications off. A GET answers 405 by design, which a ping would read as an outage, and pinging it with a body would retire a real device. Its read sibling push/subscribe answers GET and is the monitored door for this pair.",
   "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk."
 };
 
@@ -21,6 +22,7 @@ const API_KEYS = [
   "adintel/board",
   "agent-call",
   "agents",
+  "affiliates/refer",
   "ai-bureau-config",
   "applications",
   "auth/admin-reset",
@@ -145,6 +147,12 @@ const API_KEYS = [
      them on a monthly cycle, so an outage here is revenue not asked for. */
   "partner-addons",
   "payment-links",
+  /* The self-serve paid round. A plain GET answers with the price list and
+     whether this client may buy one, so it is a real uptime door: a client
+     seeing "could not load" on a page with a price on it is an outage worth
+     knowing about. The POST half is the one that mints a hosted checkout link,
+     and a GET never touches it. */
+  "paid-services",
   "pii",
   "pipeline-cards",
   "pipeline-clients",
@@ -168,9 +176,23 @@ const API_KEYS = [
   "public/partner-page",
   "public/survey-submit",
   "public/unsubscribe",
+  /* Web push for the client portal. Both answer a plain GET — push/key with the
+     public VAPID key, push/subscribe with the caller's own device list — and both
+     are client-only, so an unsigned ping answers 401, which counts as up. They are
+     worth watching because a client whose portal cannot reach them is offered a
+     button that silently does nothing. The write half, push/unsubscribe, is POST
+     only — see ALLOWED_UNMONITORED. */
+  "push/key",
+  "push/subscribe",
   "read/ad-attribution",
   "read/ad-books",
   "read/affiliates",
+  /* One affiliate's own referrals, payouts, rates and payout gates. Separate
+     from read/affiliates above, which answers staff with roster-wide counts.
+     Monitored because an outage here empties both tables on the affiliate
+     screen, whose empty state reads "No referrals on file" — an affiliate would
+     read that as their referrals having vanished, not as a server being down. */
+  "read/affiliate-portal",
   "read/agent-context",
   "read/agent-shadow-log",
   "read/agents",
@@ -178,6 +200,9 @@ const API_KEYS = [
   "read/bank-inbox",
   "read/banking-surface",
   "read/call-outcomes",
+  /* The only read behind the client progress page. An outage here is a client
+     who paid up to $10,000 seeing no scores, no checklist and no next step. */
+  "read/client-progress",
   "read/closer-call",
   "read/closer-deck",
   "read/closer-now",
@@ -187,6 +212,10 @@ const API_KEYS = [
   "read/company-brain",
   "read/contracts",
   "read/conversations",
+  /* The CSM's whole day. An outage here and the person who owns every
+     post-sale conversation has no list of who to call and no idea who is
+     behind on payments. */
+  "read/csm-queue",
   "read/customer-insights",
   "read/deal-math",
   "read/documents",

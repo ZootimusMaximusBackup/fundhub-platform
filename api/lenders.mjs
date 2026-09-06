@@ -67,7 +67,7 @@ export default async function handler(req, res, deps = {}) {
         return res.status(400).json({
           ok: false,
           error: "invalid_lender_table",
-          message: "lender_table must be one of the seven Airtable product names."
+          message: "lender_table must be one of the seven lender product names."
         });
       }
       const lender = await createLender(database, { orgId, row: body, staff });

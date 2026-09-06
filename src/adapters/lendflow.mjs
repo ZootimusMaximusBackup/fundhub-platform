@@ -410,7 +410,7 @@ export function buildSubmitPayload({ client = {}, round = {}, business = {} } = 
   const biz = business || {};
   const bizEntity = biz.entity_data || biz.entityData || {};
 
-  // cf_* names are carbon-copied from GHL (Rule 2) — read those first, then the
+  // cf_* names are carbon-copied from the CRM (Rule 2) — read those first, then the
   // typed/plain equivalents. ⚠️ the exact cf_svy_* keys beyond funding_target are
   // UNVERIFIED against the CRM field export.
   const pick = (...vals) => vals.find((v) => v !== undefined && v !== null && v !== "") ?? null;

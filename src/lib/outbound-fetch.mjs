@@ -85,11 +85,36 @@ export function redact(text) {
     .slice(0, MAX_ERROR_CHARS);
 }
 
+/* `transmitted` — WAS A REQUEST HANDED TO fetch AT ALL?
+
+   Separate from `blocked`, and it is the field a caller must read before it
+   retries anything. `blocked` says only "the dry-run fence held it"; there are
+   other ways to return without reaching the network, and a caller that checks
+   `blocked` alone treats those as maybes.
+
+   false means NOTHING LEFT THIS PROCESS. Proven by control flow, not inferred
+   from a status code or an error string — every `false` below is returned from
+   a branch that sits above the `doFetch` call.
+
+   true means a request was started. It does NOT mean it arrived, and it does
+   not mean it succeeded: a timeout and a dropped socket are both `transmitted:
+   true, status: 0`, because the vendor may well have accepted the work before
+   the connection died. Anything that must not happen twice — mailing a letter,
+   charging a card — has to treat that as "may have happened".
+
+   `status: 0` is NOT a substitute for reading this. Both a fence hold and a
+   timeout report 0. src/repair/send.mjs shipped a guard that could not tell
+   those apart, and the result was that a send the fence held destroyed the
+   letter it refused to send. */
+
 /** The shape returned when nothing was sent. Same fields as a real result so a
     caller that ignores `blocked` still sees a clean failure rather than a
     surprise `undefined`. */
 function held(reason, fence) {
-  return { ok: false, blocked: true, status: 0, body: null, headers: {}, error: reason, fence: fence ?? null };
+  return {
+    ok: false, blocked: true, transmitted: false, status: 0,
+    body: null, headers: {}, error: reason, fence: fence ?? null
+  };
 }
 
 /* readHeaders — response headers as a plain lower-cased object.
@@ -125,9 +150,12 @@ function readHeaders(res) {
  *                                        must turn the fence off explicitly.
  * @param {number} [opts.timeoutMs]
  * @param {AbortSignal} [opts.signal]
- * @returns {Promise<{ok:boolean, blocked:boolean, status:number, body:any,
+ * @returns {Promise<{ok:boolean, blocked:boolean, transmitted:boolean,
+ *                     status:number, body:any,
  *                     headers:Record<string,string>, error:string|null,
  *                     fence:string|null}>}
+ *          `transmitted:false` means no request was handed to fetch — proven by
+ *          control flow, not guessed from the status. See the note above held().
  */
 export async function transmit(url, init = {}, {
   fence,
@@ -159,7 +187,8 @@ export async function transmit(url, init = {}, {
 
   const doFetch = fetchImpl || globalThis.fetch;
   if (typeof doFetch !== "function") {
-    return { ok: false, blocked: false, status: 0, body: null, headers: {},
+    // Above the call, so nothing was sent — even though the fence allowed it.
+    return { ok: false, blocked: false, transmitted: false, status: 0, body: null, headers: {},
       error: "no fetch implementation available", fence };
   }
 
@@ -184,6 +213,7 @@ export async function transmit(url, init = {}, {
     return {
       ok: res.ok,
       blocked: false,
+      transmitted: true,
       status: res.status,
       body: asText ? text : parsed,
       headers: readHeaders(res),
@@ -195,6 +225,9 @@ export async function transmit(url, init = {}, {
     return {
       ok: false,
       blocked: false,
+      // The call was made. A timeout or a dropped socket says nothing about
+      // whether the vendor accepted the work, so this stays true.
+      transmitted: true,
       status: 0,
       body: null,
       headers: {},

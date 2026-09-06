@@ -100,29 +100,39 @@
     .na-saved,.cp-note,.cp-count,.blocker-flag,.record-key,.record-pick label,
     .fact-row,.approve-what,.approve-exp,.approve-url,.approve-nolink,
     .dz-hint,.link-btn,.more>summary,.group-title .chev,.need-meta,.sb-source,
-    .headline-caveat,.round-note){
+    .headline-caveat,.round-note,.fact-note,.lender-sub,.lender-nourl,
+    .na-inq-head,.na-inq-row,.na-inq-bureau,.na-inq-state){
     font-size:var(--fs-caption)!important;
   }
 
   /* ---------- record header ----------------------------------------------
-     THE TOP-LEFT IS THE NUMBER THE ADVISOR CAME FOR (UI-STANDARDS §12, rule 1).
+     THE TOP-LEFT IS THE NEXT STEP (UI-STANDARDS §12, rule 1).
 
-     It used to be the client's name at title size, and under it a row of EIGHT
-     tiles every one of which the brand file paints at --fs-metric. Nine things
-     at metric size is nine things at no size, and the one fact this job
-     actually chases — a bank said yes and nobody knows for how much — was a
-     small amber sentence in the 320px rail.
+     OWNER-SET 2026-09-06, and it supersedes what was here before. Chris,
+     walking a live file: "I am confused as fuck when I am using this dashboard.
+     There is no clear next step. What the fuck am I doing in this thing?"
 
-     WHY THAT COUNT AND NOT THE MONEY. The loop is: apply to many banks, wait
-     days, phone the client, record yes/no, chase the dollars, mark the round
-     funded. The only step in that loop that is countable, that rots when nobody
-     looks, and that gates the fee (docs/CLOSEOUT-FEE-BASIS.md) is "a bank said
-     yes and we still do not know how much". The advisor already knows roughly
-     what the file is worth; what they do not know is what is outstanding.
+     What used to be top-left was a COUNT of bank answers still missing a dollar
+     amount. It is a real number and it is a bookkeeping number: it answers "how
+     much tidying is outstanding", not "what do I do now". Directly under it sat
+     ACTIVE BLOCKERS 5, which answers a third question. Two big true sentences,
+     neither of them the one the person opened the screen for.
+
+     So the count moved down beside the bank rows it is about (Funding · Apply
+     door), and the worked-out next step took the slot. The step is the one line
+     on this screen that tells a person what to do, so it is the biggest text on
+     the page.
+
+     WHY `.big` AND NOT A PIXEL SIZE. fundhub-brand.css force-feeds every element
+     inside .app its parent's size (UI-STANDARDS §12.7), so a px value written
+     here paints nothing. `.big` is on the brand file's --fs-metric whitelist, so
+     the size comes from the token. `.na-main` used to ask for --fs-title and got
+     body size instead — which is a large part of why the next step never read as
+     the next step.
 
      The name is still here and still first — it is identity, not the headline,
-     and the person already knows which file they opened. The eight tiles are
-     reference and now live below the action, in the main column. */
+     and the person already knows which file they opened. The eight reference
+     tiles are below the action, in the main column. */
   .record-head{
     background:var(--surface);border-bottom:1px solid var(--line);
     padding:13px 18px 15px;flex-shrink:0;
@@ -133,10 +143,17 @@
   .record-id{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap;}
   .record-name{font-weight:700;letter-spacing:-.01em;color:var(--text);}
 
-  /* The one metric. `.big` is on the brand file's --fs-metric whitelist
-     (fundhub-brand.css:191-193), so the size comes from the token and this file
-     writes no px — a px size here would be thrown away, see §12.7. */
-  .headline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:6px;}
+  /* THE NEXT STEP, IN THE HEADER. `.na-step` is layout only; the SIZE comes
+     from `.big` on the element itself, which is on the brand file's
+     --fs-metric whitelist. Writing a px size here paints nothing (§12.7). */
+  .na-step{margin-top:6px;}
+
+  /* The waiting count. It lives in the Funding · Apply door card now, beside
+     the bank rows it counts — see the record-header note above. `.big` is on
+     the brand file's --fs-metric whitelist (fundhub-brand.css:191-193), so the
+     size comes from the token and this file writes no px — a px size here would
+     be thrown away, see §12.7. */
+  .headline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:2px;}
   .headline .big{font-family:'JetBrains Mono',monospace;font-weight:700;line-height:1.05;color:var(--text);}
   /* A count that is not zero is work waiting on a person, so it carries the
      same amber the "Amount needed" chip and the board card use — literal, not
@@ -214,7 +231,21 @@
      coral wash and a coral border at all times, so a clean file and a blocked
      one looked identical — an alarm that is always on is not an alarm. The
      coral edge is the same 4px status edge pipeline.html already uses. */
+  /* THREE COLOURS, ONE MEANING EACH — owner-set 2026-09-06.
+       green  — go, nothing is stopping this
+       yellow — a blocker, somebody has to do something
+       red    — a hard stop, something wrong with the FILE itself
+     This edge used to turn red the moment any blocker card was drawn, so a
+     clean file with five ordinary open tasks looked like a file in trouble.
+     Red is now kept for a hard stop only — see paintBlockerEdge() below, which
+     counts high-severity cards (fraud alert, no written permission, permission
+     unreadable) and nothing else. */
+  /* The panel edge follows the same three-colour rule as the cards inside it.
+     A file with open blockers is yellow, not green: green is the answer to
+     "is anything stopping this", and a blocker is exactly the thing that is. */
   .na-group{border-left:4px solid transparent;padding-left:16px;}
+  .na-group.is-clear{border-left-color:var(--green-line);}
+  .na-group.is-open-work{border-left-color:var(--amber-line);}
   .na-group.is-blocked{border-left-color:var(--red-line);}
   .na-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
   .na-lead{min-width:0;}
@@ -222,14 +253,51 @@
      tick. This is the one place on the screen that uses it, so it still reads
      as a signature rather than wallpaper. */
   .na-eyebrow{margin-bottom:6px;}
-  .na-main{font-size:var(--fs-title);font-weight:700;line-height:1.35;color:var(--text);letter-spacing:-.01em;}
+  /* NO font-size HERE, AND THAT IS THE FIX. This rule used to say
+     `font-size:var(--fs-title)` and paint nothing: fundhub-brand.css:184-186
+     forces every element inside .app to inherit, so the one line telling a
+     person what to do rendered at plain body size, exactly like the paragraph
+     under it. The size now comes from `.big` in the markup, which IS on the
+     brand file's whitelist. See §12.7. */
+  .na-main{font-weight:700;line-height:1.2;color:var(--text);letter-spacing:-.01em;}
   .na-why{font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;
     color:var(--text-dim);margin-bottom:6px;}
   /* The value saved on the record, kept OUT of the big line above and shown
      here instead — quiet, and labelled as a saved value, never an instruction. */
   .na-saved{font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint);margin:6px 0 0;}
+  /* The inquiry list that sits under the step telling you to remove them. Not a
+     table: four rows on a wide header, so it stays readable next to the big
+     line above it without competing with it. */
+  .na-inq{margin:10px 0 0;}
+  .na-inq-head{font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:5px;}
+  .na-inq-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;
+    border-top:1px solid var(--line);}
+  .na-inq-row:first-of-type{border-top:none;}
+  .na-inq-name{font-weight:700;color:var(--text);}
+  .na-inq-bureau{font-family:'JetBrains Mono',monospace;font-weight:700;
+    color:var(--text-dim);}
+  .na-inq-state{color:var(--text-faint);margin-left:auto;}
   .blockers-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
   .blockers-title{font-size:var(--fs-body);font-weight:800;color:var(--red);}
+  /* YELLOW — owner-set 2026-09-06, restated by Chris on the live screen the
+     same day: "green means go, yellow means a blocker, red means a hard stop."
+
+     This rule was written down twice in this file, two different ways, on the
+     same date. The earlier note above says yellow is a blocker. A later note
+     said "GREEN, not amber — an ordinary open task is work to do, not a
+     warning", and that is what got built. So twelve cards sat under a heading
+     reading ACTIVE BLOCKERS while every one of them was painted "nothing is
+     wrong". Chris on seeing it: "I'm confused about why active blockers are
+     green... they're enigmas."
+
+     The heading is the tiebreak. A card filed under Active blockers IS a
+     blocker, so it takes the yellow edge. If some of these are really ordinary
+     open work and not blockers, the fix is to stop filing them under that
+     heading — not to paint a blocker green.
+
+     Red is still reserved for a hard stop (.is-high below), and colour is never
+     the only signal — every card says its reason in words (UI-STANDARDS §12.6). */
   .blocker-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--amber-line);border-radius:6px;padding:9px 12px;margin-bottom:8px;}
   .blocker-top{display:flex;justify-content:space-between;align-items:flex-start;}
   .blocker-reason{font-weight:700;font-size:var(--fs-body);color:var(--text);}
@@ -494,13 +562,17 @@
   
   
 
-  /* ---------- control panel — the Airtable mirror ------------------------
+  /* ---------- control panel — the spreadsheet mirror ------------------------
      One read-only block: what to do next, what is stopping it, and where the
      funding round stands. No button lives in here and nothing in it writes.
      Every rule below is new. Nothing above it was changed. */
   .cp-why{font-size:var(--fs-body);line-height:1.45;color:var(--text-dim);margin:8px 0 0;}
   .cp-note{font-size:var(--fs-caption);line-height:1.45;color:var(--amber);margin:6px 0 0;}
   .cp-sec{margin-top:16px;padding-top:14px;border-top:1px solid var(--paper-dim);}
+  /* The first section in a card has nothing above it to be divided from. The
+     next step moved to the header, so this rule stops a hairline floating at
+     the top of the card with empty space above it. */
+  .cp-sec.is-first{margin-top:0;padding-top:0;border-top:0;}
   .cp-sec-title{font-family:'Inter',sans-serif;font-size:var(--fs-caption);font-weight:700;letter-spacing:.08em;
     text-transform:uppercase;color:var(--text-dim);margin-bottom:9px;}
   /* The same worked-out step and the same blocker list are painted into a
@@ -542,9 +614,57 @@
      names the banks it is waiting on (§12.6). */
   .round-note.is-bad{color:var(--red);font-weight:600;}
   .round-note.is-done{color:var(--green);font-weight:600;}
-  /* a high blocker keeps the same card, in the red the panel above it uses */
+  /* A HARD STOP keeps the same card and takes the red edge — something is wrong
+     with the file itself (fraud alert on the credit report, no written
+     permission on record, permission record unreadable). Everything else is
+     green above. Owner colour rule, 2026-09-06. */
   .blocker-card.is-high{border-left-color:var(--red-line);}
   .blocker-flag{font-size:var(--fs-caption);line-height:1.45;color:var(--amber);margin-top:5px;}
+
+  /* ---------- small notes that sit under a value ---------------------------
+     A tile can hold a number but not a sentence. These carry the sentence the
+     number needs — which inquiries, why a case is Blocked, where an income
+     figure came from. The caption SIZE comes from this screen's one escape
+     hatch at the top of this file (§12.7); only colour and spacing live here. */
+  .fact-note{line-height:1.45;color:var(--text-dim);margin:10px 0 0;}
+  .fact-note.is-stop{color:var(--red);font-weight:600;}
+  .fact-note b{color:var(--text);font-weight:700;}
+  .fact-note a{color:var(--blue);}
+
+  /* ---------- the bank rows — name and logo lead, Apply is a button ---------
+     OWNER-SET 2026-09-06. Chris, walking the live file: "There's no bank logo,
+     the Apply button is massive, what's play name."
+
+     The row used to be built entirely from inline styles in JS, and the Apply
+     control inherited `.action-btn { width:100% }` inside a space-between flex,
+     so the button was the widest thing on the row and the bank name was squeezed
+     to about 90 pixels and wrapped onto two lines ("Bank of / America"). The
+     name leads now and the button is a button. */
+  .lender-row{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .lender-row:last-child{border-bottom:none;}
+  .lender-top{display:flex;align-items:center;gap:8px;}
+  .lender-id{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto;}
+  /* A fixed box so a ragged set of logo shapes still leaves the names on one
+     left edge. object-fit keeps a wide wordmark from being stretched. */
+  .lender-logo{width:32px;height:32px;flex:0 0 32px;object-fit:contain;border-radius:4px;background:#fff;}
+  .lender-name{font-weight:700;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lender-sub{color:var(--text-dim);white-space:nowrap;flex:0 0 auto;}
+  /* width:auto is the fix: .action-btn is full width by default. */
+  .lender-row .apply-btn{width:auto;flex:0 0 auto;margin:0;padding:8px 16px;justify-content:center;}
+  .lender-nourl{color:var(--text-faint);flex:0 0 auto;text-align:right;max-width:22ch;line-height:1.35;}
+  .lender-fields{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+  .lender-field{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .lender-field>label{color:var(--text-dim);}
+  .lender-field input{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:#fff;color:var(--text);}
+  .lender-field input:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px;}
+  .lender-field.approach{flex:1 1 200px;}
+  .lender-field.approach input{width:100%;min-width:0;}
+  .lender-field.amount input{width:130px;font-family:'JetBrains Mono',monospace;}
+  .lender-answer{display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap;}
+  @media (max-width:480px){
+    .lender-top{flex-wrap:wrap;}
+    .lender-row .apply-btn{width:100%;}
+  }
 
   @media (max-width:480px){
     /* .topbar-right ran past the right edge of a phone screen and clipped
@@ -656,28 +776,45 @@
           <div class="record-name" id="ccp-name">Loading…</div>
           <div class="record-key" id="ccp-key">No client open — pick one below.</div>
         </div>
-        <!-- THE ONE NUMBER THIS JOB CHASES.
-             How many bank answers on this file say yes and still carry no
-             dollar amount, minus any somebody has recorded as not counting.
-             Painted by the funding block at the foot of this file, which is the
-             one place that reads GET /api/applications — see paintHeadline().
+        <!-- THE ONE THING THE PERSON CAME FOR: what to do next on this file.
+             Owner-set 2026-09-06 — the slot used to hold a count of bank answers
+             missing a dollar amount, which is bookkeeping, not an instruction.
+             That count now sits beside the bank rows it is about, in the
+             Funding · Apply door card below.
 
-             FOUR STATES, ALL WRITTEN: a count, "nothing waiting" in words, "we
-             could not check" in words, and "pick a client". A zero here is a
-             true zero (there are no such rows), never a zero standing in for
-             unknown, and it is said in words rather than shown as a bare 0. -->
-        <div class="headline" id="ccp-waiting">
-          <span class="big" id="ccp-waiting-count" hidden></span>
-          <span class="headline-what" id="ccp-waiting-what">Pick a client to see what is waiting on you.</span>
+             ONE ANSWER, NOT TWO. The step here is the one the system worked out.
+             The stale string saved on the record used to sit right under it in a
+             second line, and a paragraph under THAT explained why the two did
+             not agree — three sentences where one was wanted. The saved string
+             is still kept, quietly, under Details at the bottom of the column.
+
+             GATE A still holds: this slot only ever shows a worked-out step,
+             never the string typed onto the client record. See paintNextAction()
+             and the FH-CCP block at the top of this file's script. -->
+        <div class="na-step">
+          <div class="eyebrow na-eyebrow">Do this next</div>
+          <!-- NOT A DASH. With no file open this slot is the biggest text on the
+               screen, and a lone dash there reads as a screen that failed rather
+               than one waiting to be pointed at a client. paintNextAction()
+               replaces this the moment a file is opened, and it is the ONLY
+               thing allowed to write here (GATE A) — which is why this is
+               static markup and not a setText() call. -->
+          <div class="na-main big" id="ccp-next-action">Pick a client below.</div>
+          <p class="cp-why" id="ccp-cp-why" hidden></p>
+          <p class="cp-note" id="ccp-cp-note" hidden></p>
+          <!-- THE INQUIRIES THEMSELVES, UNDER THE STEP THAT SAYS TO REMOVE THEM.
+               "Remove Inquiries" was the biggest text on the screen with nothing
+               under it to remove. The banks were named, but as a grey footnote
+               in Record Facts, three sections down and past the funding round —
+               so the one screen telling you to act did not show you what to act
+               on. Chris on the live page: "where are the inquiries? They were
+               supposed to list off the inquiries so that way we can send them
+               off to get removed first."
+               Same rows, same source, painted where the eye already is
+               (UI-STANDARDS §5: the answer appears where the user is looking).
+               The Issue Inquiry Removal button already lives on this card. -->
+          <div class="na-inq" id="ccp-next-inquiries" hidden></div>
         </div>
-        <p class="headline-cmp" id="ccp-waiting-compare"></p>
-        <!-- THE CAVEAT IS PRINTED, NOT HIDDEN. Nothing in this system records an
-             application at the moment somebody applies — src/proxy/launch.mjs
-             writes a proxy_sessions row and nothing else, and the applications
-             row is only minted when the ANSWER is logged, days later. So this
-             count can only ever cover answers we have RECEIVED. Saying
-             "applications waiting" would be a claim the data cannot support. -->
-        <p class="headline-caveat">Counts bank answers we have been told about. Applications still out with a bank are not recorded anywhere, so they cannot be counted here.</p>
       </div>
       <div class="record-pick">
         <label for="ccp-pick">Client</label>
@@ -692,7 +829,7 @@
     <div class="main-col">
 
       <!-- ── CONTROL PANEL ─────────────────────────────────────────────────
-           Chris's Airtable control panel, mirrored on the screen that already
+           Chris's spreadsheet control panel, mirrored on the screen that already
            exists. READ AND DISPLAY ONLY — no button, no form, no write.
 
            Three facts, in his order: what to do next, what is stopping it,
@@ -711,14 +848,10 @@
            still painted, because the compliance test names both; only one set
            is shown. The mirror below is display:none and carries the rest. -->
       <div class="group na-group is-empty" id="ccp-blockers-panel">
+        <!-- The next step moved to the header, where the eye lands first. What
+             is left in this card is the two things that support it: what is
+             open on the file, and where the funding round stands. -->
         <div class="na-head">
-          <div class="na-lead">
-            <div class="eyebrow na-eyebrow">Next action</div>
-            <div class="na-main" id="ccp-next-action">—</div>
-            <p class="na-saved" id="ccp-saved" hidden></p>
-            <p class="cp-why" id="ccp-cp-why" hidden></p>
-            <p class="cp-note" id="ccp-cp-note" hidden></p>
-          </div>
           <div class="blocker-age-wrap" id="ccp-blocker-age-wrap" hidden>
             <span class="blocker-age" id="ccp-blocker-age"></span>
             <span class="blocker-age-label">blocked</span>
@@ -732,7 +865,7 @@
           <div id="ccp-blocker-list"></div>
         </div>
 
-        <div class="cp-sec">
+        <div class="cp-sec is-first">
           <div class="cp-sec-title card-title">Active blockers <span class="cp-count" id="ccp-cp-blocker-count"></span></div>
           <div id="ccp-cp-blockers"><p class="cp-empty">Open a client file to see what is blocking it.</p></div>
         </div>
@@ -790,15 +923,45 @@
            this block earlier today and both are untouched. -->
       <div class="group">
         <div class="group-title card-title">Funding · Apply door</div>
-        <div id="fh-funding-apply">
+        <!-- THE COUNT LIVES HERE NOW — owner-set 2026-09-06.
+             How many bank answers on this file say yes and still carry no dollar
+             amount, minus any somebody has recorded as not counting. Painted by
+             the funding block at the foot of this file, which is the one place
+             that reads GET /api/applications — see paintHeadline().
+
+             It used to be the biggest thing in the page header, above the
+             client's status, where it read as the file's headline and answered a
+             question nobody had asked. It is a fact ABOUT THESE ROWS, so it sits
+             on top of these rows.
+
+             FOUR STATES, ALL WRITTEN: a count, "nothing waiting" in words, "we
+             could not check" in words, and "pick a client". A zero here is a
+             true zero (there are no such rows), never a zero standing in for
+             unknown, and it is said in words rather than shown as a bare 0. -->
+        <div class="headline" id="ccp-waiting">
+          <span class="big" id="ccp-waiting-count" hidden></span>
+          <span class="headline-what" id="ccp-waiting-what">Pick a client to see what is waiting on you.</span>
+        </div>
+        <p class="headline-cmp" id="ccp-waiting-compare"></p>
+        <!-- THE CAVEAT IS PRINTED, NOT HIDDEN. Nothing in this system records an
+             application at the moment somebody applies — src/proxy/launch.mjs
+             writes a proxy_sessions row and nothing else, and the applications
+             row is only minted when the ANSWER is logged, days later. So this
+             count can only ever cover answers we have RECEIVED. Saying
+             "applications waiting" would be a claim the data cannot support.
+
+             REWRITTEN 2026-09-06. The old wording opened "Counts bank answers we
+             have been told about", which is not a sentence a person says. Same
+             two facts, in two plain sentences. -->
+        <p class="headline-caveat">This counts only the banks that have already given us an answer. Applications still out with a bank are not recorded anywhere, so they are not in this number.</p>
+        <div id="fh-funding-apply" style="margin-top:12px">
           <div id="fh-funding-apply-status" style="font-size:var(--fs-body);line-height:1.45;color:var(--text-dim)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
           <!-- A bank said yes and nobody has recorded how much yet. That is a
                real, allowed state — but it has to be VISIBLE, because until the
                dollars are in, this round cannot be billed a success fee and the
                approval quietly rots. Hidden until there is one to report.
-               The COUNT also leads the screen now (see the header). This block
-               is the instruction that goes with it — what to type, and where —
-               and it sits with the rows it is about. -->
+               The COUNT sits directly above this block. This block is the
+               instruction that goes with it — what to type, and where. -->
           <div id="fh-funding-amounts-waiting" hidden style="margin-top:8px;font-size:var(--fs-body);line-height:1.45;font-weight:600;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:8px 10px"></div>
           <!-- WHAT THE BANK'S OWN EMAIL SAID. The bank states the amount in the
                email it sends this client, and until 2026-08-30 the system found
@@ -821,7 +984,7 @@
 
       <div class="group">
         <div class="group-title card-title">Actions</div>
-        <p id="ccp-actions-desk-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">Pull one bureau at a time. Generate Apps refreshes the lender apply list for this file.</p>
+        <p id="ccp-actions-desk-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">Pull one bureau at a time. Each button answers underneath itself.</p>
         <!-- All three pull buttons used to render identical and enabled whether
              or not this client had agreed to a credit pull; the only thing that
              ever said otherwise was the refusal that came back AFTER the tap.
@@ -850,7 +1013,21 @@
           <button type="button" class="action-btn" id="ccp-pull-ex" style="cursor:pointer;">Pull Experian <span class="arrow">→</span></button>
           <button type="button" class="action-btn" id="ccp-pull-eq" style="cursor:pointer;">Pull Equifax <span class="arrow">→</span></button>
         </div>
-        <button type="button" class="action-btn" id="ccp-generate-apps" style="cursor:pointer;">Generate Apps <span class="arrow">→</span></button>
+        <!-- EVERY BUTTON ANSWERS UNDER ITSELF — owner-set 2026-09-06.
+             All four desk buttons used to print into one line at the bottom of
+             this card, the one sitting under "Issue Inquiry Removal". So
+             pressing a bureau pull, or the old Generate Apps button, printed its
+             result under the removal button and looked like the removal had run.
+             UI-STANDARDS §5: the answer appears where the user is looking. -->
+        <p id="ccp-pull-status" style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 7px;"></p>
+        <!-- GENERATE APPS IS GONE — owner-set 2026-09-06, TODO §7.
+             Chris: "I don't think we're gonna need a Generate Apps button. That
+             doesn't make any fucking sense. Just delete that."
+             It created nothing. It re-read the lender match list, redrew the same
+             rows and printed "apps ready". An application row is only ever
+             created by Bank yes / Bank no on a single lender row
+             (logBankDecision, src/applications/status.mjs). The lender list
+             already loads when the page opens, so nothing was lost with it. -->
         <button type="button" class="action-btn" id="ccp-issue-ir" style="cursor:pointer;">Issue Inquiry Removal <span class="arrow">→</span></button>
         <p id="ccp-issue-ir-status" style="font-size:var(--fs-body);color:var(--text-dim);margin:8px 0 0;"></p>
         <!-- THE PRESS THE RESET SCREEN HAS ALWAYS PROMISED. A client who pays
@@ -896,7 +1073,17 @@
                funding block at the foot of this file, from the same read as the
                headline — never from funded_amount, and never from the guess. -->
           <div class="rf-tile"><div class="rf-label">Approved · confirmed</div><div class="rf-num" id="ccp-approved">—</div></div>
-          <div class="rf-tile"><div class="rf-label">Open Inquiries</div><div class="rf-num" id="ccp-inquiries">—</div></div>
+          <!-- INQUIRIES ON THE CREDIT FILE, NOT INSIDE A REMOVAL CASE.
+               Owner-set 2026-09-06, TODO §8. This tile used to print
+               inquiry_removal_cases.open_inquiry_count, which is a count of rows
+               in inquiry_log for one case. inquiry_log is written by the removal
+               desk, so on a file nobody has worked it is empty and the tile read
+               0 or 1 — while the credit report itself listed four. Two screens,
+               one word, two different numbers.
+               It reads the stored credit report now, and names the banks
+               underneath. When the stored report carries no inquiry list at all
+               it says so; it never prints 0, because 0 would be a claim. -->
+          <div class="rf-tile"><div class="rf-label">Inquiries on the credit file</div><div class="rf-num" id="ccp-inquiries">—</div></div>
           <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-num" data-ir-case id="ccp-ir">—</div></div>
           <div class="rf-tile"><div class="rf-label">Scores</div>
             <div class="rf-num" id="ccp-scores">—</div></div>
@@ -908,6 +1095,17 @@
           <div class="rf-tile"><div class="rf-label">Card Use</div><div class="rf-num" id="ccp-card-use">—</div></div>
           <div class="rf-tile"><div class="rf-label">Funding Round</div><div class="rf-num" id="ccp-round">—</div></div>
         </div>
+        <!-- The banks that pulled this person's credit, by name, so nobody has
+             to open a second screen to find out which four they are. -->
+        <p class="fact-note" id="ccp-inquiry-names" hidden></p>
+        <!-- WHY A REMOVAL CASE IS BLOCKED, AND WHERE IT GETS UNBLOCKED.
+             "Blocked" was printed on its own with no reason and no route. It has
+             exactly one cause: the identity packet is not complete, so the send
+             gate refuses (src/inquiry-ops/send.mjs, checkDocPacket in
+             src/inquiry-ops/doc-gate.mjs). Say that, and link to the desk that
+             fixes it. -->
+        <p class="fact-note is-stop" id="ccp-ir-why" hidden></p>
+        <a class="link-btn" id="ccp-ir-unblock" href="inquiry-remover.html" hidden>Open the Inquiry Remover to add the missing documents <span class="arrow">↗</span></a>
       </div>
 
       <div class="group">
@@ -917,7 +1115,7 @@
 
       <div class="group">
         <div class="group-title card-title">Need action</div>
-        <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px;">Clients with an open inquiry removal case. Pick one to open the file.</p>
+        <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px;">Other clients with an open inquiry removal case. One row each. Pick one to open that file.</p>
         <div id="ccp-need-action" style="font-size:var(--fs-body);color:var(--text-dim);">Loading…</div>
       </div>
 
@@ -947,10 +1145,19 @@
         <div class="group-body" id="hold-body" hidden>
           <div class="kv-grid">
             <div class="kv"><div class="kv-label">Credit Status</div><div class="kv-value" id="ccp-credit-status">—</div></div>
-            <div class="kv"><div class="kv-label">Income (Experian)</div><div class="kv-value" id="ccp-income-ex">—</div></div>
+            <!-- "Income (Experian)" READ AS A BUREAU FACT AND IS NOT ONE.
+                 Owner-set 2026-09-06, TODO §3 "Also found". The credit file holds
+                 no income the client reported. These two numbers come from two
+                 scoring models the bureaus sell — Experian "Income Insight" and
+                 Equifax "Income View" (src/http/client-detail.mjs:232-233). The
+                 model GUESSES a yearly income from how the person uses credit.
+                 The label says estimate now, and the sentence under the grid says
+                 who is doing the estimating. Nothing was removed. -->
+            <div class="kv"><div class="kv-label">Income estimate (Experian model)</div><div class="kv-value" id="ccp-income-ex">—</div></div>
             <div class="kv"><div class="kv-label">On Hold Because</div><div class="kv-value" id="ccp-hold-reason">—</div></div>
-            <div class="kv"><div class="kv-label">Income (Equifax)</div><div class="kv-value" id="ccp-income-eq">—</div></div>
+            <div class="kv"><div class="kv-label">Income estimate (Equifax model)</div><div class="kv-value" id="ccp-income-eq">—</div></div>
           </div>
+          <p class="fact-note">Neither income figure was reported by this client and neither is on the credit report. Each one is a guess produced by a bureau scoring model from how the person uses credit. Do not quote either as their income.</p>
         </div>
       </div>
 
@@ -966,6 +1173,17 @@
             <div class="kv"><div class="kv-label">Tier</div><div class="kv-value" id="ccp-tier">—</div></div>
             <div class="kv"><div class="kv-label">Path</div><div class="kv-value" id="ccp-path">—</div></div>
           </div>
+          <!-- THE OLD STEP TYPED ONTO THE RECORD, KEPT BUT NOT SHOUTED.
+               Owner-set 2026-09-06, TODO §3 "Also found": the top of the screen
+               said "Apply for Funding" while a second line under it said the
+               record held "Collect Documents", and a paragraph under THAT
+               explained that the two disagreed. Chris: pick one and say it.
+               The worked-out step is the one that is said, at the top. The value
+               saved on the record is not thrown away — nobody has been told to
+               act on it, so it belongs here with the other reference facts.
+               Still painted by paintNextAction(), which is the only rule allowed
+               to touch it (GATE A). -->
+          <p class="na-saved" id="ccp-saved" hidden></p>
           <div class="kv-label" style="margin-bottom:5px;">Notes (editable)</div>
           <textarea class="notes-box" id="notes"
             placeholder="No notes yet — add context for the next person who opens this file."></textarea>
@@ -1017,6 +1235,16 @@
         <div class="group-title card-title">Quick launch</div>
         <p id="ccp-actions-note" style="font-size:var(--fs-caption);line-height:1.45;color:var(--text-dim);margin:0 0 10px;">These open the live file. Bureau pulls stay on the closer deck.</p>
         <a class="action-btn" id="ccp-link-pipeline" href="pipeline.html">Open Pipeline <span class="arrow">↗</span></a>
+        <!-- NEITHER OF THE TWO present.html ROWS IS VISIBLE TO ANYBODY TODAY,
+             OWNER INCLUDED — this one and "Open Credit Snapshot" under More.
+             Not a fault in this file. shell.js gates every <a href> on the page
+             against its own list of screens a role may open (`var ALL`, near the
+             top of public/app/shell.js), and "present.html" is not in that list
+             for any role, so gateLinks() sets display:none on both rows. Typing
+             the address opens the screen fine.
+             The fix is one line in shell.js, which this lane does not own. Do not
+             work around it here by turning these into buttons — that would put a
+             link in front of a role the gate has refused. Reported 2026-09-06. -->
         <a class="action-btn" id="ccp-link-present" href="present.html">Open Closer Deck <span class="arrow">↗</span></a>
         <a class="action-btn" id="ccp-link-messaging" href="messaging.html">Open Messaging <span class="arrow">↗</span></a>
         <a class="action-btn" id="ccp-link-ir" href="inquiry-remover.html">Open Inquiry Remover <span class="arrow">↗</span></a>
@@ -1455,6 +1683,191 @@ document.addEventListener("DOMContentLoaded", function () {
     return Math.round(n) + "%" + (u.band ? " · " + u.band : "");
   }
 
+  /* ── THE INQUIRIES ON THE CREDIT FILE ─────────────────────────────────────
+   *
+   * OWNER-SET 2026-09-06, TODO §8. The tile above used to print
+   * inquiry_removal_cases.open_inquiry_count. That column counts rows in
+   * inquiry_log, and inquiry_log is only written once the removal desk stages a
+   * case, so on a file nobody has worked it is empty and the tile read 0 or 1
+   * while the credit report itself listed four — Capital One, SYNCB/PayPal,
+   * Navy Federal and Citibank on Walk1 Funding. Two screens, one word, two
+   * numbers, and neither said which it meant.
+   *
+   * THE NAMES ARE ALREADY ON THIS PAGE. GET /api/dashboard/client returns
+   * crs_results with the whole stored report in `result`, so no new read is
+   * needed — this walks it.
+   *
+   * THE FIELD NAMES ARE COPIED, NOT INVENTED. They are exactly the ones
+   * src/inquiry-ops/extract-disputables.mjs reads (collectInquiries), so this
+   * screen and the removal desk cannot disagree about what an inquiry is.
+   * THAT DUPLICATION IS A DEBT, and it is written down rather than hidden: the
+   * right home for this is one field on the client endpoint, and when that
+   * lands this function should be deleted rather than kept beside it.
+   *
+   * SANDBOX PULLS ARE SKIPPED, the same rule triMerge() and incomeEstimates()
+   * already apply — a vendor test fixture is not this person's credit file.
+   *
+   * NEVER A ZERO STANDING IN FOR UNKNOWN. Three answers:
+   *   { known:false }                 no usable stored report — say so
+   *   { known:true, rows:[] }         a report with no inquiry list on it
+   *   { known:true, rows:[{name,bureau}] }
+   */
+  function fileInquiries(crsResults) {
+    var out = { known: false, rows: [] };
+    var list = Array.isArray(crsResults) ? crsResults.slice() : [];
+    list.sort(function (a, b) {
+      return new Date((b && b.created_at) || 0) - new Date((a && a.created_at) || 0);
+    });
+    for (var i = 0; i < list.length; i++) {
+      var row = list[i] || {};
+      var result = row.result;
+      if (typeof result === "string") {
+        try { result = JSON.parse(result); } catch (e) { result = null; }
+      }
+      if (!result || typeof result !== "object") continue;
+      var env = "";
+      try { env = String(result.environment || "").toLowerCase(); } catch (e) { env = ""; }
+      if (env === "sandbox") continue;
+
+      out.known = true;
+      var seen = {};
+      var rows = [];
+      function take(items) {
+        for (var j = 0; j < (Array.isArray(items) ? items.length : 0); j++) {
+          var inq = items[j];
+          if (!inq || typeof inq !== "object") continue;
+          var name = inq.creditorName || inq.inquiry || inq.inquiry_name || inq.name || inq.furnisher;
+          name = String(name == null ? "" : name).trim();
+          if (!name) continue;
+          var bureau = inq.source || inq.bureau || inq.bureauCode;
+          bureau = String(bureau == null ? "" : bureau).trim().toUpperCase();
+          var key = name.toLowerCase() + "|" + bureau;
+          if (seen[key]) continue;
+          seen[key] = true;
+          rows.push({ name: name, bureau: bureau });
+        }
+      }
+      var normalized = (result.normalized && typeof result.normalized === "object") ? result.normalized : result;
+      take(normalized.inquiries);
+      take(result.inquiries);
+      take(result.newInquiries);
+      var blocks = (result.bureaus && typeof result.bureaus === "object") ? result.bureaus
+        : (normalized.bureaus && typeof normalized.bureaus === "object") ? normalized.bureaus : {};
+      for (var code in blocks) {
+        if (!Object.prototype.hasOwnProperty.call(blocks, code)) continue;
+        var block = blocks[code];
+        if (!block || typeof block !== "object") continue;
+        var items2 = Array.isArray(block.inquiries) ? block.inquiries.slice() : [];
+        for (var k = 0; k < items2.length; k++) {
+          if (items2[k] && typeof items2[k] === "object" && !items2[k].bureau && !items2[k].source) {
+            items2[k] = { creditorName: items2[k].creditorName || items2[k].name
+              || items2[k].inquiry_name || items2[k].furnisher, bureau: code };
+          }
+        }
+        take(items2);
+      }
+      out.rows = rows;
+      return out;
+    }
+    return out;
+  }
+
+  /* One line naming the banks that pulled this person's credit, so nobody has
+     to open a second screen to find out which four they are. Full names — a
+     bureau writes "AMERICAN EXPRESS", never "Amex" (owner rule). */
+  /* THE SAME ROWS, PAINTED UNDER THE NEXT STEP.
+     Record Facts keeps its one-line footnote; this puts the list itself where
+     the instruction to act on it is. Built as DOM nodes with textContent, never
+     an HTML string — a creditor name comes off a credit report and is not ours
+     to trust. */
+  function paintNextInquiries(rows) {
+    var box = $("ccp-next-inquiries");
+    if (!box) return;
+    box.textContent = "";
+    if (!rows || !rows.length) { box.hidden = true; return; }
+    var head = document.createElement("div");
+    head.className = "na-inq-head";
+    head.textContent = rows.length === 1
+      ? "The 1 inquiry on this file"
+      : "The " + rows.length + " inquiries on this file";
+    box.appendChild(head);
+    rows.forEach(function (r) {
+      var row = document.createElement("div");
+      row.className = "na-inq-row";
+      var name = document.createElement("span");
+      name.className = "na-inq-name";
+      name.textContent = r.name;
+      row.appendChild(name);
+      if (r.bureau) {
+        var b = document.createElement("span");
+        b.className = "na-inq-bureau";
+        b.textContent = r.bureau;
+        row.appendChild(b);
+      }
+      /* No status word here. This list comes off the stored credit report,
+         which knows who pulled the file and nothing about whether a removal
+         has been sent — inquiry_log holds that and this endpoint does not
+         return it. Printing "Pending Removal" from this source would be a
+         claim the source cannot support. */
+      box.appendChild(row);
+    });
+    box.hidden = false;
+  }
+
+  function paintInquiries(crsResults) {
+    var found = fileInquiries(crsResults);
+    var names = $("ccp-inquiry-names");
+    if (!found.known) {
+      setText("ccp-inquiries", "no report yet");
+      if (names) { names.textContent = ""; names.hidden = true; }
+      paintNextInquiries([]);
+      return;
+    }
+    if (!found.rows.length) {
+      setText("ccp-inquiries", "none listed");
+      if (names) {
+        names.textContent = "The stored credit report does not list any inquiries. "
+          + "That is not the same as none — pull a bureau again if this file should have them.";
+        names.hidden = false;
+      }
+      paintNextInquiries([]);
+      return;
+    }
+    setText("ccp-inquiries", String(found.rows.length));
+    /* The run-on line under Client Facts is gone. It printed
+       "Who pulled this credit: CAPITAL ONE (EX) · SYNCB/PAYPAL CREDIT (EX) ·
+       NAVY FEDERAL CU (TU) · CITIBANK NA (EQ)" as one wrapping sentence —
+       Chris, on the live screen: "this is janky and not clear."
+       The same four rows are now a real list under the step that says to remove
+       them, so keeping this was duplication in the worse of the two formats.
+       The count tile beside it still answers "how many". */
+    if (names) { names.textContent = ""; names.hidden = true; }
+    paintNextInquiries(found.rows);
+  }
+
+  /* WHY A REMOVAL CASE SAYS BLOCKED, AND WHERE IT GETS UNBLOCKED.
+     "Blocked" was printed on its own, with no reason and no route out. There is
+     exactly one thing that sets it: the send gate refuses because the identity
+     packet is not complete (src/inquiry-ops/send.mjs:153-176, using
+     checkDocPacket in src/inquiry-ops/doc-gate.mjs). So the reason is known and
+     can be said outright. */
+  function paintInquiryCaseHelp(irc) {
+    var why = $("ccp-ir-why");
+    var link = $("ccp-ir-unblock");
+    var blocked = false;
+    try { blocked = String((irc && irc.case_status) || "").trim().toLowerCase() === "blocked"; }
+    catch (e) { blocked = false; }
+    if (why) {
+      why.textContent = blocked
+        ? "Blocked means the identity packet is not finished. We will not post a dispute "
+          + "letter without a government photo ID, proof of address and a signed authorization. "
+          + "Add whichever is missing and the case moves on by itself."
+        : "";
+      why.hidden = !blocked;
+    }
+    if (link) link.hidden = !blocked;
+  }
+
   function tickClock() {
     var node = $("ccp-clock");
     if (!node) return;
@@ -1634,7 +2047,11 @@ document.addEventListener("DOMContentLoaded", function () {
       else if (!fx) line = "We did not work out a next step for this file.";
       else if (fx.degraded) line = "Part of this file could not be read, so we did not work out the next step.";
       else line = "No step on the list applies to this file right now.";
-      if (act.saved) line += " Nothing here is telling anyone to do the saved value below.";
+      /* THE SCREEN NO LONGER EXPLAINS ITS OWN DISAGREEMENT — owner-set
+         2026-09-06. This used to append "Nothing here is telling anyone to do
+         the saved value below", because the stale value saved on the record sat
+         directly underneath. It does not sit there any more; it is filed under
+         Details with the other reference facts. One step is named, once. */
       why.textContent = line;
       why.hidden = !line;
     }
@@ -1715,11 +2132,13 @@ document.addEventListener("DOMContentLoaded", function () {
       // Passing null for the worked-out answer is the honest thing to say,
       // because nothing was worked out.
       try {
-        var fell = paintNextAction("ccp-cp-action", "ccp-cp-saved", null, cf);
+        paintNextAction("ccp-cp-action", "ccp-cp-saved", null, cf);
         var why = $("ccp-cp-why");
         if (why) {
-          why.textContent = "This block could not be worked out, so no step is being suggested." +
-            (fell.saved ? " Nothing here is telling anyone to do the saved value below." : "");
+          /* Same change as the main path above: one step, said once. The value
+             saved on the record is filed under Details, so there is nothing
+             "below" here to warn anybody off. */
+          why.textContent = "This block could not be worked out, so no step is being suggested.";
           why.hidden = false;
         }
         var note = $("ccp-cp-note");
@@ -1903,11 +2322,23 @@ document.addEventListener("DOMContentLoaded", function () {
        not lost: it is on the Funded line in System Facts below. */
 
     var irc = d.inquiry_removal_case;
-    setText("ccp-inquiries", irc && irc.open_inquiry_count != null ? String(irc.open_inquiry_count) : "");
+    /* THE TILE COUNTS THE CREDIT FILE, NOT THE REMOVAL CASE — owner-set
+       2026-09-06. It used to print irc.open_inquiry_count, which is rows in
+       inquiry_log for one case and reads 0 or 1 on a file the removal desk has
+       not touched. See fileInquiries() above for what replaced it and why. */
+    paintInquiries(d.crs_results);
+    paintInquiryCaseHelp(irc);
     if (irc && (irc.case_status || irc.master_call_state)) {
       var irBits = [];
       if (irc.case_status) irBits.push(irc.case_status);
       if (irc.master_call_state) irBits.push(String(irc.master_call_state).replace(/_/g, " "));
+      /* The case's own staged count keeps a home, on the tile it belongs to and
+         labelled as what it is. It is NOT the credit file's inquiry count — that
+         is the tile to the left — and printing it under that name is the defect
+         this pass fixed. */
+      if (irc.open_inquiry_count != null) {
+        irBits.push(String(irc.open_inquiry_count) + " staged");
+      }
       setText("ccp-ir", irBits.join(" · "));
     } else {
       setText("ccp-ir", "");
@@ -1976,12 +2407,28 @@ document.addEventListener("DOMContentLoaded", function () {
        and stays neutral otherwise. Reading the array a third time here would
        be a third route past the endpoint's sanitizer — see
        src/http/client-panel-screen.test.mjs. */
+    /* THREE COLOURS, ONE MEANING EACH — owner-set 2026-09-06.
+       This edge used to go red the moment ANY blocker card was drawn. Walk1
+       Funding is a clean file with five ordinary open tasks on it, so it painted
+       red and read as a file in trouble. Red now means a hard stop: something
+       wrong with the file itself. On this screen that is exactly the
+       high-severity set — fraud alert on the report, no written permission on
+       record, permission record unreadable (src/fulfillment/next-action.mjs).
+       Anything else still open is yellow, and green is kept for a file with
+       nothing open at all — green means go, and a blocker is the thing that
+       stops you going. */
     var panel = $("ccp-blockers-panel");
     if (panel) {
       panel.classList.remove("is-empty");
       var shown = 0;
-      try { shown = panel.querySelectorAll(".blocker-card").length; } catch (e) { shown = 0; }
-      panel.classList.toggle("is-blocked", shown > 0);
+      var hard = 0;
+      try {
+        shown = panel.querySelectorAll(".blocker-card").length;
+        hard = panel.querySelectorAll(".blocker-card.is-high").length;
+      } catch (e) { shown = 0; hard = 0; }
+      panel.classList.toggle("is-blocked", hard > 0);
+      panel.classList.toggle("is-open-work", hard === 0 && shown > 0);
+      panel.classList.toggle("is-clear", shown === 0);
     }
     var bizCredit = d.business_credit || {};
     paintBusinesses("full", bizCredit.businesses || []);
@@ -2131,18 +2578,53 @@ document.addEventListener("DOMContentLoaded", function () {
         box.textContent = "No open inquiry removal cases.";
         return;
       }
+
+      /* ONE ROW PER CLIENT, AND NEVER A ROW BACK TO THIS PAGE.
+         Owner-set 2026-09-06, TODO §35. This list is one row per CASE, and a
+         client can have several — Walk1 Funding has three, so the same person
+         was listed three times, and all three links opened the file already on
+         screen. The list is here to send you somewhere else, so a row that goes
+         nowhere is worse than no row.
+         The cases are still counted, on the one row, so nothing is hidden. */
+      var byClient = [];
+      var index = {};
+      for (var i = 0; i < cases.length; i++) {
+        var c = cases[i];
+        if (!c || !c.client_id) continue;
+        var key = String(c.client_id);
+        if (key === String(id || "")) continue;   // this is the file you are on
+        if (index[key] === undefined) {
+          index[key] = byClient.length;
+          byClient.push({
+            client_id: key,
+            name: c.client_name || c.client_email || "Client",
+            count: 1,
+            status: c.case_status || ""
+          });
+        } else {
+          byClient[index[key]].count += 1;
+        }
+      }
+
+      if (!byClient.length) {
+        box.textContent = "No other client has an open inquiry removal case.";
+        return;
+      }
+
       box.textContent = "";
-      cases.slice(0, 12).forEach(function (c) {
-        if (!c || !c.client_id) return;
+      byClient.slice(0, 12).forEach(function (row) {
         var a = document.createElement("a");
         a.className = "need-row";
-        a.href = "client-control-panel.html?id=" + encodeURIComponent(c.client_id);
+        a.href = "client-control-panel.html?id=" + encodeURIComponent(row.client_id);
         var name = document.createElement("span");
         name.className = "need-name";
-        name.textContent = c.client_name || c.client_email || c.case_id || "Client";
+        name.textContent = row.name;
         var meta = document.createElement("span");
         meta.className = "need-meta";
-        meta.textContent = [c.case_status, c.selected_bureaus_raw].filter(Boolean).join(" · ");
+        meta.textContent = [
+          row.status,
+          row.count === 1 ? "1 case" : row.count + " cases"
+        ].filter(Boolean).join(" · ");
         a.appendChild(name);
         a.appendChild(meta);
         box.appendChild(a);
@@ -2151,8 +2633,17 @@ document.addEventListener("DOMContentLoaded", function () {
   })();
 
   (function wireDeskActions() {
+    /* TWO ANSWER LINES, NOT ONE — owner-set 2026-09-06, TODO §34.
+       Every button in this card used to print into the single line under "Issue
+       Inquiry Removal", so a bureau pull reported itself under the removal
+       button and looked like the removal had run. `say` is the bureau pulls'
+       line, directly under the three pull buttons; `sayIr` is the removal
+       button's own line, directly under it. UI-STANDARDS §5: the answer appears
+       where the user is looking. */
+    var pullStatus = $("ccp-pull-status");
     var status = $("ccp-issue-ir-status");
-    function say(t) { if (status) status.textContent = t || ""; }
+    function say(t) { if (pullStatus) pullStatus.textContent = t || ""; }
+    function sayIr(t) { if (status) status.textContent = t || ""; }
     var pullBtns = [
       { id: "ccp-pull-tu", bureau: "TU", label: "TransUnion" },
       { id: "ccp-pull-ex", bureau: "EX", label: "Experian" },
@@ -2480,34 +2971,25 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     checkConsent();
 
-    var gen = $("ccp-generate-apps");
-    if (gen) {
-      if (!id) gen.disabled = true;
-      else gen.addEventListener("click", function () {
-        if (typeof window.fhRefreshFundingApply === "function") {
-          say("Building the apply list…");
-          window.fhRefreshFundingApply("Apps ready — use Apply on each lender").then(function (msg) {
-            say(msg || "Apps ready — use Apply on each lender");
-          });
-        } else {
-          say("Apply list is not on this page.");
-        }
-      });
-    }
+    /* GENERATE APPS IS GONE — owner-set 2026-09-06, TODO §7. Its handler lived
+       here and did one thing: re-read the lender match list and print "apps
+       ready". No application row was ever created by it; that only happens on
+       Bank yes / Bank no. The lender list already loads when the page opens, so
+       the button and this handler both go. */
     var btn = $("ccp-issue-ir");
     if (!btn) return;
     if (!id) {
       btn.disabled = true;
-      say("Pick a client first.");
+      sayIr("Pick a client first.");
       return;
     }
     btn.addEventListener("click", function () {
       if (!window.FHData || typeof FHData.write !== "function") {
-        say("Not available — the data layer has not loaded.");
+        sayIr("Not available — the data layer has not loaded.");
         return;
       }
       btn.disabled = true;
-      say("Opening a removal case…");
+      sayIr("Opening a removal case…");
       FHData.write("/api/inquiry-cases", {
         action: "create",
         client_id: id,
@@ -2515,10 +2997,10 @@ document.addEventListener("DOMContentLoaded", function () {
       }).then(function (res) {
         if (!res || !res.ok) {
           btn.disabled = false;
-          say((res && (res.error || res.message)) || "Could not open a case.");
+          sayIr((res && (res.error || res.message)) || "Could not open a case.");
           return;
         }
-        say("Case opened. Going to Inquiry Remover…");
+        sayIr("Case opened. Going to Inquiry Remover…");
         location.href = "inquiry-remover.html";
       });
     });
@@ -3352,20 +3834,70 @@ document.addEventListener("DOMContentLoaded", function () {
         listEl.innerHTML = "";
         var all = d.matches || [];
         paintMore(all.length, Math.min(all.length, ROW_CAP));
+        /* ── THE BANK ROW ──────────────────────────────────────────────────────
+           REBUILT 2026-09-06, owner-set. Chris, walking the live file: "There's
+           no bank logo, the Apply button is massive, what's play name."
+
+           Three things were wrong and all three were in this loop:
+
+           1. NO LOGO. 244 logo files ship in public/assets/lenders/ and the
+              matcher does return `logo_path` on every match row
+              (src/lenders/match.mjs) — this screen simply never drew one. It
+              draws one now, and falls back to the shared placeholder file that
+              lenders.html already uses, so the names stay on one left edge
+              instead of going ragged. A logo that 404s hides itself.
+           2. THE APPLY BUTTON WAS THE WIDEST THING ON THE ROW. `.action-btn` is
+              `width:100%`, and in a space-between flex that left the bank name
+              about 90 pixels — "Bank of / America" wrapped onto two lines while
+              the button stretched the rest. The name and logo lead now, and the
+              button is `width:auto` (see .lender-row .apply-btn in the CSS).
+           3. "No URL" WAS AN ABSENCE WITH NO EXPLANATION. It says what it means
+              now: we hold no online application address for that bank, and those
+              banks are applied to in a branch or over the phone.
+
+           Layout moved out of inline cssText and into named classes at the top
+           of this file. No font-size is written in either place — a px size
+           inside .app is discarded before it paints (UI-STANDARDS §12.7). */
         all.slice(0, ROW_CAP).forEach(function (m) {
           var row = document.createElement("div");
-          row.style.cssText = "display:flex;flex-direction:column;gap:6px;padding:8px 0;border-bottom:1px solid var(--line,#E4E4E7)";
+          row.className = "lender-row";
+
           var top = document.createElement("div");
-          top.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px";
+          top.className = "lender-top";
+
+          var idBox = document.createElement("div");
+          idBox.className = "lender-id";
+
+          var logo = document.createElement("img");
+          logo.className = "lender-logo";
+          logo.alt = "";
+          logo.setAttribute("aria-hidden", "true");
+          logo.src = m.logo_path ? String(m.logo_path) : "/assets/lenders/placeholder.svg";
+          /* A logo file that is missing must not leave a broken-image box in the
+             row. Hide it and let the name stand on its own. */
+          logo.addEventListener("error", function () { logo.style.display = "none"; });
+          idBox.appendChild(logo);
+
           var label = document.createElement("span");
-          label.style.cssText = "font-size:var(--fs-body);min-width:0";
-          label.textContent = (m.name || "?") + (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
-          top.appendChild(label);
+          label.className = "lender-name";
+          /* FULL LEGAL NAMES, exactly as the lender table holds them — owner
+             rule. "American Express", never "Amex". Nothing here shortens. */
+          label.textContent = m.name || "Bank name missing";
+          label.title = m.name || "";
+          idBox.appendChild(label);
+
+          if (m.bureaus_pulled) {
+            var bureau = document.createElement("span");
+            bureau.className = "lender-sub";
+            bureau.textContent = "pulls " + m.bureaus_pulled;
+            idBox.appendChild(bureau);
+          }
+          top.appendChild(idBox);
+
           if (m.id && m.application_url && window.FHProxyApply) {
             var btn = document.createElement("button");
             btn.type = "button";
-            btn.className = "action-btn";
-            btn.style.cssText = "margin:0;padding:6px 10px;font-size:var(--fs-caption)";
+            btn.className = "action-btn apply-btn";
             btn.textContent = "Apply";
             btn.setAttribute("data-fh-apply", "1");
             btn.addEventListener("click", function () {
@@ -3378,20 +3910,31 @@ document.addEventListener("DOMContentLoaded", function () {
             top.appendChild(btn);
           } else {
             var miss = document.createElement("span");
-            miss.style.cssText = "font-size:var(--fs-caption);color:var(--gray2,#A1A1AA)";
-            miss.textContent = "No URL";
+            miss.className = "lender-nourl";
+            miss.textContent = "No online application on file — this bank is applied to in a branch or by phone.";
             top.appendChild(miss);
           }
           row.appendChild(top);
+
           var playRow = document.createElement("div");
-          playRow.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:6px";
-          var play = document.createElement("input");
-          play.type = "text";
-          play.setAttribute("list", "fh-play-names");
-          play.placeholder = "Play name (optional)";
-          if (m.id) play.setAttribute("data-lender-id", m.id);
-          play.style.cssText = "flex:1;min-width:140px;font-size:var(--fs-caption);padding:4px 6px";
-          playRow.appendChild(play);
+          playRow.className = "lender-fields";
+
+          /* "HOW DID YOU APPLY?" IS GONE — owner-set 2026-09-06.
+             Chris: "the system already knows the way that it should be applied,
+             so that's a useless option."
+
+             He is right twice over. The lender row already carries the apply
+             method from the lender record, so asking a human to re-type it was
+             asking for something we hold. And nothing ever read the answer back:
+             the value landed in application_decisions.play_name, and the only
+             caller of listOutcomesForLaterPlays (src/plays/outcomes.mjs) is a
+             test file. No screen, no report, no workflow. A required-looking box
+             on the busiest row of the busiest screen, feeding nothing.
+
+             The column and its write path stay — play_name is nullable, "Empty
+             is allowed" per 261_application_decision_play.sql, and the read
+             function is there for whenever a screen wants it. This removes the
+             asking, not the ability. */
 
           /* HOW MUCH the bank approved — OPTIONAL, and filled in whenever the
              team learns it. It is the column the Funded move on the Pipeline
@@ -3406,13 +3949,29 @@ document.addEventListener("DOMContentLoaded", function () {
              finally says how much. Type it, press Bank yes again, and the SAME
              application row is updated — logBankDecision finds the existing row
              by client + lender, so there is no second approval. */
+          var amtWrap = document.createElement("div");
+          amtWrap.className = "lender-field amount";
+          var amtLab = document.createElement("label");
+          amtLab.textContent = "Approved $";
           var amt = document.createElement("input");
           amt.type = "text";
           amt.inputMode = "decimal";
-          amt.placeholder = "Approved $";
-          if (m.id) amt.setAttribute("data-amount-lender-id", m.id);
-          amt.style.cssText = "width:110px;font-size:var(--fs-caption);padding:4px 6px";
-          playRow.appendChild(amt);
+          amt.placeholder = "leave empty if unknown";
+          if (m.id) {
+            amt.setAttribute("data-amount-lender-id", m.id);
+            amt.id = "fh-approved-" + m.id;
+            amtLab.setAttribute("for", amt.id);
+          }
+          amtWrap.appendChild(amtLab);
+          amtWrap.appendChild(amt);
+          playRow.appendChild(amtWrap);
+
+          /* The answer buttons and the row's own flags sit together at the end
+             of the row, so the two boxes above read as one thing to fill in and
+             the two buttons read as one thing to press. */
+          var answer = document.createElement("div");
+          answer.className = "lender-answer";
+          playRow.appendChild(answer);
 
           /* The row's own marker for "this bank said yes and we still do not
              know for how much". Plain amber, written literally rather than from
@@ -3426,7 +3985,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (m.id) needChip.setAttribute("data-amount-needed-lender-id", m.id);
           needChip.style.cssText = "font-size:var(--fs-caption);padding:2px 8px;border-radius:999px;"
             + "background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;white-space:nowrap;font-weight:600";
-          playRow.appendChild(needChip);
+          answer.appendChild(needChip);
 
           /* ── THE WAY OUT ──────────────────────────────────────────────────
              A round cannot be moved to Funded while any bank yes on it has no
@@ -3489,7 +4048,7 @@ document.addEventListener("DOMContentLoaded", function () {
               statusEl.textContent = "Could not change whether that approval counts.";
             });
           });
-          playRow.appendChild(skip);
+          answer.appendChild(skip);
           /* Where the bank's own figure is offered — immediately beside the box
              it goes into, one click to accept. Filled in by paintRowButtons()
              once the bank inbox has been read; empty and hidden when this
@@ -3502,15 +4061,21 @@ document.addEventListener("DOMContentLoaded", function () {
              never be hidden by the `hidden` attribute on the line above. */
           suggest.className = "amount-suggest";
           if (m.id) suggest.setAttribute("data-amount-suggest-lender-id", m.id);
-          playRow.appendChild(suggest);
+          answer.appendChild(suggest);
+
+          /* The three words, spelled once. The buttons, the saved line and the
+             already-saved line all read from here, so they cannot drift. Keys
+             are the stored values; applications_status_ck allows all three. */
+          var WORD_FOR = { Approved: "Approved", Denied: "Declined", Applied: "Pending" };
 
           function logBank(status) {
             var payload = {
               client_id: clientId,
               lender_id: m.id,
-              status: status,
-              play_name: play.value || ""
+              status: status
             };
+            /* play_name is no longer sent. The column stays nullable and the
+               write path still accepts it; nothing asks a human for it now. */
             /* AN EMPTY BOX IS ALLOWED ON A YES. "Approved, amount unknown" is a
                real state, so a blank box sends no approved_amount at all and the
                column keeps its NULL. Blank is never 0.
@@ -3542,9 +4107,8 @@ document.addEventListener("DOMContentLoaded", function () {
               if (res && res.ok) {
                 var waitingNow = (status === "Approved" && !payload.approved_amount);
                 needChip.hidden = !waitingNow;
-                statusEl.textContent = (status === "Approved" ? "Bank yes" : "Bank no")
+                statusEl.textContent = WORD_FOR[status]
                   + (payload.approved_amount ? (" · $" + payload.approved_amount) : "")
-                  + (play.value ? (" · " + play.value) : "")
                   + " saved."
                   + (waitingNow ? " Add the dollar amount here as soon as the bank tells you." : "");
                 // Re-count what is still waiting across every lender on the file.
@@ -3555,18 +4119,32 @@ document.addEventListener("DOMContentLoaded", function () {
               statusEl.textContent = "Could not save bank yes/no.";
             });
           }
-          var yes = document.createElement("button");
-          yes.type = "button";
-          yes.textContent = "Bank yes";
-          yes.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
-          yes.addEventListener("click", function () { logBank("Approved"); });
-          var no = document.createElement("button");
-          no.type = "button";
-          no.textContent = "Bank no";
-          no.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
-          no.addEventListener("click", function () { logBank("Denied"); });
-          playRow.appendChild(yes);
-          playRow.appendChild(no);
+          /* APPROVED / DECLINED / PENDING — owner-set 2026-09-06.
+             Chris: "the words btw are Approved / Declined / Pending right?
+             cause when we apply it goes either to approved / declined or
+             pending."
+
+             The buttons said "Bank yes" and "Bank no", and there was no third
+             one — so an application that had gone in and was waiting on the bank
+             had nowhere to be recorded. It sat looking untouched, which is why
+             the apply door says out loud that applications still out with a bank
+             "are not recorded anywhere".
+
+             The stored values do not change: Approved stays "Approved",
+             Declined writes "Denied" and Pending writes "Applied", all three
+             already allowed by applications_status_ck. The words on screen are
+             now Chris's words, and WORD_FOR is the one place they are spelled,
+             so the buttons and the saved-confirmation line cannot drift apart
+             the way "Bank yes" and "Approved" already had. */
+          [["Approved", "Approved"], ["Declined", "Denied"], ["Pending", "Applied"]]
+            .forEach(function (pair) {
+              var b = document.createElement("button");
+              b.type = "button";
+              b.textContent = pair[0];
+              b.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
+              b.addEventListener("click", function () { logBank(pair[1]); });
+              answer.appendChild(b);
+            });
           row.appendChild(playRow);
           listEl.appendChild(row);
         });
@@ -3574,16 +4152,8 @@ document.addEventListener("DOMContentLoaded", function () {
            land. Deliberately NOT awaited: a slow or failed inbox read must not
            hold up the lender list or the saved-amount repaint below. */
         loadBankAmounts();
-        if (!document.getElementById("fh-play-names")) {
-          var dl = document.createElement("datalist");
-          dl.id = "fh-play-names";
-          ["Card stacking first pull", "In-branch visit", "Online only", "Docs first"].forEach(function (name) {
-            var opt = document.createElement("option");
-            opt.value = name;
-            dl.appendChild(opt);
-          });
-          document.body.appendChild(dl);
-        }
+        /* The fh-play-names datalist that fed "How did you apply?" is gone with
+           the field it filled. Nothing else referenced it. */
         return refreshSaved().then(function () {
           return readyCopy || (n + " lenders ready.");
         });

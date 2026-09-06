@@ -1,5 +1,5 @@
 // C-02B — Inquiry Removal Requested.
-// Source: GHL-System-Map.md CREDIT OPS WORKFLOWS section (single-step workflow).
+// Source: the CRM system map CREDIT OPS WORKFLOWS section (single-step workflow).
 // Trigger: deposit.paid — Spec §4.2's explicit auto-trigger: "deposit.paid -> set
 // run_inquiry_removal -> IRA schedule-call flow". This is that trigger, ported
 // directly.

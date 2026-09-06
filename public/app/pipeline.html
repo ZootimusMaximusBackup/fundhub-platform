@@ -118,6 +118,11 @@
   .search input{border:none;background:transparent;outline:none;font-family:var(--sans);font-size:var(--fs-body);width:100%;color:var(--text);}
   .select{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:7px;
     padding:5px 9px;font-size:var(--fs-body);color:var(--text);cursor:default;}
+  /* `display:flex` on the class beats the browser's own [hidden] rule, so a
+     hidden .select stays on screen. Any control this page hides needs this
+     said out loud. */
+  .select[hidden]{display:none;}
+  .board-summary span[hidden]{display:none;}
   .select .sl-k{color:var(--text-dim);}
   .select .caret{color:var(--text-faint);font-size:var(--fs-caption);}
   .select.on{background:var(--alert-bg);border-color:var(--alert-line);color:var(--ink2);font-weight:700;}
@@ -147,6 +152,13 @@
   .fp-clear{margin-left:4px;background:transparent;border:0;font-family:var(--sans);font-size:var(--fs-body);
     color:var(--text-dim);text-decoration:underline;cursor:pointer;}
   .fp-clear:hover{color:var(--ink2);}
+  /* One sentence about the board, under the controls and above the columns.
+     No colour and no icon: it is a standing fact, not an alert. Sized by the
+     brand's .caption whitelist, so no font-size is written here (§12.7). */
+  .rail-note{background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0;
+    padding:6px 14px;color:var(--text-dim);}
+  .rail-note[hidden]{display:none;}
+  .rail-note b{color:var(--text);}
   .board-summary{font-family:var(--mono);font-size:var(--fs-body);color:var(--text-dim);display:flex;gap:12px;align-items:center;}
   .board-summary b{color:var(--text);}
   .board-summary .held-n{color:var(--ink2);font-weight:700;}
@@ -708,7 +720,11 @@
       <div class="hl-sep"></div>
       <div class="board-summary">
         <span><b id="sumCount">—</b> cards</span>
-        <span><b id="sumMoney">—</b> est.</span>
+        <!-- The board total is FUNDING money and is drawn on the funding rails
+             only. On Inquiry Removal, Repair, AR, Affiliates and Hiring this
+             span is hidden rather than printing a funding figure those boards
+             have nothing to do with. See railHasMoney(). -->
+        <span id="sumMoneyWrap"><b id="sumMoney">—</b> funding est.</span>
         <span class="held-n" id="sumHeld" title="the pipeline API does not return hold status">— held</span>
       </div>
     </div>
@@ -738,9 +754,20 @@
       <option value="bank">A bank</option>
       <option value="client">The client</option>
       <option value="none">Nothing recorded</option></select></div>
-    <div class="select"><span class="sl-k">Owner:</span><select id="fOwner"><option value="">Anyone</option></select></div>
-    <div class="select"><span class="sl-k">Hold:</span><select id="fHold">
-      <option value="">Any</option><option value="held">Held only</option><option value="clear">Not held</option></select></div>
+    <!-- OWNER — hidden until a card on the board actually has an owner on it.
+         Nothing in production writes cards.owner, so on a real board every card
+         reads "unassigned" and this select offered one choice, "Anyone", which
+         filtered nothing. UI-STANDARDS §5: a control that cannot do anything
+         today does not render today. rebuildOwnerOptions() shows it again the
+         moment a card comes back with an owner, so nothing is lost. -->
+    <div class="select" id="fOwnerWrap" hidden><span class="sl-k">Owner:</span><select id="fOwner"><option value="">Anyone</option></select></div>
+    <!-- HOLD IS GONE FROM HERE ON PURPOSE (2026-09-06). "Held only" emptied
+         every board every time it was chosen: no card ever carries the `held`
+         class, because /api/dashboard/pipeline returns no hold field for a card
+         (see the note on #sumHeld above, which still says the count is
+         unknown). A filter that can only ever hide everything is worse than no
+         filter. When the API starts returning hold status, put the select back
+         beside the code that paints the class — not before. -->
     <div class="select"><span class="sl-k">Age:</span><select id="fAge">
       <option value="">Any</option><option value="60">Over 1h in stage</option>
       <option value="1440">Over 1d in stage</option><option value="4320">Over 3d in stage</option></select></div>
@@ -750,6 +777,14 @@
       <option value="needs">Amount needed first</option></select></div>
     <button class="fp-clear" id="filterClear">Clear all</button>
   </div>
+
+  <!-- ONE FACT ABOUT THE BOARD YOU ARE LOOKING AT, WHEN THERE IS ONE.
+       Sales gets the only one today: money landing does not move a card, and
+       until somebody knows that, "Closed Won (deposit) — 0" on a board with a
+       paid client on it reads as a broken board rather than as work nobody has
+       done yet. Written on the screen because the move genuinely is manual —
+       no handler moves a sales card when a payment clears. See railNote(). -->
+  <div class="rail-note caption" id="railNote" hidden></div>
 
   <!-- BOARD
        Starts empty on purpose. Sample columns used to paint here, then the
@@ -1209,7 +1244,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ menu.hidd
 
 /* ---------- filters, search, sort ---------- */
 var q=document.getElementById('q'), fOwner=document.getElementById('fOwner'),
-    fHold=document.getElementById('fHold'), fAge=document.getElementById('fAge'),
+    fOwnerWrap=document.getElementById('fOwnerWrap'), fAge=document.getElementById('fAge'),
     fSort=document.getElementById('fSort'), fWait=document.getElementById('fWait');
 
 /* owner list is built from who actually appears on the cards.
@@ -1232,6 +1267,13 @@ function rebuildOwnerOptions(){
   });
   // Preserve the current choice if that owner still exists on the board.
   fOwner.value = seen[keep] ? keep : "";
+  /* NO OWNERS ON THE BOARD MEANS NO OWNER FILTER. With nothing but "Anyone" in
+     it this select could not change what you see, and offering it said the
+     board knows who owns a card when every card on it says "unassigned". It
+     comes back on its own as soon as one does. */
+  var haveOwners = Object.keys(seen).length > 0;
+  if (fOwnerWrap) fOwnerWrap.hidden = !haveOwners;
+  if (!haveOwners && fOwner.value) fOwner.value = "";
 }
 window.rebuildOwnerOptions = rebuildOwnerOptions;
 rebuildOwnerOptions();
@@ -1272,14 +1314,12 @@ function waitHit(card, want){
 }
 function applyFilters(){
   var term=(q.value||'').trim().toLowerCase();
-  var owner=fOwner.value, hold=fHold.value, age=parseInt(fAge.value||'0',10);
+  var owner=fOwner.value, age=parseInt(fAge.value||'0',10);
   var wait=fWait?fWait.value:'';
   cards().forEach(function(c){
     var hit=true;
     if(term && nameOf(c).toLowerCase().indexOf(term)<0) hit=false;
     if(hit&&owner){ var b=c.querySelector('.c-act b'); if(!b||b.textContent.trim()!==owner) hit=false; }
-    if(hit&&hold==='held'  && !c.classList.contains('held')) hit=false;
-    if(hit&&hold==='clear' &&  c.classList.contains('held')) hit=false;
     if(hit&&age && ageMins(c)<age) hit=false;
     if(hit&&!waitHit(c,wait)) hit=false;
     c.classList.toggle('filtered',!hit);
@@ -1312,7 +1352,7 @@ function applySort(){
     list.forEach(function(c){ body.insertBefore(c, more||null); });
   });
 }
-[q,fOwner,fHold,fAge,fWait].forEach(function(el){
+[q,fOwner,fAge,fWait].forEach(function(el){
   if(!el) return;
   el.addEventListener('input',applyFilters);
   el.addEventListener('change',applyFilters);
@@ -1347,7 +1387,7 @@ function syncWaitButtons(){
 var fBtn=document.getElementById('filterBtn'), fPanel=document.getElementById('filterPanel'),
     fN=document.getElementById('filterN'), fChips=document.getElementById('filterChips'),
     fClear=document.getElementById('filterClear');
-var CONTROLS=[{el:fWait,k:'Waiting on'},{el:fOwner,k:'Owner'},{el:fHold,k:'Hold'},
+var CONTROLS=[{el:fWait,k:'Waiting on'},{el:fOwner,k:'Owner'},
               {el:fAge,k:'Age'},{el:fSort,k:'Sort'}].filter(function(c){return !!c.el;});
 
 function labelOf(c){ return c.el.options[c.el.selectedIndex].textContent.trim(); }
@@ -1665,9 +1705,14 @@ restore();
   // unknown (not yet loaded, or the load failed) is a dash too, never 0.
   var sumCountEl = document.getElementById("sumCount");
   var sumMoneyEl = document.getElementById("sumMoney");
+  var sumMoneyWrap = document.getElementById("sumMoneyWrap");
   function setSummary(totals) {
     if (sumCountEl) sumCountEl.textContent = totals ? String(totals.count) : "—";
     if (sumMoneyEl) sumMoneyEl.textContent = totals ? usd(totals.money) : "—";
+    /* The money on a card is the client's FUNDING number, so a board total is
+       only meaningful on the rails that are about funding. Everywhere else the
+       figure is hidden instead of being summed into something it is not. */
+    if (sumMoneyWrap) sumMoneyWrap.hidden = !railHasMoney();
   }
 
   /* ── THE HEADLINE ────────────────────────────────────────────────────────
@@ -1836,10 +1881,19 @@ restore();
     card.appendChild(msgLine("sms", c.phone, c.client_id, c.sms_needs_reply));
     card.appendChild(msgLine("email", c.email, c.client_id, c.email_needs_reply));
 
+    /* THE SAME NUMBER ON EVERY BOARD, BECAUSE IT IS ABOUT THE CLIENT, NOT THE
+       BOARD. It is what this client is estimated to get funded (or the amount
+       that has funded already), so the unit says "funding est." wherever it
+       paints. It used to read a bare "est.", which on the Inquiry Removal board
+       read as money for inquiry removal. The column and board totals are drawn
+       on the funding rails only — see railHasMoney(). */
     var amt = div("c-amt", c.amount == null ? "—" : usd(c.amount) + " ");
+    amt.title = c.funded
+      ? "What this client has funded."
+      : "What this client is estimated to get funded. The same number on every board.";
     if (c.amount != null) {
       var unit = document.createElement("span");
-      unit.className = "unit"; unit.textContent = "est.";
+      unit.className = "unit"; unit.textContent = c.funded ? "funded" : "funding est.";
       amt.appendChild(unit);
     }
     card.appendChild(amt);
@@ -2209,9 +2263,26 @@ restore();
       return "$" + Number(row.annual).toLocaleString("en-US") + "/yr";
     }
     var creditMore = sec("Credit");
+    /* THE THREE REAL SCORES, FIRST, BECAUSE THEY ARE THE ANSWER.
+       `tm` (the tri-merge from the client's last credit pull) has been read on
+       this line since the drawer shipped and was never drawn. So a file with
+       771 / 778 / 766 on it opened on "They said —" — the client's own guess,
+       unknown — with the three measured numbers sitting in the reply the panel
+       had already received. Bureau order matches the Client Control Panel.
+       A dash here is unknown: no pull on file yet, or that bureau sent no
+       score. It is never a zero and never a guess. */
+    creditMore.appendChild(rowAlways("Experian", tm.experian));
+    creditMore.appendChild(rowAlways("Equifax", tm.equifax));
+    creditMore.appendChild(rowAlways("TransUnion", tm.transunion));
+    creditMore.appendChild(rowAlways("Scores pulled", fmtWhen(tm.asOf)));
     creditMore.appendChild(rowAlways("They said", said));
-    creditMore.appendChild(rowAlways("Income (Experian)", moneyYr(inc.experian)));
-    creditMore.appendChild(rowAlways("Income (Equifax)", moneyYr(inc.equifax)));
+    /* These two are the bureau's GUESS at a yearly income, worked out from the
+       credit file (Experian Income Insight / Equifax IncomeView). They are not
+       pay stubs and not bank balances, and the label has to say so — read as a
+       plain "Income" on a call, a modelled number becomes something we told the
+       client we knew. */
+    creditMore.appendChild(rowAlways("Income, Experian's estimate", moneyYr(inc.experian)));
+    creditMore.appendChild(rowAlways("Income, Equifax's estimate", moneyYr(inc.equifax)));
     creditMore.appendChild(rowAlways("Business score", biz.intelliscore));
     creditMore.appendChild(rowAlways("Business FSR", biz.fsr));
     drawerBody.appendChild(creditMore);
@@ -2465,6 +2536,27 @@ restore();
     clearHeadline("Loading " + (label || "the board") + "…");
   }
 
+  /* ── WHOSE MONEY IS THIS? ────────────────────────────────────────────────
+     Every card carries ONE dollar figure and it is the same figure on every
+     rail: funded_amount if the file has funded, otherwise the client's
+     total_funding_estimate (api/dashboard/pipeline.mjs builds `amount` that
+     way). That is the client's FUNDING number.
+
+     Adding those up per column made sense on Sales and on Card Stacking and
+     was plainly wrong everywhere else: the Inquiry Removal board printed
+     "$212,000 est." as its column total and its board total, which reads as
+     money owed for inquiry removal. It is nothing of the sort — inquiry
+     removal, repair rounds, AR, affiliates and hiring have no dollar figure on
+     this board at all.
+
+     So the totals are drawn on the rails the number belongs to, and nowhere
+     else. The card keeps the number on every rail — it is true about the
+     client wherever you meet them — but it now says what it is. */
+  var MONEY_RAILS = { sales: 1, funding_card_stacking: 1, funding_altfin: 1 };
+  function railHasMoney(key) {
+    return !!MONEY_RAILS[key || activePipelineKey];
+  }
+
   function buildColumn(stage, pipelineKey) {
     var col = document.createElement("section");
     col.className = "col";
@@ -2479,9 +2571,14 @@ restore();
     var countEl = document.createElement("div");
     countEl.className = "col-count"; countEl.textContent = String(stage.count);
     headTop.appendChild(nameEl); headTop.appendChild(countEl);
-    var moneyEl = document.createElement("div");
-    moneyEl.className = "col-money"; moneyEl.textContent = usd(stage.amount) + " est.";
-    head.appendChild(headTop); head.appendChild(moneyEl);
+    head.appendChild(headTop);
+    if (railHasMoney(pipelineKey)) {
+      var moneyEl = document.createElement("div");
+      moneyEl.className = "col-money";
+      moneyEl.textContent = usd(stage.amount) + " funding est.";
+      moneyEl.title = "The funding these clients are estimated to get. Not money collected.";
+      head.appendChild(moneyEl);
+    }
     var body = document.createElement("div");
     body.className = "col-body";
     (stage.cards || []).forEach(function (c) { body.appendChild(cardEl(c, stage.key)); });
@@ -2516,8 +2613,39 @@ restore();
   var cache = {};
   var loadSeq = 0;
 
+  /* ── THE SALES BOARD DOES NOT MOVE ITSELF WHEN MONEY LANDS ───────────────
+     Traced 2026-09-06, because "Closed Won (deposit)" read 0 with a paid
+     $3,000 client sitting two columns back in Decision Rendered:
+
+       * payment.received / deposit.paid only stamp a flag on the client
+         (src/handlers/client-lifecycle.mjs onDepositPaid) — no card is touched.
+       * the purchase router places a card on the FUNDING board when someone
+         buys (src/handlers/purchase-routing.mjs) and never advances the sales
+         card.
+       * the one thing that does move a card into Closed Won is a client
+         texting back "yes" (src/workflows/dpc-03-inbound-reply-router.mjs).
+         That is their answer, not their payment.
+
+     So the move is manual, and this says so where the zero is, rather than
+     leaving the board looking broken. It is a note, not a fix: putting a
+     payment-driven move into the product is a decision for the owner and a
+     change to a handler, not to this screen. */
+  var railNoteEl = document.getElementById("railNote");
+  var RAIL_NOTES = {
+    sales: "A payment does not move a card. When a deposit is paid, somebody has to " +
+           "move the card to Closed Won (deposit) — drag it, or use MOVE on the card. " +
+           "Nothing moves it for you."
+  };
+  function setRailNote(key) {
+    if (!railNoteEl) return;
+    var text = RAIL_NOTES[key || activePipelineKey] || "";
+    railNoteEl.textContent = text;
+    railNoteEl.hidden = !text;
+  }
+
   function applyBoard(stages, rail, label, key) {
     var r = paint(stages, key);
+    setRailNote(key);
     setSummary(fhPipelineSummary(stages));
     setHeadline(stages);
     if (typeof window.rebuildOwnerOptions === "function") {
@@ -2563,6 +2691,10 @@ restore();
     var key = PIPELINE_KEYS[rail];
     if (!key) { showNote(label + " — unknown rail."); return; }
     activePipelineKey = key;
+    // Set here as well as in applyBoard so the note is right while the board is
+    // loading and after a load that failed — it is a fact about the rail, not
+    // about the cards that came back.
+    setRailNote(key);
     if (window.FHPipelineBoard) window.FHPipelineBoard.currentKey = key;
 
     if (cache[key]) {
@@ -2995,7 +3127,7 @@ restore();
      panel does not spring open, an already-hidden Archive button stays
      hidden, and no filter is re-applied or cleared. */
   var boardOnly = [];
-  [".search", "#filterBtn", "#fhNewClient", "#filterChips", ".headline", ".board-summary", "#filterPanel"].forEach(function (sel) {
+  [".search", "#filterBtn", "#fhNewClient", "#filterChips", ".headline", ".board-summary", "#filterPanel", "#railNote"].forEach(function (sel) {
     var el = document.querySelector(sel);
     if (el) boardOnly.push(el);
   });

@@ -48,8 +48,8 @@ flowchart LR
   e_diagnostic_paid --> w_af_02_referral_ownership_capture["af-02-referral-ownership-capture"]
   e_diagnostic_paid --> w_c_00_crs_soft_pull_request["c-00-crs-soft-pull-request"]
   e_docs_received(["docs.received"])
+  e_docs_received --> w_doc_check["doc-check"]
   e_docs_received --> w_f_06_funding_conditions_missing_docs["f-06-funding-conditions-missing-docs"]
-  e_docs_received --> w_ghl_doc_document_check["ghl-doc-document-check"]
   e_docs_received --> w_repair_bureau_response_reader["repair-bureau-response-reader"]
   e_entry_captured(["entry.captured"])
   e_entry_captured --> w_af_02_referral_ownership_capture["af-02-referral-ownership-capture"]
@@ -106,7 +106,7 @@ flowchart LR
 | `call.completed` | 4 | `ai-set-03-no-answer-cadence`, `ds-01-repair-referral`, `s-08-post-call-funding-declined`, `s-offer-bucket` |
 | `deposit.paid` | 3 | `c-02b-inquiry-removal-requested`, `s-06-post-call-funding-purchased`, `s-doc-collection` |
 | `diagnostic.paid` | 2 | `af-02-referral-ownership-capture`, `c-00-crs-soft-pull-request` |
-| `docs.received` | 3 | `f-06-funding-conditions-missing-docs`, `ghl-doc-document-check`, `repair-bureau-response-reader` |
+| `docs.received` | 3 | `doc-check`, `f-06-funding-conditions-missing-docs`, `repair-bureau-response-reader` |
 | `entry.captured` | 5 | `af-02-referral-ownership-capture`, `at-01-first-touch-capture`, `s-00-welcome`, `s-01-new-lead-intake`, `s-02-incomplete-survey-nudge` |
 | `inquiry.removed` | 1 | `c-03-inquiry-removed-resume-or-hold` |
 | `invoice.sent` | 1 | `ar-collections` |
