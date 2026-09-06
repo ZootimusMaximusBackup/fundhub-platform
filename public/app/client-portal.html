@@ -2506,6 +2506,12 @@ document.addEventListener("DOMContentLoaded", async function () {
  * button that throws would look like our bug and would teach the client the
  * feature is broken.
  *
+ * AND THE VERSION IS READ BEFORE ANYTHING IS ASKED OF ANYBODY. An iPhone on
+ * 16.0 to 16.3 is too old for push but new enough to look modern, and it used to
+ * be handed the three add-to-home-screen steps and then, once it had done them,
+ * an empty space where the card had been. Every iPhone this page cannot serve is
+ * told so up front, in one sentence, whether it is installed or not.
+ *
  * THE KILL SWITCH LIVES HERE TOO. Loading this page with ?push=off unregisters
  * every service worker on this origin and empties their caches. The other half
  * is KILL_SWITCH in client-portal-sw.js, which does the same thing from a single
@@ -2565,9 +2571,27 @@ document.addEventListener("DOMContentLoaded", async function () {
        user is offered a button that cannot work. */
     || (/Macintosh/.test(ua) && typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 1);
 
+  /* iOS 16.4 is the first version with web push at all. Below it the feature
+     does not exist, home screen or not, and telling somebody to add an icon
+     first is sending them on an errand that cannot work. */
+  var PUSH_MIN = { major: 16, minor: 4 };
+
   function iosVersion() {
+    /* Only an honest iOS user agent carries a version worth reading. An iPad on
+       iPadOS 13+ says "Macintosh; Intel Mac OS X 10_15_7", and taking the 10 out
+       of that would tell a current iPad it is nine years out of date. */
+    if (!/iP(hone|od|ad)/.test(ua)) return null;
     var m = /OS (\d+)[._](\d+)/.exec(ua);
     return m ? { major: Number(m[1]), minor: Number(m[2]) } : null;
+  }
+
+  /* True only when we KNOW the version and know it is too old. An unreadable
+     version is not a reason to tell somebody their phone is out of date. */
+  function iosTooOldForPush() {
+    if (!isIOS) return false;
+    var v = iosVersion();
+    if (!v) return false;
+    return v.major < PUSH_MIN.major || (v.major === PUSH_MIN.major && v.minor < PUSH_MIN.minor);
   }
 
   function installed() {
@@ -2631,21 +2655,45 @@ document.addEventListener("DOMContentLoaded", async function () {
     return ("serviceWorker" in navigator) && ("PushManager" in window) && ("Notification" in window);
   }
 
-  function paintIphoneNotInstalled() {
-    var v = iosVersion();
+  /* THE OLD-IPHONE MESSAGE, AND WHY IT COMES FIRST.
+     An iPhone on 16.0 to 16.3 used to be shown the three add-to-home-screen
+     steps, because the only version check was "below 16". The client did the
+     three taps, the page reloaded as an installed app, and the whole card then
+     vanished with no message at all — because the installed path needs
+     PushManager, which does not exist before 16.4. Three taps for nothing, then
+     silence. So the version is checked BEFORE anybody is asked to do anything,
+     and it is checked whether or not the app is already installed. */
+  function paintIphoneTooOld() {
     show(card, true);
     show(btn, false);
-    if (v && v.major < 16) {
-      // Honest and specific. "Your browser can't" would send them looking for a
-      // different browser, and on iPhone every browser is Safari underneath.
-      show(steps, false);
-      copy.textContent = "Notifications need iPhone software version 16.4 or newer. "
-        + "Yours is older, so this phone cannot show them yet.";
-      return;
-    }
+    show(steps, false);
+    // Honest and specific. "Your browser can't" would send them looking for a
+    // different browser, and on iPhone every browser is Safari underneath.
+    copy.textContent = "Notifications need iPhone software version 16.4 or newer. "
+      + "This phone is on an older version, so it cannot show them yet. "
+      + "Updating the phone's software is all it takes.";
+    say("");
+  }
+
+  /* An iPhone new enough for push, in Safari, not yet on the home screen. */
+  function paintIphoneNotInstalled() {
+    show(card, true);
+    show(btn, false);
     show(steps, true);
     copy.textContent = "iPhone only allows notifications once FundHub is on your home screen. "
       + "Three taps and you are done:";
+  }
+
+  /* Last resort on an iPhone: new enough by its user agent, installed, and the
+     browser still has no push. Better a sentence than an empty space where a
+     card was — the client has already been told to expect one. */
+  function paintIphoneUnavailable() {
+    show(card, true);
+    show(btn, false);
+    show(steps, false);
+    copy.textContent = "This iPhone cannot show notifications yet. "
+      + "They need iPhone software version 16.4 or newer, with FundHub opened from your home screen.";
+    say("");
   }
 
   function paintReady(reg) {
@@ -2763,10 +2811,22 @@ document.addEventListener("DOMContentLoaded", async function () {
     // for somebody who is not signed in gains nothing.
     if (!token()) return Promise.resolve();
 
+    /* Version first. An iPhone that cannot do this at any point must never be
+       sent to do the three taps, and must not be left with a blank space after
+       it has done them. */
+    if (iosTooOldForPush()) { paintIphoneTooOld(); return Promise.resolve(); }
+
     if (isIOS && !installed()) { paintIphoneNotInstalled(); return Promise.resolve(); }
 
     // Everything else, iPhone included once it is on the home screen.
-    if (!supported()) return Promise.resolve();   // nothing honest to offer
+    if (!supported()) {
+      /* On a laptop or an Android with no push there is nothing the person can
+         do about it, so the card stays away rather than showing a dead end. On
+         an iPhone there is: it is a software update, and they have already read
+         the card once. */
+      if (isIOS) paintIphoneUnavailable();
+      return Promise.resolve();
+    }
 
     return ensureWorker().then(function (reg) {
       if (!reg) return;

@@ -32,9 +32,10 @@
 // that for you — it tells you the fence is up and stops, so nobody transmits by
 // running a script they were only reading. Pass --send to mean it.
 //
-// THE BODY IS THE GENERIC ONE. It goes through the same lock-screen gate every
-// other notification does, with the detail flag off, so this script cannot be
-// used to put a dollar amount on somebody's phone.
+// THE BODY IS THE APPROVED ONE. It goes through the same lock-screen gate every
+// other notification does, with the detail flag off, and that gate only lets
+// through sentences already written into src/push/payload.mjs — so this script
+// cannot be used to put anything of a client's on somebody's phone.
 //
 // NOTHING IS PRINTED THAT COULD BE USED TO SEND. No endpoint, no key. Row ids,
 // device labels and statuses only.

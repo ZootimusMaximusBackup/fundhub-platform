@@ -22,13 +22,15 @@ flowchart TD
     KILL -->|Yes| TEARDOWN[Every service worker removed<br/>and every cache emptied on this device]
     KILL -->|No| IOS{iPhone or iPad?}
 
-    IOS -->|Yes, and not on the home screen| IOSVER{iOS 16.4 or newer?}
-    IOSVER -->|No| TOOOLD[Card says: this phone's software is too old.<br/>No button.]
-    IOSVER -->|Yes| ADDHOME[Card shows the three add-to-home-screen steps.<br/>NO button — asking Safari for permission here throws.]
+    IOS -->|Yes| IOSVER{iOS 16.4 or newer?<br/>Checked FIRST, installed or not}
+    IOSVER -->|No| TOOOLD[Card says: this phone needs iOS 16.4 or newer.<br/>No steps, no button. Nobody below 16.4 is<br/>ever sent to add it to the home screen.]
+    IOSVER -->|Yes, and not on the home screen| ADDHOME[Card shows the three add-to-home-screen steps.<br/>NO button — asking Safari for permission here throws.]
     ADDHOME -.client adds it and reopens.-> SUPPORT
 
-    IOS -->|No, or already on the home screen| SUPPORT{Browser supports<br/>service workers + push?}
-    SUPPORT -->|No| HIDDEN[Card stays hidden. Nothing to offer.]
+    IOSVER -->|Yes, and on the home screen| SUPPORT
+    IOS -->|No| SUPPORT{Browser supports<br/>service workers + push?}
+    SUPPORT -->|No, on an iPhone| IOSDEAD[Card says this iPhone cannot show them yet<br/>and what it would need. Never a blank space.]
+    SUPPORT -->|No, anywhere else| HIDDEN[Card stays hidden. Nothing the person can do.]
     SUPPORT -->|Yes| REG[Service worker registered<br/>scope = /app/client-portal.html only]
 
     REG --> PERM{Notification permission}
@@ -56,7 +58,7 @@ flowchart TD
     OFFTAP --> REVOKED[(revoked_at stamped.<br/>Row kept — 'they asked us to stop')]
 
     LIVE --> SEND([Something calls sendToClient])
-    SEND --> GATE{Body passes the lock-screen gate?}
+    SEND --> GATE{Is the body one of the approved ones?<br/>A whitelist — free text is not a body}
     GATE -->|No| REFUSEDBODY[Refused before the network.<br/>Permanent — a retry refuses it again.]
     GATE -->|Yes| ENCRYPT[Encrypted for this device<br/>RFC 8291 aes128gcm]
     ENCRYPT --> PUSHSVC[POST to the push service<br/>signed with our VAPID key]
@@ -141,8 +143,10 @@ Nothing sends a notification today. To connect the nudge engine:
    `await sendToClient(db, { orgId, clientId, notification: { kind: "check_in" } })`.
 3. If it answers `reason: "no_subscription_on_file"`, fall back to the text. If it
    answers `sent >= 1`, skip the text — that is the whole saving.
-4. Add the notification's `kind` to `GENERIC_BODIES` in `src/push/payload.mjs` first.
-   An unknown kind is refused, on purpose.
+4. Add the notification's `kind` — and the complete sentence it should say — to
+   `APPROVED_BODIES` in `src/push/payload.mjs` first. An unknown kind is refused,
+   on purpose, and so is any body that is not already written down in that file.
+   There is no way to pass words in from a caller with the detail flag off.
 
 To route it through the message dispatcher instead (a bigger change, not needed for
 the above):

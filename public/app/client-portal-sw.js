@@ -138,10 +138,12 @@ self.addEventListener("fetch", (event) => {
 
 /* ── PUSH — show what the server said, and nothing it did not ────────────── */
 self.addEventListener("push", (event) => {
-  /* THE BODY IS ALREADY SAFE FOR A LOCK SCREEN. src/push/payload.mjs refuses to
-     build one containing a dollar amount, a lender's name or a credit term.
-     Nothing is added to it here — no client name, no amount read from a cache,
-     no "you have 3 alerts". This worker displays and does not compose. */
+  /* THE BODY IS ALREADY SAFE FOR A LOCK SCREEN. With the detail flag off — which
+     is everywhere today — src/push/payload.mjs will only build a body that is
+     one of a short list of approved sentences written into that file; free text
+     is refused there, so nothing client-specific can arrive here to display.
+     Nothing is added to it here either — no client name, no amount read from a
+     cache, no "you have 3 alerts". This worker displays and does not compose. */
   let data = {};
   try {
     data = event.data ? event.data.json() : {};
