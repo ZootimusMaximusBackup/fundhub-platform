@@ -84,6 +84,54 @@ flowchart TD
     Q1 -->|No| Q3[PI-INQUIRY-UNMATCHED<br/>asks for the permissible purpose<br/>or deletion]
 ```
 
+### No document is addressed to a word
+
+ADDED 2026-09-06. **COMPLIANCE REVIEW REQUIRED — credit-repair messaging.**
+
+A person's name printed on a letter to a credit bureau, on a validation demand to a
+collector, or on a complaint sworn under penalty of perjury is **either a real name or it is
+absent**. There is no third answer, and no document is built with a word standing where the
+name should be — not "Client", not "Consumer", not a bracketed blank.
+`src/metro2/letters/consumer-name.cjs` is the one place that decides, and every renderer
+imports it, including the CommonJS vendor letter writer.
+
+**Two earlier write-ups on this were wrong, and here is the correction.**
+
+*It said there were "exactly three places in this repository that print a customer's name
+onto a document".* There are more than three, they were listed off the filesystem this time
+(`src/`, `vendor/`, `scripts/`, `api/`, `public/`), and every one that mails something now
+runs the same predicate:
+
+| Where | What it prints | Now |
+|---|---|---|
+| `src/metro2/letters/generate.mjs` | bureau letterhead and body | refuses |
+| `src/metro2/letters/sign-block.mjs` | the signature line, and the perjury declaration | refuses |
+| `src/metro2/letters/furnisher-validation.mjs` | demand mailed to a collector | refuses |
+| `src/metro2/letters/complaints.mjs` | the CFPB and state attorney general complaints | refuses |
+| `src/metro2/diy/package.mjs` | the whole do-it-yourself packet | refuses first, with a reason |
+| `src/metro2/diy/deliver.mjs` | resolves the name off the customer record | answers NULL |
+| `src/inquiry-ops/letter-draft.mjs` | the inquiry-removal draft | answers NULL |
+| `src/underwrite/letter-pack.mjs` | the funding / repair pack | withholds the letters, keeps the analysis |
+| `vendor/underwriteiq-full/api/lite/letter-generator.js` | the mailed dispute PDF's sender block, its signature, and the "keep only my legal name" claim | refuses |
+
+Only a WHOLE value counts as a stand-in, so a customer actually called "Pat Client" still
+gets their letters.
+
+*It said the CFPB and state attorney general complaint forms "only come out of the
+do-it-yourself packet, not the repair desk".* **The opposite is true.**
+`src/underwrite/letter-pack.mjs` `buildEscalationComplaints` returns immediately for every
+pack that is not `"repair"`, so it is a repair-desk builder and nothing else. It feeds
+`src/metro2/diy/package.mjs` `maybeComplaintFiles` from the same typed customer record the
+bureau letters use, and it now takes the same name gate they do — before any work, not
+inside the renderer.
+
+**What this does NOT change.** The repair desk still holds its letters to the name read off
+the uploaded government ID, as the section below describes. The gate above is the floor
+under that, not a replacement for it: the do-it-yourself packet reads the typed customer
+record, so a name gate is the only check standing between it and a letter addressed to
+nobody. Raising the packet to the ID standard as well would stop every customer without a
+read ID from getting one, which is a product decision nobody has made.
+
 ### The rule that makes this safe
 
 A dispute letter is a statement of fact mailed to a credit bureau in the

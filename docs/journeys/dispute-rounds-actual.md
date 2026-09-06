@@ -202,9 +202,61 @@ Two more checks, because a rendered sample is not a proof of a pool:
   letters built from the commit before this fix: 1,134 letters compared, and the only text
   that moved anywhere is Round 3's 90.
 
-Nothing in any round says a CFPB or state attorney general complaint HAS been filed.
-Rounds 4 and 5 name both only in the future tense, because nothing in this repository
-records whether either was actually submitted.
+### What a round may say about a complaint HAVING been filed
+
+CORRECTED 2026-09-06. **COMPLIANCE REVIEW REQUIRED — dispute logic.**
+
+**The sentence that stood here was wrong.** It said "Nothing in any round says a CFPB or
+state attorney general complaint HAS been filed." A reviewer rendered Round 6 with two
+records in hand and got exactly that, in a letter to a credit bureau:
+
+```
+COMPLAINTS ALREADY FILED (evidence):
+On 2026-08-01 a complaint about this file was mailed to the Consumer Financial Protection Bureau.
+On 2026-08-15 a complaint about this file was mailed to my state attorney general.
+```
+
+So here is the true, narrower claim, traced through the code rather than remembered.
+
+**Round 6, and only Round 6, can print it.** `src/metro2/letters/generate.mjs:816` calls
+`formatComplaintFilings` only when the round is R6. Rounds 1 to 5 print nothing about a
+filing whatever records exist — they name the two offices in the future tense only.
+
+**One sentence per record, and no record means no sentence.**
+`src/metro2/rounds/complaint-filing.mjs` `formatComplaintFilings` walks the rows it is
+given, keeps only those whose target is `cfpb` or `state_ag` AND whose status is `sent` or
+`delivered`, and de-duplicates by target. A row with no usable date says "A complaint about
+this file was mailed to …" without inventing a day. Nothing is hedged and nothing is
+assumed.
+
+**Where a record can come from — the whole set, read off the code.** Rows are read by
+`loadComplaintFilings` out of `dispute_letters`. Two functions insert into that table:
+
+* `src/metro2/rounds/store.mjs` `saveLetter`, whose only callers are `src/repair/analyze.mjs`
+  (twice) — and both write `target: "bureau"` or `target: "furnisher"` with
+  `status: "generated"`. Neither can produce a row this sentence would read.
+* `src/metro2/rounds/complaint-filing.mjs` `recordComplaintFiling`, which is the only
+  writer that can. Its one caller in the product is `src/repair/send.mjs:565`, inside the
+  block that runs **after the mail provider returned**, gated on the letter's target being
+  a complaint target.
+
+**And it now takes a receipt, not our word.** `recordComplaintFiling` requires
+`providerId` — the mail provider's own identifier for the piece it accepted. Without one it
+writes nothing and answers `no_provider_receipt`. So the sentence cannot be opened by
+intending to send, by generating a complaint, or by a staff member marking something done:
+only by a provider having taken the piece and handed back an id for it.
+
+**What that costs, stated rather than hidden.** `src/repair/send.mjs:441` reads the id as
+`sent?.providerId || sent?.id || null`, and its own note at :449 records that a provider can
+accept a piece and return no identifier. When that happens the complaint really was mailed
+and no record is written, so **Round 6 stays silent about it**. That is the intended
+direction: a true sentence lost can be recovered, a false one mailed to a credit bureau
+cannot.
+
+**What is NOT claimed here.** Whether the live database holds any `cfpb` or `state_ag` row
+today was not checked and is not asserted — this page is written from the code, and the live
+data was not read. What the code says is the whole of the above: one writer, one caller, and
+that caller only after a mail provider handed back a receipt.
 
 ## Gaps between this and the intended journey
 

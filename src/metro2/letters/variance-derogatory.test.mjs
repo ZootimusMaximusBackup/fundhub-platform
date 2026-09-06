@@ -8,6 +8,7 @@ import {
   DEFAULT_THRESHOLD
 } from "./variance.mjs";
 import { generateLetter } from "./generate.mjs";
+import { readFileSync } from "node:fs";
 import { openingFor, closingFor } from "./prompts.mjs";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -69,7 +70,15 @@ async function letterFor(bureau) {
   const out = await generateLetter({
     bureau,
     round: 1,
+    /* `client` is NOT read by generateLetter — only `identity` is — so this
+       fixture used to render three letters headed "[Consumer Name]" and this
+       test never noticed, because what it measures is how alike the letters
+       are, not who they are addressed to. ./consumer-name.cjs now refuses a
+       letter nobody can be named on, which is what surfaced it. The identity
+       below says exactly what the `client` line already said; nothing about
+       what this test measures has changed. */
     client: { first_name: "Sim", last_name: "Three", address_line1: "1 Test St" },
+    identity: { fullName: "Sim Three", addressLine1: "1 Test St" },
     violations: [
       { ...CLAIM("DEROG-COLLECTION", "MIDLAND CREDIT MANAGEMENT"), bureau },
       { ...CLAIM("DEROG-CHARGEOFF", "CAPITAL ONE"), bureau }
@@ -163,18 +172,64 @@ test("a derogatory batch is no more alike than the Metro 2 batch it stands in fo
    pool deliberately. No new copy: the same six approved lines, differently drawn. */
 test("the three bureaus draw different opening and closing lines", async () => {
   const texts = await Promise.all(["TU", "EX", "EQ"].map((b) => letterFor(b)));
-  // Ask the pool which line each letter drew, rather than guessing at paragraphs.
-  const drew = (pool, text) => pool.findIndex((line) => text.includes(line));
-  const openings = [0, 1, 2, 3, 4, 5].map((i) => openingFor(i, 1));
-  const closings = [0, 1, 2, 3, 4, 5].map((i) => closingFor(i, 1));
-  const openIdx = texts.map((t) => drew(openings, t));
-  const closeIdx = texts.map((t) => drew(closings, t));
-  assert.ok(openIdx.every((i) => i >= 0), "a letter opened with a line that is not in the R1 pool");
-  assert.equal(new Set(openIdx).size, 3,
-    `two of the three bureaus opened with the same sentence (pool indexes ${openIdx.join(", ")}). ` +
+
+  /* HOW THIS USED TO ASK, AND WHY IT CANNOT ANY MORE.
+     It looked each letter's opening up by index in the R1 pool. That works
+     only while the drawn line reaches the page verbatim, and for a DEROGATORY
+     batch it does not: `accurate()` in ./generate.mjs rewrites any pool line
+     that claims a Metro 2 field defect, because these claims are not Metro 2
+     ones. Pool line 3 is "I dispute the Metro 2 field defects identified
+     below..." and this batch prints "I dispute the items identified below...",
+     which is the honest wording and the whole point of that rewriter.
+
+     The index lookup returned -1 for it and the test read that as "a line that
+     is not in the pool". It never fired before only because the seed happened
+     to miss line 3; the seed moved when the consumer's name started feeding it
+     (./consumer-name.cjs — a letter is now seeded from the name it is actually
+     addressed to). So the lookup was always going to break on a coin flip.
+
+     What this asks instead is stricter, not looser: pull the opening sentence
+     off the page positionally, then require that the exact sentence appears in
+     the letter SOURCE. That proves it is approved copy — whether it came
+     straight from the pool or through the accuracy rewriter — and it cannot be
+     satisfied by a sentence somebody invented at runtime. */
+  const SOURCE = ["./prompts.mjs", "./generate.mjs"]
+    .map((f) => readFileSync(new URL(f, import.meta.url), "utf8"))
+    .join("\n");
+
+  // The opening is the paragraph directly after the "Re:" line; the closing is
+  // the paragraph under the "CLOSING:" heading.
+  const openingOf = (text) => {
+    const lines = text.split("\n");
+    const re = lines.findIndex((l) => l.startsWith("Re: "));
+    return re < 0 ? "" : (lines.slice(re + 1).find((l) => l.trim()) || "").trim();
+  };
+  const closingOf = (text) => {
+    const lines = text.split("\n");
+    const at = lines.findIndex((l) => l.trim() === "CLOSING:");
+    return at < 0 ? "" : (lines.slice(at + 1).find((l) => l.trim()) || "").trim();
+  };
+
+  const opens = texts.map(openingOf);
+  const closes = texts.map(closingOf);
+
+  for (const line of [...opens, ...closes]) {
+    assert.ok(line.length > 0, "a letter has no opening or closing paragraph at all");
+    assert.ok(
+      SOURCE.includes(line),
+      `a letter used a sentence that is in no approved pool and in no rewrite: ${line}`
+    );
+  }
+  assert.equal(new Set(opens).size, 3,
+    `two of the three bureaus opened with the same sentence:\n${opens.join("\n")}\n` +
     `That is the mod-6 collision generate.mjs spreads the bureaus to avoid.`);
-  assert.ok(new Set(closeIdx).size >= 2,
-    `all three bureaus closed with the same sentence (pool indexes ${closeIdx.join(", ")}).`);
+  assert.ok(new Set(closes).size >= 2,
+    `all three bureaus closed with the same sentence:\n${closes.join("\n")}`);
+
+  // And the pools themselves are still the six lines they are meant to be — the
+  // half of the old assertion that was measuring something real.
+  assert.equal(new Set([0, 1, 2, 3, 4, 5].map((i) => openingFor(i, 1))).size, 6);
+  assert.equal(new Set([0, 1, 2, 3, 4, 5].map((i) => closingFor(i, 1))).size, 6);
 });
 
 /* THE GATE MUST STILL BITE. A stripper that swallows too much is how a
