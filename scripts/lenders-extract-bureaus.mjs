@@ -82,9 +82,9 @@ function resolveSourceRoot() {
   );
 }
 
-const SRC_ROOT = resolveSourceRoot();
+export const SRC_ROOT = resolveSourceRoot();
 
-const SOURCES = {
+export const SOURCES = {
   book: path.join(SRC_ROOT, "credentials/lenders-audit/lenders-audited.csv"),
   datapoints: path.join(SRC_ROOT, "docs/legacy-strong/bank-datapoints-active-banks.md"),
   inquiries: path.join(SRC_ROOT, "docs/legacy-strong/inquiry-master-database.csv"),
@@ -116,7 +116,7 @@ const CONFIRM = process.argv.includes("--confirm");
    must run without importing app code, and the app's splitter is not exported
    in a form a plain script can borrow without pulling the rest in. */
 
-function splitCsvLine(line) {
+export function splitCsvLine(line) {
   const out = [];
   let cur = "";
   let inQ = false;
@@ -135,7 +135,7 @@ function splitCsvLine(line) {
   return out;
 }
 
-function escapeCsv(v) {
+export function escapeCsv(v) {
   if (v == null) return "";
   const s = String(v);
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -143,7 +143,7 @@ function escapeCsv(v) {
 
 /* Reads a CSV where a single cell may contain line breaks (the book has a few).
    Returns { headers, rows } with every cell kept as the exact original text. */
-function readCsv(file) {
+export function readCsv(file) {
   const text = fs.readFileSync(file, "utf8").replace(/^﻿/, "");
   const lines = text.split(/\r?\n/);
   const headers = splitCsvLine(lines[0]).map((h) => h.trim());
@@ -166,7 +166,7 @@ function readCsv(file) {
 /* ───────────────────── ONE SPELLING OF EACH BANK NAME ─────────────────────
    Exactly the cleaning the alias map documents under how_to_use.step_1. */
 
-function cleanName(s) {
+export function cleanName(s) {
   return String(s == null ? "" : s)
     .toLowerCase()
     .replace(/[‘’]/g, "'")
@@ -186,7 +186,7 @@ const LOOKUP = new Map(Object.entries(aliasMap.lookup).map(([k, v]) => [cleanNam
    that in and half the rows get the wrong bureau, which is the exact mistake
    that sends a client to the bureau they were protecting. So any bank on this
    list is skipped entirely and listed in the review file instead. */
-const BLOCKED = new Set();
+export const BLOCKED = new Set();
 for (const item of (aliasMap.unresolved && aliasMap.unresolved.items) || []) {
   for (const part of String(item.name).split(/\/| vs /i)) {
     const hit = LOOKUP.get(cleanName(part));
@@ -204,7 +204,7 @@ const TRAILING_PRODUCT_WORDS = new Set([
 ]);
 
 /** Turns any spelling into the one proper bank name, or null if unsure. */
-function resolveInstitution(raw) {
+export function resolveInstitution(raw) {
   const direct = LOOKUP.get(cleanName(raw));
   if (direct) return direct;
   // Try again with anything in brackets removed: "First Citizens (30k) RM".
@@ -280,12 +280,12 @@ function parseBureauCell(cell) {
 }
 
 const BUREAU_ORDER = { EX: 0, EQ: 1, TU: 2 };
-function sortBureaus(set) {
+export function sortBureaus(set) {
   return [...set].sort((a, b) => BUREAU_ORDER[a] - BUREAU_ORDER[b]);
 }
 /** The book stores bureaus as one piece of text with slashes: "TU/EX/EQ".
     src/lenders/match.mjs splits on slash, comma, semicolon, plus or a space. */
-function toBookText(list) {
+export function toBookText(list) {
   return list.join("/");
 }
 
@@ -375,7 +375,7 @@ const INQ_MIN_ROWS_PER_BANK = 10;
 const INQ_MIN_SHARE = 0.30;
 const INQ_MIN_ROWS_PER_BUREAU = 5;
 
-function readInquiries() {
+export function readInquiries() {
   const { rows } = readCsv(SOURCES.inquiries);
   const byInstitution = new Map();
   const stats = { total: 0, withCreditor: 0, resolved: 0, unrecognisedBureauCells: new Map() };
@@ -1111,4 +1111,9 @@ function buildReport(d) {
   return L.join("\n") + "\n";
 }
 
-main();
+/* Only run when this file IS the command. scripts/lenders-extract-personal.mjs
+   imports the readers above rather than writing a second copy of them, and an
+   import must not kick off a whole extraction run. */
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}

@@ -21,6 +21,7 @@ import { upsertSurveyCarbonCopy } from "./client-custom-fields.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { demoFlagForEmail } from "../demo/test-identity.mjs";
 import { advanceCardToStage } from "../workflows/cards.mjs";
+import { evaluateWaypoints } from "../waypoints/verify.mjs";
 
 // Last question on the CF apply survey (Available Capital).
 // docs/clickfunnels/cf-survey-ground-truth.md — Survey Complete only when this lands.
@@ -367,6 +368,40 @@ export async function onSaleClosed(event, db) {
 // so `staffId` is never present and no row is written. Under the 05/30 model
 // drift the pull runs live on the call, which gives it an actor for the first
 // time; when the emitter carries one, this reads it. It is not invented here.
+/* THE CLIENT'S CHECKLIST, RE-READ AGAINST THE PULL THAT JUST LANDED.
+
+   MEASURED ON THIS BRANCH BEFORE THIS FUNCTION EXISTED: evaluateWaypoints() had
+   NO production caller at all. A grep across the branch found it in test files
+   and nowhere else. So a client who actually paid a card down was told to pay it
+   down forever — the checklist could be created and never closed.
+
+   WHY HERE. analysis.completed is the moment a credit pull's result becomes a
+   stored fact (the INSERT below is that line), and re-reading the checklist is
+   exactly a reaction to a stored fact, which is what this file is for. It is the
+   same shape enrolment uses for seeding: called beside the write that already
+   happens, not behind a new trigger of its own.
+
+   BEST-EFFORT, AND THAT IS LOAD-BEARING. By the time this runs the pull is
+   already stored. A checklist that could not be re-read is a checklist to fix;
+   it is not a reason to fail the event and lose the pull, so nothing in here is
+   allowed to throw. It is also outside every transaction in src/finance/
+   soft-pulls.mjs, so it cannot roll one back.
+
+   IDEMPOTENT. A replayed event re-reads the same file and reaches the same
+   verdicts: a row already done is not in listVerifiableWaypoints() at all, and
+   blocking a row that is already blocked writes the same reason again. */
+async function reviewChecklistAfterPull(db, { orgId, clientId }) {
+  if (!orgId || !clientId) return null;
+  try {
+    return await evaluateWaypoints(db, { orgId, clientId });
+  } catch {
+    /* Swallowed on purpose. There is no channel from here that a failure should
+       reach: the pull is stored, and a waypoint left open is the safe direction
+       for every check this runs. */
+    return null;
+  }
+}
+
 export async function onAnalysisCompleted(event, db) {
   const clientId = await resolveClient(db, event);
   if (!clientId) return;
@@ -402,6 +437,7 @@ export async function onAnalysisCompleted(event, db) {
         WHERE id = $1`,
       [crsResultId, JSON.stringify(canonical), event.payload?.outcomeTier ?? null]
     );
+    await reviewChecklistAfterPull(db, { orgId: event.orgId, clientId });
     return;
   }
 
@@ -436,6 +472,8 @@ export async function onAnalysisCompleted(event, db) {
       }
     });
   }
+
+  await reviewChecklistAfterPull(db, { orgId: event.orgId, clientId });
 }
 
 // decision.rendered — stamp the 6-tier outcome + funding estimate on the client.
