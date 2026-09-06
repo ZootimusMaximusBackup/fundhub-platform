@@ -1,4 +1,4 @@
-// Three collections: start (existing apply survey), mid check-in, ending interview.
+// Three collections: start (existing apply survey), mid accountability call, end-of-service accountability call.
 // Google Meet is only for the sales call and the ending interview.
 // Mid is a phone / AI reach-out, due at the halfway point of the service.
 
@@ -38,10 +38,15 @@ export const ASSIGNEE_ROLE = "csm";
 export const MID_DUE_DAYS = 90;
 
 export const SOURCE_WORKFLOW = "customer-insights-post";
-export const TASK_TITLE = "Post-funding Google Meet interview";
+/* ACCOUNTABILITY CALL, not "interview". Chris's word, 2026-09-05, and it is the
+   honest one: the CSM holds the client accountable to their own progress,
+   gathers what they say, and nudges toward the next product. Naming it an
+   interview when money and an offer also come up is the part that would need
+   defending later; naming it what it is does not. */
+export const TASK_TITLE = "Accountability call — results and what's next";
 
 export const MID_SOURCE_WORKFLOW = "customer-insights-mid";
-export const MID_TASK_TITLE = "Mid-journey check-in";
+export const MID_TASK_TITLE = "Accountability call — halfway check-in";
 
 export function interviewTaskBody(eventId, env = process.env) {
   const questions = formatQuestionList("post");
@@ -53,16 +58,21 @@ export function interviewTaskBody(eventId, env = process.env) {
     "Click Record in Google Meet. Ask these questions. Save answers with POST /api/customer-insights (stage=post, channel=google_meet).",
     RECORDING_NOTE,
     "",
-    /* Owner-set 2026-09-05: this is one call, not three. The interview is real
-       and it comes first — the answers are the point, and a client who has
-       just been pressed for money gives you nothing worth keeping. Money and
-       the next offer come after the questions, in that order. The open balance
-       and what they already own are on the CSM queue, so this task does not
-       repeat numbers that would be stale by the time anyone reads it. */
-    "THEN, after the questions and in this order:",
-    "  1. If they owe anything, ask for it. The balance and a pay link are on your queue.",
-    "  2. If they are in a good place, offer what they do not already have.",
-    "Do not lead with either. The answers are the reason this call exists.",
+    /* Owner-set 2026-09-05, after the Cole Gordon research. One call, and the
+       answers are the point of it. The CSM is paid 10% on upsells and nothing
+       on collections, deliberately: a rep paid to collect leans on the client
+       mid-conversation, and a rep paid on the next sale is motivated to make
+       this one work first.
+
+       So the offer is a NUDGE, not a pitch — Chris's words, "nothing too crazy,
+       just pushes and nudges". A client can be sold another product while still
+       halfway through this one; do not wait for the current service to finish.
+       What they already own is on the CSM queue, so this task does not repeat
+       facts that go stale before anyone reads it. */
+    "THEN, once you have their answers:",
+    "  Nudge, do not pitch. If they are in a good place, mention what they do not",
+    "  already have. Being mid-service is not a reason to hold off.",
+    "The answers are the reason this call exists. The offer rides along.",
     "",
     questions,
     "",
@@ -75,7 +85,9 @@ export function checkinTaskBody(eventId) {
   const questions = formatQuestionList("mid");
   return [
     "Call them (phone or AI reach-out). This is not a Google Meet.",
+    "An accountability call: how are they doing against what they came here for.",
     "Ask these questions. Save answers with POST /api/customer-insights (stage=mid, channel=call).",
+    "If they are in a good place, nudge toward what they do not already have. A nudge, not a pitch.",
     "",
     questions,
     "",
