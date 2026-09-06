@@ -13,6 +13,30 @@ export const LENDER_TABLES = Object.freeze([
 
 export const LENDER_TABLE_SET = new Set(LENDER_TABLES);
 
+/* WHICH PRODUCTS NEED A COMPANY.
+   Owner rule, 2026-09-06: no business on file, no business credit cards. A
+   client with no company cannot be handed a card that is issued to a company,
+   so the four business product tables below are the ones the matcher holds
+   back when the client's file has no business on it. The three personal
+   tables are always available. Split here rather than in the matcher so one
+   list serves every caller. */
+
+export const BUSINESS_LENDER_TABLES = Object.freeze([
+  "OnlineBizCC",
+  "InBranchBizCC",
+  "BizLOC_Stated",
+  "BizLOC_Documented"
+]);
+
+export const PERSONAL_LENDER_TABLES = Object.freeze([
+  "PersonalCC",
+  "PersonalLoans",
+  "PersonalLOC"
+]);
+
+const BUSINESS_LENDER_TABLE_SET = new Set(BUSINESS_LENDER_TABLES);
+const PERSONAL_LENDER_TABLE_SET = new Set(PERSONAL_LENDER_TABLES);
+
 export const APPLICATION_STATUSES = Object.freeze([
   "Apply",
   "Applied",
@@ -104,6 +128,16 @@ export const INLINE_EDIT_FIELDS = Object.freeze([
 
 export function isLenderTable(v) {
   return LENDER_TABLE_SET.has(String(v || "").trim());
+}
+
+/** A product that is issued to a company. Needs a business on file. */
+export function isBusinessLenderTable(v) {
+  return BUSINESS_LENDER_TABLE_SET.has(String(v || "").trim());
+}
+
+/** A product that is issued to a person. Never needs a business. */
+export function isPersonalLenderTable(v) {
+  return PERSONAL_LENDER_TABLE_SET.has(String(v || "").trim());
 }
 
 export function isApplicationStatus(v) {

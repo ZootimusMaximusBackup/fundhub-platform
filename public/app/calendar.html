@@ -64,9 +64,10 @@
                     alone would make the calendar the odd one out the same way.
      Anything the shell owns or injects stays off this list. */
   .app :is(.stat .l,.errbar .acts span,
-    .ws-dname,.ws-count,.ws-chip,.ws-more,.ws-empty,
+    .ws-dname,.ws-dtoday,.ws-count,.ws-chip,.ws-more,.ws-empty,
     .hour-label,.evt-meta,.evt-outcome,.who-name,.evt-fix span,.nowline .lbl,.open-slot,
     .un-minlbl,.un-when,.un-meta,.un-sec,.un-check,.un-doc,.un-alt,
+    .row-btn,.row-msg,.nodate-sub,.nodate-note,
     .then-time,.then-sub,.cov-role,.cov-load){
     font-size:var(--fs-caption)!important;
   }
@@ -152,17 +153,25 @@
   .ws-title{font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:7px;}
   .ws-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .ws-day{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:6px 7px 7px;min-height:96px;}
-  .ws-day.today{background:var(--surface);border-color:var(--gray2);box-shadow:0 1px 3px rgba(0,0,0,.07);
-    border-top:2px solid transparent;border-image:var(--spectrum) 1;}
+  /* SELECTED IS NOT TODAY. One class did both jobs, so the raised white box —
+     the thing everyone reads as "today" — moved to whatever day you clicked,
+     and the real today looked like every other day. Two signals now: the box is
+     the day you are LOOKING AT, and today is marked with the word "today" as
+     well as the spectrum edge, because a white-label brand can paint every
+     colour on this screen the same hue (UI-STANDARDS §12.6). */
+  .ws-day.sel{background:var(--surface);border-color:var(--gray2);box-shadow:0 1px 3px rgba(0,0,0,.07);}
+  .ws-day.is-today{border-top:2px solid transparent;border-image:var(--spectrum) 1;}
   .ws-day.empty{border-style:dashed;background:transparent;}
-  .ws-dtop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px;}
+  .ws-dtop{display:flex;align-items:baseline;justify-content:space-between;gap:5px;margin-bottom:5px;}
   .ws-dname{font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);}
-  .ws-day.today .ws-dname{color:var(--text);}
+  .ws-dtoday{font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--text);
+    border:1px solid var(--line);border-radius:9px;padding:0 6px;}
+  .ws-day.sel .ws-dname{color:var(--text);}
   .ws-dnum{font-family:var(--mono);font-weight:800;}
   .ws-count{font-family:var(--mono);color:var(--text-faint);margin-bottom:4px;}
   .ws-chip{background:var(--surface);border:1px solid var(--line);border-radius:4px;
     padding:2px 5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .ws-day.today .ws-chip{background:var(--paper);}
+  .ws-day.sel .ws-chip{background:var(--paper);}
   .ws-chip .t{font-family:var(--mono);color:var(--text-faint);margin-right:3px;}
   .ws-chip.live{border-color:var(--ok-line);background:var(--ok-bg);}
   .ws-more{color:var(--text-faint);}
@@ -244,6 +253,38 @@
 
   .open-slot{border:1px dashed var(--line);border-radius:7px;padding:6px 12px;text-align:center;
     color:var(--text-faint);background:rgba(255,255,255,.45);}
+
+  /* ---------- claim / mark done, on the row itself ----------
+     Every task on this screen was read-only: five tasks, all of them saying
+     "unclaimed", and no way to take one or tick it off. Both writes already
+     existed (PATCH /api/tasks {id,claim:true} and {id,done:true}); the screen
+     just never offered them. 40px tall per UI-STANDARDS §5, which the row is
+     already tall enough to hold. */
+  .row-acts{display:flex;align-items:center;gap:6px;}
+  .row-btn{font-family:var(--sans);font-weight:700;color:var(--text);
+    background:var(--surface);border:1px solid var(--line);border-radius:6px;
+    padding:0 11px;min-height:40px;cursor:pointer;white-space:nowrap;}
+  .row-btn:hover{background:var(--paper);border-color:var(--gray2);}
+  .row-btn[disabled]{cursor:default;color:var(--text-faint);background:var(--paper-dim);}
+  /* What happened to the last thing you pressed, where you pressed it. Words,
+     never colour alone (§12.6): the sentence itself says which it is. */
+  .row-msg{color:var(--ink2);margin-top:3px;}
+  .row-msg.bad{background:var(--alert-bg);border-radius:4px;padding:1px 6px;}
+
+  /* ---------- work with no date on it ----------
+     The calendar can only draw dated work, so tasks created with no due date
+     were invisible on this screen — 3 of the walk client's 5. They get a
+     named list of their own rather than being silently dropped. */
+  .nodate{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  /* The rail is 336px wide. Two buttons beside the text cut every task title in
+     half, so the buttons sit under it instead. */
+  .nodate-row{padding:7px 11px;border-bottom:1px solid var(--paper-dim);}
+  .nodate-row .row-acts{margin-top:6px;}
+  .nodate-row:last-child{border-bottom:none;}
+  .nodate-main{flex:1;min-width:0;}
+  .nodate-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .nodate-sub{color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .nodate-note{color:var(--text-dim);padding:7px 11px;line-height:1.45;}
 
   /* fix-it actions live on the clashing rows, not in a strip above the day */
   .evt-fix{display:flex;gap:5px;margin-top:4px;}
@@ -422,12 +463,28 @@
     </div>
     <div class="datelabel">—</div>
     <div class="sh-spacer"></div>
+    <!-- THE TILES DESCRIBE THE DAY YOU ARE LOOKING AT, NOT ALWAYS TODAY.
+         The date beside them says which day that is, and the "Left" label now
+         says "Left today" only when the selected day really is today.
+
+         No-show and Show rate are HIDDEN, not deleted (2026-09-06). Nothing on
+         this screen can know either one: the calendar is built from the task
+         queue (/api/tasks), and a task row carries no call outcome — no-show
+         lives on the client's own record. They had been a hardcoded dash since
+         the screen shipped and were taking two of the five tiles in the best
+         spot on the page. The elements stay in the page, empty and out of the
+         way, because e2e/calendar.spec.mjs pins them as the proof this screen
+         never invents a number it cannot read; when a real source for a call
+         outcome lands here, unhide them in paintStats() and fill them. -->
     <div class="stat-tiles">
       <div class="stat"><div class="l">Booked</div><div class="v" id="statBooked">—</div></div>
       <div class="stat"><div class="l">Done</div><div class="v" id="statDone">—</div></div>
-      <div class="stat"><div class="l">No-show</div><div class="v" id="statNoshow">—</div></div>
-      <div class="stat"><div class="l">Show rate</div><div class="v" id="statShow">—</div></div>
-      <div class="stat"><div class="l">Left today</div><div class="v" id="statLeft">—</div></div>
+      <div class="stat" id="statNoshowTile" hidden><div class="l">No-show</div><div class="v" id="statNoshow">—</div></div>
+      <div class="stat" id="statShowTile" hidden><div class="l">Show rate</div><div class="v" id="statShow">—</div></div>
+      <div class="stat"><div class="l" id="statLeftLabel">Left today</div><div class="v" id="statLeft">—</div></div>
+      <!-- Work with no date on it. It cannot be drawn on a calendar, so the
+           count says how much of it there is and the rail lists it. -->
+      <div class="stat" id="statNoDateTile" hidden><div class="l">No date</div><div class="v" id="statNoDate">—</div></div>
     </div>
   </div>
 
@@ -478,6 +535,15 @@
         <div class="then-row"><div class="then-name" style="color:var(--ink2)">Nothing else dated after Up Next.</div></div>
       </div>
 
+      <!-- WORK WITH NO DATE ON IT.
+           A calendar can only draw dated work, so a task created without a due
+           date used to vanish from this screen entirely — three of the walk
+           client's five tasks. They are listed here, with the same Claim and
+           Mark done buttons the timeline rows carry, so nothing is invisible
+           just because nobody put a date on it. -->
+      <div class="rail-title eyebrow" id="noDateTitle" hidden>No date on it</div>
+      <div class="nodate" id="noDateList" hidden></div>
+
       <div class="rail-title eyebrow">CA-03 / Who's On Today</div>
       <div class="cov" id="covList">
         <div class="cov-row"><span class="cov-name" style="color:var(--ink2)">No coverage feed yet — shift roster is on Staff &amp; Teams.</span></div>
@@ -509,6 +575,19 @@ var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct",
 var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 var datedTasks = [];
+/* WORK THE CALENDAR CANNOT DRAW. Tasks with no due date come back from the same
+   read and used to be thrown away here, which made them invisible on this
+   screen forever. They are kept, counted and listed in the rail instead. */
+var undatedTasks = [];
+/* The queue read stops at 200 rows per half. When it comes back full, there may
+   be more undated work than is being shown, and the screen says "at least".  */
+var queueCapped = false;
+var QUEUE_LIMIT = 200;
+/* The last thing a person pressed, and what came back — keyed by task id so the
+   answer paints on the row they pressed. {text, bad} */
+var rowMsgs = Object.create(null);
+/* The task whose button is mid-save. Its buttons are disabled while it is. */
+var busyTaskId = null;
 var selectedDate = startOfDay(new Date());
 var selectedId = null;
 var view = "day";
@@ -634,6 +713,114 @@ function briefingText(t) {
 function meetingUrl(t) {
   return (t && (t.meeting_url || t.join_url)) || "";
 }
+/* ── THE TWO WRITES THIS SCREEN NOW OFFERS ───────────────────────────────────
+   PATCH /api/tasks { id, claim:true } and { id, done:true } have existed since
+   the queue shipped; nothing on the calendar ever called them, so every row
+   said "unclaimed" with no way to change it.
+
+   Both writes need the person to be on a shift (owners excepted) — that gate is
+   api/tasks.mjs's, not this screen's, and its refusal is turned into plain
+   words below rather than a status code. FHData.write is POST-only, so this
+   uses fetch directly with the same bearer token every other read here sends. */
+function taskAuthHeaders() {
+  var t = "";
+  try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+  var h = { accept: "application/json", "content-type": "application/json" };
+  if (t) h.authorization = "Bearer " + t;
+  return h;
+}
+
+/* What went wrong, in the words of the person it happened to. Never a number,
+   never a raw error name. */
+function writeFailureText(status, body) {
+  var err = String((body && body.error) || "");
+  if (status === 401) return "You are signed out. Sign in again, then try once more.";
+  if (err === "no_active_shift") return "Clock in first. Work can only be claimed or closed on a shift.";
+  if (err === "already_claimed") return "Somebody else took this one first.";
+  if (status === 403) return "You are not allowed to change this task.";
+  if (status === 404) return "That task is gone. Reload the page.";
+  if (status === 503) return "The database is not reachable right now. Try again in a moment.";
+  return "That did not save. Try again in a moment.";
+}
+
+function withId(id, patch) {
+  var body = { id: id };
+  for (var k in patch) {
+    if (Object.prototype.hasOwnProperty.call(patch, k)) body[k] = patch[k];
+  }
+  return body;
+}
+
+function patchTask(id, patch) {
+  var started;
+  try {
+    started = fetch("/api/tasks", {
+      method: "PATCH",
+      headers: taskAuthHeaders(),
+      body: JSON.stringify(withId(id, patch))
+    });
+  } catch (e) {
+    return Promise.resolve({ ok: false, text: "Could not reach the server. Try again in a moment." });
+  }
+  return Promise.resolve(started).then(function (r) {
+    return r.json().catch(function () { return null; }).then(function (body) {
+      if (r.status >= 200 && r.status < 300 && body && body.ok === true) return { ok: true };
+      return { ok: false, text: writeFailureText(r.status, body) };
+    });
+  }, function () {
+    return { ok: false, text: "Could not reach the server. Try again in a moment." };
+  });
+}
+
+/* Press → the row says what is happening → the queue is read again → the row
+   shows what is true. The list is re-read rather than edited in place: a claim
+   fills in a person's NAME, which only the server knows, and guessing it here
+   would be the screen inventing a fact (CLAUDE.md §12). */
+function runTaskAction(id, patch, workingText, doneText) {
+  if (!id || busyTaskId) return;
+  busyTaskId = id;
+  rowMsgs[id] = { text: workingText, bad: false };
+  paintAll();
+  patchTask(id, patch).then(function (res) {
+    busyTaskId = null;
+    if (!res.ok) {
+      rowMsgs[id] = { text: res.text, bad: true };
+      paintAll();
+      return;
+    }
+    rowMsgs[id] = { text: doneText, bad: false };
+    refreshTasks().then(function () {
+      paintAll();
+      /* The row itself now shows what changed — the Claim button is gone, or
+         the task is ticked off — so the sentence has done its job and goes.
+         A failure message stays put until the person does something about it. */
+      setTimeout(function () {
+        if (rowMsgs[id] && !rowMsgs[id].bad) { delete rowMsgs[id]; paintAll(); }
+      }, 4000);
+    });
+  });
+}
+
+/* Read the queue again after a write. A read that fails leaves what is on
+   screen alone — the write itself already succeeded, and blanking the day would
+   say something worse and less true. */
+function refreshTasks() {
+  return loadDatedTasks().then(function (res) {
+    if (!res || !res.ok || !res.data) return false;
+    takeTasks(res.data.tasks || []);
+    return true;
+  }, function () { return false; });
+}
+
+/* One place that splits a queue answer into what the calendar can draw and what
+   it cannot, so the two never drift apart. */
+function takeTasks(tasks) {
+  var all = Array.isArray(tasks) ? tasks : [];
+  datedTasks = all.filter(function (t) { return t && t.due_at; });
+  datedTasks.sort(function (a, b) { return new Date(a.due_at) - new Date(b.due_at); });
+  undatedTasks = all.filter(function (t) { return t && !t.due_at && !t.done; });
+}
+
 function tasksOn(day) {
   return datedTasks.filter(function (t) {
     return sameDay(new Date(t.due_at), day);
@@ -678,14 +865,107 @@ function paintDateLabel() {
   else el.textContent = dateLabelText(selectedDate);
 }
 
+/* ── THE TWO BUTTONS, DRAWN THE SAME WAY WHEREVER A TASK IS SHOWN ───────────
+   Claim only appears on work nobody has taken; Mark done only on work that is
+   not finished. A button that could not do anything is not drawn (§5). */
+function actionsHtml(t) {
+  if (!t || !t.id) return "";
+  var busy = busyTaskId && String(busyTaskId) === String(t.id);
+  var dis = busy ? " disabled" : "";
+  var html = '<div class="row-acts">';
+  if (!t.assignee_staff_id && !t.assignee_name) {
+    html += '<button type="button" class="row-btn" data-act="claim" data-task-id="' +
+      esc(t.id) + '"' + dis + ">Claim</button>";
+  }
+  if (!t.done) {
+    html += '<button type="button" class="row-btn" data-act="done" data-task-id="' +
+      esc(t.id) + '"' + dis + ">Mark done</button>";
+  }
+  return html + "</div>";
+}
+
+/* What happened to the last press, on the row it was pressed. */
+function rowMsgHtml(t) {
+  var m = t && t.id ? rowMsgs[t.id] : null;
+  if (!m) return "";
+  return '<div class="row-msg' + (m.bad ? " bad" : "") + '">' + esc(m.text) + "</div>";
+}
+
+/* HOW MUCH WORK HAS NO DATE ON IT. Hidden when there is none, and hidden before
+   the queue has answered — an unread queue is not a claim that everything has a
+   date. A "+" means the read hit its 200-row limit and there may be more. */
+function paintNoDateTile() {
+  var tile = document.getElementById("statNoDateTile");
+  var v = document.getElementById("statNoDate");
+  if (!tile || !v) return;
+  if (!loaded || !undatedTasks.length) {
+    tile.hidden = true;
+    v.textContent = "—";
+    return;
+  }
+  tile.hidden = false;
+  v.textContent = String(undatedTasks.length) + (queueCapped ? "+" : "");
+  tile.title = queueCapped
+    ? "Open tasks with no due date. The queue read stops at 200 rows, so there may be more."
+    : "Open tasks with no due date. They are listed in the rail on the right.";
+}
+
+function paintNoDateList() {
+  var title = document.getElementById("noDateTitle");
+  var list = document.getElementById("noDateList");
+  if (!title || !list) return;
+  if (!loaded || !undatedTasks.length) {
+    title.hidden = true;
+    list.hidden = true;
+    list.innerHTML = "";
+    return;
+  }
+  title.hidden = false;
+  list.hidden = false;
+  var n = undatedTasks.length;
+  var note = n === 1
+    ? "1 open task has no date on it, so it cannot sit on a day."
+    : n + " open tasks have no date on them, so they cannot sit on a day.";
+  if (queueCapped) note += " The queue is read 200 rows at a time, so there may be more than this.";
+  var html = '<div class="nodate-note">' + esc(note) + "</div>";
+  undatedTasks.slice(0, 12).forEach(function (t) {
+    html += '<div class="nodate-row">' +
+      '<div class="nodate-main">' +
+        '<div class="nodate-name">' + esc(displayName(t)) + "</div>" +
+        '<div class="nodate-sub">' + esc(briefingText(t)) +
+          (t.assignee_name ? " · " + esc(t.assignee_name) : " · unclaimed") + "</div>" +
+        rowMsgHtml(t) +
+      "</div>" +
+      actionsHtml(t) +
+    "</div>";
+  });
+  if (n > 12) {
+    html += '<div class="nodate-note">' + (n - 12) + " more are not shown here.</div>";
+  }
+  list.innerHTML = html;
+}
+
 function paintStats() {
   var bookedEl = document.getElementById("statBooked");
   var doneEl = document.getElementById("statDone");
   var noEl = document.getElementById("statNoshow");
   var showEl = document.getElementById("statShow");
   var leftEl = document.getElementById("statLeft");
+  var leftLabelEl = document.getElementById("statLeftLabel");
+  /* "LEFT TODAY" WAS NOT TODAY. Every tile here counts the day you have
+     selected, so on any other day this said "Left today" over a number that had
+     nothing to do with today. The number was right; the word was wrong. */
+  if (leftLabelEl) {
+    leftLabelEl.textContent = sameDay(selectedDate, startOfDay(new Date()))
+      ? "Left today"
+      : "Left " + MONTHS_SHORT[selectedDate.getMonth()] + " " + selectedDate.getDate();
+  }
+  /* No-show and Show rate have no source on this screen — see the note on the
+     tiles themselves. They stay a dash and stay hidden, rather than sitting in
+     two of the five best tiles on the page saying nothing. */
   if (noEl) { noEl.textContent = "—"; noEl.className = "v"; }
   if (showEl) { showEl.textContent = "—"; showEl.className = "v"; }
+  paintNoDateTile();
   if (!loaded) {
     if (bookedEl) bookedEl.textContent = "—";
     if (bookedEl && bookedEl.closest(".stat")) bookedEl.closest(".stat").hidden = false;
@@ -714,7 +994,13 @@ function paintWeekStrip() {
   var title = document.getElementById("wsTitle");
   var sun = sundayOf(selectedDate);
   var today = startOfDay(new Date());
-  if (title) title.textContent = "This week · " + weekRangeLabel(sun);
+  /* "THIS WEEK" ONLY WHEN IT IS THIS WEEK. The strip follows whatever day you
+     have selected, so this heading sat over a week three months away and still
+     said "This week". */
+  var thisWeek = sameDay(sundayOf(today), sun);
+  if (title) {
+    title.textContent = (thisWeek ? "This week · " : "Week of ") + weekRangeLabel(sun);
+  }
   if (!grid) return;
   var html = "";
   for (var i = 0; i < 7; i++) {
@@ -724,7 +1010,7 @@ function paintWeekStrip() {
     var isToday = sameDay(d, today);
     var isSel = sameDay(d, selectedDate);
     var empty = items.length === 0;
-    var cls = "ws-day" + (isSel ? " today" : "") + (empty ? " empty" : "");
+    var cls = "ws-day" + (isSel ? " sel" : "") + (isToday ? " is-today" : "") + (empty ? " empty" : "");
     var count = "—";
     if (loaded) {
       if (!items.length) count = "—";
@@ -739,8 +1025,11 @@ function paintWeekStrip() {
       }
     }
     html += '<div class="' + cls + '" data-ymd="' + ymd(d) + '" role="button" tabindex="0">';
-    html += '<div class="ws-dtop"><span class="ws-dname">' + DAYS[d.getDay()] +
-      '</span><span class="ws-dnum">' + d.getDate() + "</span></div>";
+    /* The word, not just the coloured edge — a one-hue white-label brand paints
+       every border on this strip the same colour (UI-STANDARDS §12.6). */
+    html += '<div class="ws-dtop"><span class="ws-dname">' + DAYS[d.getDay()] + "</span>" +
+      (isToday ? '<span class="ws-dtoday">today</span>' : "") +
+      '<span class="ws-dnum">' + d.getDate() + "</span></div>";
     html += '<div class="ws-count">' + esc(count) + "</div>";
     if (items.length) {
       items.slice(0, 2).forEach(function (t) {
@@ -824,6 +1113,7 @@ function paintDay() {
               ? ' <span class="rail-tag">' + esc(String(it.t.assignee_role).toUpperCase()) + "</span>"
               : "") +
           "</div>" +
+          rowMsgHtml(it.t) +
         "</div>" +
         '<div class="evt-right">' +
           (who
@@ -831,6 +1121,9 @@ function paintDay() {
               '</span><span class="who-name">' + esc(who) + "</span></div>"
             : '<div class="who"><span class="who-name">unclaimed</span></div>') +
           (done ? '<span class="tag done">Done</span>' : "") +
+          /* Claim it, or tick it off, without leaving the screen you plan your
+             day on. Both buttons write through PATCH /api/tasks. */
+          actionsHtml(it.t) +
         "</div></div>";
     });
     if (isToday && !nowLineDrawn && slot.key === nowHour) {
@@ -996,8 +1289,30 @@ function paintAll() {
   paintWeekStrip();
   paintDay();
   paintRail();
+  paintNoDateList();
   paintFooter();
   paintLiveChip();
+}
+
+/* One handler for both places a task can be acted on. The button carries the
+   task id, so the row it belongs to is never guessed from position. */
+function wireTaskButtons(root) {
+  if (!root) return;
+  root.addEventListener("click", function (e) {
+    var btn = e.target.closest && e.target.closest(".row-btn");
+    if (!btn || !btn.dataset.taskId) return;
+    // Stop the row's own click — pressing a button must not also re-select the
+    // row underneath it and scroll the rail somewhere else.
+    e.preventDefault();
+    e.stopPropagation();
+    if (btn.disabled) return;
+    var id = btn.dataset.taskId;
+    if (btn.dataset.act === "claim") {
+      runTaskAction(id, { claim: true }, "Claiming…", "Claimed by you.");
+    } else if (btn.dataset.act === "done") {
+      runTaskAction(id, { done: true }, "Marking done…", "Marked done.");
+    }
+  });
 }
 
 [].slice.call(document.querySelectorAll("#seg span")).forEach(function (x) {
@@ -1052,9 +1367,13 @@ if (thenList) {
   });
 }
 
+wireTaskButtons(document.querySelector(".day-wrap"));
+wireTaskButtons(document.getElementById("noDateList"));
+
 var dayWrap = document.querySelector(".day-wrap");
 if (dayWrap) {
   dayWrap.addEventListener("click", function (e) {
+    if (e.target.closest && e.target.closest(".row-btn")) return;
     var eventBlock = e.target.closest(".evt");
     if (!eventBlock || !eventBlock.dataset.taskId) return;
     selectedId = eventBlock.dataset.taskId;
@@ -1100,16 +1419,26 @@ function loadDatedTasks() {
 
     var seen = Object.create(null);
     var tasks = [];
+    /* UNDATED WORK IS KEPT. It used to be dropped on this line (`if (!t.due_at)
+       return;`), which is why three of the walk client's five tasks could not
+       be seen anywhere on this screen. The calendar still only DRAWS dated work
+       — a task with no date has no place on a day — but the rail lists it and
+       the tiles count it, so it is not invisible. */
     function take(res) {
       if (!res || !res.ok || !res.data) return;
-      (res.data.tasks || []).forEach(function (t) {
-        if (!t || !t.due_at) return;
-        var key = t.id || (String(t.due_at) + ":" + String(t.title || ""));
+      var rows = res.data.tasks || [];
+      // The read stops at 200 rows. A full answer may have been cut short, and
+      // the count on screen has to say so rather than claim a total.
+      if (rows.length >= QUEUE_LIMIT) queueCapped = true;
+      rows.forEach(function (t) {
+        if (!t) return;
+        var key = t.id || (String(t.due_at || "no-date") + ":" + String(t.title || ""));
         if (seen[key]) return;
         seen[key] = true;
         tasks.push(t);
       });
     }
+    queueCapped = false;
     take(open);
     take(closed);
     return { ok: true, source: "api", data: { tasks: tasks }, error: null };
@@ -1153,8 +1482,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }, SLOW_AFTER_MS);
 
     var wired = FHData.wire(read, "appointments", function (data) {
-      datedTasks = (data.tasks || []).filter(function (t) { return t && t.due_at; });
-      datedTasks.sort(function (a, b) { return new Date(a.due_at) - new Date(b.due_at); });
+      takeTasks(data.tasks || []);
       loaded = true;
       selectedId = null;
       paintAll();

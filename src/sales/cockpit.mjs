@@ -16,6 +16,109 @@ function money(n) {
   return Number(n);
 }
 
+/* AN OPEN SHIFT NOBODY CLOSED IS NOT A SHIFT YOU ARE ON.
+   Walk, 2026-09-06: the chip at the top of the call screen read
+   "ON SHIFT · 370H 28M" — fifteen and a half days — because a `shifts` row
+   started on 22 August has `ended_at IS NULL` and this file simply subtracted
+   that timestamp from now. The row is real. The number off it is not a working
+   day, and a closer reading it learns nothing about their own morning.
+
+   A day is the bound, and it is not an invented figure: a shift still open more
+   than twenty-four hours after it began was not ended, whatever else is true.
+   Past that the chip stops counting and says what happened and when instead.
+   The row itself is still reported — `started_at`, `elapsed_ms` and
+   `never_closed` all ride on the payload — so nothing is hidden from a later
+   reader, and whoever cleans the row up can still see it. */
+const OPEN_SHIFT_MAX_MS = 24 * 60 * 60 * 1000;
+
+export function describeShift(row, now = new Date()) {
+  if (!row) return { on_shift: false, reason: "No open shift" };
+  const startedAt = new Date(row.started_at);
+  const elapsedMs = Math.max(0, now.getTime() - startedAt.getTime());
+  if (elapsedMs <= OPEN_SHIFT_MAX_MS) {
+    return { on_shift: true, started_at: row.started_at, elapsed_ms: elapsedMs };
+  }
+  const day = Number.isNaN(startedAt.getTime())
+    ? null
+    : startedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  return {
+    on_shift: false,
+    never_closed: true,
+    started_at: row.started_at,
+    elapsed_ms: Number.isFinite(elapsedMs) ? elapsedMs : null,
+    reason: day
+      ? `Shift open since ${day} — never clocked out`
+      : "Shift open — never clocked out"
+  };
+}
+
+/**
+ * THE FUNDING NUMBER COMES FROM THE STORED FILE, NOT FROM A SECOND CALCULATION.
+ *
+ * Owner-set 2026-09-06, walk finding 9. This screen showed $636,000 while the
+ * Client Control Panel showed $212,000 for the same client at the same moment.
+ * Nothing was wrong with either calculation: there were simply two of them.
+ * The Client Control Panel prints what was stored when credit was pulled; this
+ * screen re-ran the underwriting engine over the tradeline rows and printed
+ * that instead. A closer reads the number here out loud. Chris: "Nobody gets
+ * 600K in funding."
+ *
+ * So there is one source now, and it is the stored pre-approval:
+ *
+ *   1. crs_results.result.preapprovals — totalPersonal / totalBusiness /
+ *      totalCombined, written by the pull itself (src/finance/crs-pull.mjs,
+ *      scripts/sim/push-credit.mjs).
+ *   2. clients.custom_fields.analyzer_prequal_amount, else
+ *      total_funding_estimate — the same two fields the Client Control Panel
+ *      reads, in the same order (public/app/client-control-panel.html), for a
+ *      file stamped before the preapprovals block was carried through.
+ *
+ * Three numbers, and only the three the owner asked for: personal, business,
+ * total. No conservative band, no multiplier presented as a forecast.
+ *
+ * NULL SURVIVES (CLAUDE.md §12). A figure nobody stored is unknown, never zero,
+ * and never re-derived here from something else. Where exactly one of the three
+ * is missing and the other two are known it is filled by subtraction, which is
+ * arithmetic on stored numbers rather than a second opinion about the client.
+ */
+export function storedFunding({ crsResult = null, customFields = {} } = {}) {
+  const file = crsResult && typeof crsResult === "object" ? crsResult : {};
+  const pre = file.preapprovals && typeof file.preapprovals === "object" ? file.preapprovals : {};
+  const cf = customFields && typeof customFields === "object" ? customFields : {};
+
+  let personal = money(pre.totalPersonal);
+  let business = money(pre.totalBusiness);
+  let total = money(pre.totalCombined);
+  let source = (personal != null || business != null || total != null) ? "crs_preapprovals" : null;
+
+  if (total == null) {
+    const stamped = money(cf.analyzer_prequal_amount ?? cf.total_funding_estimate);
+    if (stamped != null) {
+      total = stamped;
+      if (source == null) source = "client_custom_fields";
+    }
+  }
+
+  if (total == null && personal != null && business != null) total = personal + business;
+  if (personal == null && total != null && business != null) personal = total - business;
+  if (business == null && total != null && personal != null) business = total - personal;
+
+  const available = personal != null || business != null || total != null;
+  return {
+    available,
+    personal,
+    business,
+    total,
+    source,
+    reason: available
+      ? null
+      : "No funding estimate on this file yet — pull credit to get one.",
+    note: available
+      ? "The stored pre-approval. The same figure the Client Control Panel prints."
+      : null
+  };
+}
+
 /**
  * buildCockpit(db, { orgId, staffId, clientId, now })
  */
@@ -193,6 +296,52 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     ),
     underwriteAdapter.businessAges
   );
+
+  /* "DEROGATORIES: —" ON A FILE WITH NOTHING WRONG WITH IT. Walk finding 25.
+     summarizeCrs looked for a key named exactly `derogatories` on the raw
+     bureau payload. Walk1's file does not carry that name, so a client with
+     four clean accounts and no negative items had the one fact that IS the
+     pitch printed as unknown, on a live call.
+
+     The count is already measured on this screen. The underwrite adapter reads
+     clients.custom_fields.crs_negative_items_count and the engine carries it
+     through as metrics.negative_accounts, and both of them keep UNKNOWN as null
+     rather than coalescing it to zero — that rule is the whole subject of
+     src/underwrite/adapter.mjs's header. So the answer is taken from the
+     measurement this file already computes, instead of from a key name, and a
+     count nobody has entered still reads as unknown rather than as clean. */
+  if (credit.available && credit.derogatories == null) {
+    const measured = money(underwriteData?.metrics?.negative_accounts);
+    if (measured != null) {
+      credit.derogatories = measured;
+      credit.derogatories_source = "clients.custom_fields.crs_negative_items_count";
+    }
+  }
+
+  /* ONE FUNDING NUMBER, SHARED WITH THE CLIENT CONTROL PANEL. See
+     storedFunding() above for why. The engine's own arithmetic stays on the
+     payload under `personal`, `business` and `per_bureau` as the record of what
+     it computed; what the screen READS — totals — is the stored file, and
+     `totals.source` says which of the two it is looking at.
+
+     When nothing is stored the engine's totals are left exactly as they were,
+     which is the no-credit-pull case: closer-call.js already prints a dash and
+     the reason there, and a computed zero must never reach the screen as a
+     confident $0 (src/sales/cockpit-honest-money.test.mjs). */
+  const funding = storedFunding({
+    crsResult: crs.rows[0]?.result,
+    customFields: client.custom_fields
+  });
+  const underwriteTotals = funding.available
+    ? {
+        ...(underwriteData.totals || {}),
+        total_personal_funding: funding.personal,
+        total_business_funding: funding.business,
+        total_combined_funding: funding.total,
+        source: "stored_preapprovals"
+      }
+    : { ...(underwriteData.totals || {}), source: "engine" };
+
   const lenderMatch = gateLenderMatch({ credit, lenders });
   const precall = buildPrecall({
     client,
@@ -259,13 +408,7 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     staff: {
       id: staffId,
       name: staffRow.rows[0]?.name || null,
-      shift: shift.rows[0]
-        ? {
-            on_shift: true,
-            started_at: shift.rows[0].started_at,
-            elapsed_ms: Math.max(0, now.getTime() - new Date(shift.rows[0].started_at).getTime())
-          }
-        : { on_shift: false, reason: "No open shift" }
+      shift: describeShift(shift.rows[0], now)
     },
     kpis: {
       cash_today_cents: await todayCash(db, { orgId, staffId, now }),
@@ -299,8 +442,12 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
       pipeline: card.rows[0] || null
     },
     credit,
+    /* The three numbers the owner asked for, on their own, named for what they
+       are. Personal, business, total — one stored source, no bands. */
+    funding,
     underwrite: {
       ...underwriteData,
+      totals: underwriteTotals,
       funding_round_id: closeoutRow?.id || null,
       ...lenderMatch,
       applications: apps.rows
@@ -398,7 +545,11 @@ function summarizeCrs(row) {
       ?? (inquiriesList ? inquiriesList.length : null)
       ?? (typeof result.inquiries === "number" ? result.inquiries : null)
     ),
-    derogatories: result.derogatories ?? result.derogs ?? null,
+    /* Whatever the raw payload happens to name it. Where it names it nothing,
+       buildCockpit fills this from the measured negatives count — see the
+       block beside the underwrite call. */
+    derogatories: money(result.derogatories ?? result.derogs),
+    derogatories_source: money(result.derogatories ?? result.derogs) != null ? "crs_result" : null,
     note: "Scores come from triMerge over the stored CRS payload; UnderwriteIQ projections sit beside this block in the same closer-call response."
   };
 }
