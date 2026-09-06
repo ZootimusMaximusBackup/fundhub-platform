@@ -18,12 +18,14 @@ import { db, close } from "../db.mjs";
 import { listLenders, exportLendersCsv, matchForClient } from "./store.mjs";
 import { matchLenders, parseBureaus } from "./match.mjs";
 import { DEMO_LENDERS } from "../demo/roster.mjs";
+import { BUSINESS_LENDER_TABLES, PERSONAL_LENDER_TABLES } from "./tables.mjs";
 
 const hasDb = !!process.env.DATABASE_URL;
 const SLUG = "w3-demo-gate-test";
 
 let orgId = null;
 let clientId = null;
+let noBusinessClientId = null;
 let realLenderId = null;
 
 /* Expectations are derived from the roster, not hardcoded, so this suite stays
@@ -52,6 +54,26 @@ before(async () => {
     [orgId]
   )).rows[0].id;
 
+  /* THIS FIXTURE HAS A COMPANY. Owner rule 2026-09-06 holds every business
+     card back from a client with no business on file, and this suite is about
+     Demo Mode, not about that rule — without a company here the business
+     samples vanish and the Demo Mode counts stop meaning anything.
+
+     No state on the company on purpose. Several sample lenders name a state
+     list, so giving this fixture a state would start failing them on the
+     state gate and change what these counts measure. */
+  await db.query(
+    `INSERT INTO businesses (org_id, client_id, name, entity_data)
+     VALUES ($1, $2, 'W3 Gate Fixture LLC', '{}'::jsonb)`,
+    [orgId, clientId]
+  );
+
+  /* The other side of the same rule: a client with no company at all. */
+  noBusinessClientId = (await db.query(
+    `INSERT INTO clients (org_id, first_name, last_name) VALUES ($1, 'NoCompany', 'Fixture') RETURNING id`,
+    [orgId]
+  )).rows[0].id;
+
   // One real lender. Equifax-only, so a TransUnion block leaves it standing.
   realLenderId = (await db.query(
     `INSERT INTO lenders (org_id, lender_table, name, active, priority_tier, bureaus_pulled, eligible_states, external_row_id, is_demo)
@@ -74,6 +96,7 @@ after(async () => {
   if (!hasDb || !orgId) return;
   await db.query(`DELETE FROM inquiry_log WHERE org_id = $1`, [orgId]);
   await db.query(`DELETE FROM lenders WHERE org_id = $1`, [orgId]);
+  await db.query(`DELETE FROM businesses WHERE org_id = $1`, [orgId]);
   await db.query(`DELETE FROM clients WHERE org_id = $1`, [orgId]);
   await db.query(`DELETE FROM orgs WHERE id = $1`, [orgId]);
   await close().catch(() => {});
@@ -181,4 +204,34 @@ test("the CSV export never carries a sample lender, even with Demo Mode ON",
     for (const L of DEMO_LENDERS) {
       assert.equal(csv.includes(L.name), false, `${L.name} must not reach an export`);
     }
+  });
+
+/* ── No business on file, no business credit cards (owner rule 2026-09-06) ── */
+
+test("a client with no company matches no business card, and the summary says why",
+  { skip: !hasDb }, async () => {
+    await setDemo(true);
+    const withCompany = await matchForClient(db, { orgId, clientId });
+    const without = await matchForClient(db, { orgId, clientId: noBusinessClientId });
+
+    assert.equal(withCompany.summary.held_for_no_business.business_on_file, true);
+    assert.equal(withCompany.summary.held_for_no_business.count, 0);
+
+    assert.equal(without.summary.held_for_no_business.business_on_file, false);
+    assert.ok(without.summary.match_count < withCompany.summary.match_count,
+      "the list gets shorter, not the same");
+    assert.equal(
+      without.matches.some((m) => BUSINESS_LENDER_TABLES.includes(m.lender_table)),
+      false,
+      "not one business product survives"
+    );
+    assert.ok(
+      without.matches.every((m) => PERSONAL_LENDER_TABLES.includes(m.lender_table)),
+      "everything left is a personal product"
+    );
+    // The screen has to be able to say why the list shrank.
+    assert.match(
+      without.summary.held_for_no_business.message,
+      /held back because there is no business on file/
+    );
   });
