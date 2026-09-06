@@ -14,6 +14,7 @@ export const ALLOWED_UNMONITORED = {
   "trials/convert": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a partner agreement or pause a partner. Day 8 is a human decision, not an uptime probe.",
   "campaigns/meta-agency": "POST only. A GET answers 405 by design, and pinging it with a body would store a Meta Business id against a partner and fire a real agency-access request at Meta on their behalf. The monitored door for this surface is campaigns/connections, which reports whether the access actually landed.",
   "training-progress": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a compliance certification against a partner nobody assessed. The monitored door for the training is read/partner-training, which is what a partner actually opens.",
+  "push/unsubscribe": "POST or DELETE only — it is the control that switches a client's notifications off. A GET answers 405 by design, which a ping would read as an outage, and pinging it with a body would retire a real device. Its read sibling push/subscribe answers GET and is the monitored door for this pair.",
   "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk."
 };
 
@@ -175,6 +176,14 @@ const API_KEYS = [
   "public/partner-page",
   "public/survey-submit",
   "public/unsubscribe",
+  /* Web push for the client portal. Both answer a plain GET — push/key with the
+     public VAPID key, push/subscribe with the caller's own device list — and both
+     are client-only, so an unsigned ping answers 401, which counts as up. They are
+     worth watching because a client whose portal cannot reach them is offered a
+     button that silently does nothing. The write half, push/unsubscribe, is POST
+     only — see ALLOWED_UNMONITORED. */
+  "push/key",
+  "push/subscribe",
   "read/ad-attribution",
   "read/ad-books",
   "read/affiliates",

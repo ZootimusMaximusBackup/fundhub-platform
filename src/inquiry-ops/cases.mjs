@@ -1,5 +1,7 @@
 /* Inquiry removal cases — queue + clear/close actions. */
 
+import { parseBureaus } from "../lenders/match.mjs";
+
 export const CASE_STATUSES = Object.freeze([
   "Queued",
   "Scheduled",
@@ -105,7 +107,101 @@ export async function getActiveCaseForClient(db, { orgId, clientId }) {
   return publicCase(r.rows[0] || null);
 }
 
+/* The bureaus a case is addressed to, as one comparable key. Empty string when
+   the case names none — and an empty key never matches another empty one, see
+   below. */
+function bureauKeyOf(raw) {
+  return [...new Set(parseBureaus(raw))].sort().join("+");
+}
+
+/* ── ONE CLIENT, ONE BUREAU, ONE OPEN CASE ────────────────────────────────
+   Measured 2026-09-06 on the funding walkthrough client: four inquiries, SEVEN
+   open cases. Three were made at 03:06 when the deposit was paid, before any
+   funding round existed. Three MORE — the same three bureaus, exact duplicates
+   — were made at 11:20 once a round did.
+
+   Why: src/handlers/inquiry-gate.mjs looks for an existing case with
+   `funding_round_id IS NOT DISTINCT FROM $5`. The first three carry a null
+   round. The second trigger arrived carrying a round id, matched none of them,
+   and made three fresh ones. If those had ever been sent, every bureau would
+   have received the same dispute letter twice.
+
+   Two open cases for the same client and the same bureau is never a real
+   situation — it is two letters to one address. So the check lives HERE, at the
+   one INSERT every path goes through, rather than in the caller that got its
+   own lookup wrong. An existing open case is ADOPTED: it takes the funding
+   round if it did not have one, and it is returned in place of a new row, so
+   the caller's follow-up writes (letter draft, item count, status) land on the
+   case that already exists.
+
+   A case naming NO bureau is never adopted and never adopts. We cannot tell
+   what such a case is for, and quietly folding one into another would be a
+   guess. It gets its own row and is reported as the anomaly it is.
+
+   NOTHING IS DELETED HERE and nothing is closed. This stops new duplicates; the
+   ones already on the database are Chris's call. */
+async function findOpenCaseForBureau(db, { orgId, clientId, bureauKey }) {
+  if (!orgId || !clientId || !bureauKey) return null;
+  const r = await db.query(
+    `SELECT *
+       FROM inquiry_removal_cases
+      WHERE org_id = $1::uuid
+        AND client_id = $2::uuid
+        AND case_status::text = ANY($3::text[])
+      ORDER BY requested_at ASC NULLS LAST, created_at ASC`,
+    [orgId, clientId, [...ACTIVE]]
+  );
+  return (r.rows || []).find((c) => bureauKeyOf(c.selected_bureaus_raw) === bureauKey) || null;
+}
+
 export async function createCase(db, { orgId, row }) {
+  const bureauKey = bureauKeyOf(row?.selected_bureaus_raw);
+  const twin = await findOpenCaseForBureau(db, {
+    orgId,
+    clientId: row?.client_id,
+    bureauKey
+  });
+  if (twin) {
+    /* Adopting has to carry what the caller was going to put on the new row, or
+       the second trigger becomes a no-op and the case keeps a stale item count.
+       Three fields, each with its own rule:
+
+         funding_round_id — taken only when the open case has none. A case
+           already attached to a round is not moved to a different one here.
+         open_inquiry_count — refreshed whenever the caller counted.
+         case_status — moved ONLY between Queued and Blocked, which are the two
+           the doc gate computes. A case that has already been sent is In
+           Progress, and writing Queued over that would tell the desk to send a
+           letter that is already in the mail. */
+    const sets = ["updated_at = now()"];
+    const params = [twin.id];
+    if (row?.funding_round_id && !twin.funding_round_id) {
+      params.push(row.funding_round_id);
+      sets.push(`funding_round_id = $${params.length}::uuid`);
+    }
+    if (row?.open_inquiry_count != null) {
+      params.push(Number(row.open_inquiry_count));
+      sets.push(`open_inquiry_count = $${params.length}`);
+    }
+    const gateStatuses = ["Queued", "Blocked"];
+    if (gateStatuses.includes(row?.case_status)
+        && gateStatuses.includes(twin.case_status)
+        && row.case_status !== twin.case_status) {
+      params.push(row.case_status);
+      sets.push(`case_status = $${params.length}::inquiry_case_status`);
+    }
+    const adopted = sets.length > 1
+      ? (await db.query(
+          `UPDATE inquiry_removal_cases
+              SET ${sets.join(", ")}
+            WHERE id = $1::uuid
+            RETURNING *`,
+          params
+        )).rows[0] || twin
+      : twin;
+    return { ...publicCase(adopted), reused: true };
+  }
+
   const caseId = String(row?.case_id || `IRC-${Date.now()}`).slice(0, 80);
   const status = CASE_SET.has(row?.case_status) ? row.case_status : "Queued";
   const r = await db.query(

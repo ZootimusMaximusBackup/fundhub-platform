@@ -241,6 +241,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/340_client_light_affiliate.sql",
   "migrations/345_paid_service_one_open.sql",
   "migrations/346_csm_upsell_commission_rate.sql",
+  "migrations/352_client_push_subscriptions.sql",
   "migrations/360_waypoint_verification.sql",
   "migrations/361_waypoint_definitions.sql",
   "migrations/362_waypoint_definitions_seed.sql",

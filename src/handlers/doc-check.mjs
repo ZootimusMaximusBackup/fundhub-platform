@@ -31,6 +31,7 @@ import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { addTags, removeTags } from "../workflows/tags.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { FUNDING_DOC_HOLD } from "../inquiry-ops/doc-gate.mjs";
+import { SUBTYPE_TITLES } from "../documents/kinds.mjs";
 import { extractVerifiedIdentity, recordVerifiedIdentity } from "../identity/verified.mjs";
 
 export const AGENT_CODE = "DOC-CHECK";
@@ -72,6 +73,42 @@ async function loadDocumentBytes(db, { documentId, versionId = null, store = nul
     // gained a newer version in between.
     versionId: target.version_id || versionId || null
   };
+}
+
+/* raiseUncheckedDocumentTask — a person is told when the robot could not read
+ * a file.
+ *
+ * This is the honest half of "nothing checks a document". It does NOT check
+ * anything and it must never be mistaken for a check: it says only that a file
+ * arrived, that the reader did not produce a verdict on it, and that somebody
+ * has to look. The identity packet is left exactly as it was.
+ *
+ * NEVER THROWS. It hangs off the end of an upload. A missing table, a locked
+ * row or a bad role must not turn "we could not read your file" into a request
+ * that fails outright — the document is already stored either way. */
+export async function raiseUncheckedDocumentTask(db, {
+  orgId, clientId, documentId = null, eventId = null, docType = "document", why = ""
+} = {}) {
+  if (!orgId || !clientId) return { created: false, reason: "missing_ids" };
+  const label = SUBTYPE_TITLES[String(docType)] || "Document";
+  try {
+    return await createTask(db, {
+      orgId,
+      clientId,
+      title: `Check this ${label.toLowerCase()} by hand — nobody has read it`,
+      sourceWorkflow: WORKFLOW_ID,
+      assigneeRole: "closer",
+      eventId: eventId ? `${eventId}:unchecked` : null,
+      body: [
+        `A ${label.toLowerCase()} was uploaded and ${why || "nothing checked it"}.`,
+        "Open the file, confirm it belongs to this client, and confirm it is readable.",
+        documentId ? `Document: ${documentId}` : null
+      ].filter(Boolean).join(" ")
+    });
+  } catch (err) {
+    console.error(`[doc-check] could not raise the unchecked-document task: ${err && err.message}`);
+    return { created: false, reason: "task_failed", error: String(err?.message || err) };
+  }
 }
 
 export async function routeDocCheckOutcome(db, {
@@ -224,17 +261,37 @@ export async function onDocsReceivedDocCheck(db, event, deps = {}) {
   }
 
   const payloadVersionId = payload.version_id || payload.versionId || null;
-  const loaded = await (loadBytesImpl || loadDocumentBytes)(db, {
-    documentId,
-    versionId: payloadVersionId
-  });
+  /* A READ THAT THROWS USED TO ERASE THE WHOLE RUN.
+     Only a null return was handled. The storage client throws instead of
+     returning null whenever its own environment is not wired up — and that
+     throw travelled out of here, out of step.run(), and off the end of the
+     Inngest attempt. Nothing was recorded, nobody was told, and the upload
+     looked exactly like an upload that had been read and passed. Every way of
+     failing to get the bytes is now the same recorded outcome. */
+  let loaded = null;
+  let loadError = null;
+  try {
+    loaded = await (loadBytesImpl || loadDocumentBytes)(db, {
+      documentId,
+      versionId: payloadVersionId
+    });
+  } catch (err) {
+    loadError = String(err?.message || err);
+  }
   if (!loaded?.buffer) {
     await recordRunImpl(db, {
       orgId, agentCode: AGENT_CODE, clientId,
       triggerEvent: "docs.received", eventId: event.id || null,
-      channel: "internal", outcome: "document_bytes_missing"
+      channel: "internal", outcome: "document_bytes_missing",
+      detail: loadError
     });
-    return { done: false, reason: "document_bytes_missing" };
+    await raiseUncheckedDocumentTask(db, {
+      orgId, clientId, documentId,
+      eventId: event.id || documentId,
+      docType: payload.subtype || payload.kind || "document",
+      why: "we could not open the file that was uploaded"
+    });
+    return { done: false, reason: "document_bytes_missing", error: loadError };
   }
   const versionId = loaded.versionId || payloadVersionId || null;
 
@@ -273,11 +330,28 @@ export async function onDocsReceivedDocCheck(db, event, deps = {}) {
     detail: String(modelResult.text || modelResult.error || "").slice(0, 500)
   });
 
-  const routed = json
-    ? await routeImpl(db, {
-        orgId, clientId, eventId: event.id || documentId, json, documentId, versionId
-      })
-    : { routed: false, reason: "no_json" };
+  /* NO ANSWER IS NOT A PASS.
+     When the model is unreachable, errors, or replies with something that is
+     not the JSON it was asked for, this used to return quietly: no message, no
+     job for anybody, no mark on the file. An unread document then sat on the
+     client's record looking exactly like one that had been read and accepted.
+     A document nobody could read is work for a person, so it becomes one. */
+  let routed;
+  if (json) {
+    routed = await routeImpl(db, {
+      orgId, clientId, eventId: event.id || documentId, json, documentId, versionId
+    });
+  } else {
+    const task = await raiseUncheckedDocumentTask(db, {
+      orgId, clientId, documentId,
+      eventId: event.id || documentId,
+      docType,
+      why: modelResult.error
+        ? `the document reader could not finish (${modelResult.error})`
+        : "the document reader did not answer"
+    });
+    routed = { routed: false, reason: "no_json", task, gate: "closed" };
+  }
 
   return {
     done: true,

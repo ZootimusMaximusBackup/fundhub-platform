@@ -369,6 +369,72 @@ test("a file with no company gets an empty list, not a fake row", async () => {
   assert.deepEqual(out.businesses, []);
 });
 
+/* THE THREE TESTS ABOVE ALL PASSED THROUGH A LIVE OUTAGE.
+
+   fakeDb hands back whatever rows the test names and never looks at the SQL, so
+   it happily answered a query that a real Postgres refuses. From 2026-09-03 the
+   deck asked `businesses` for a column called incorporated_date. There is no
+   such column. Present — the deck a closer has open in front of a paying client
+   — was a white page reading `column "incorporated_date" does not exist` for
+   every client in the company until 2026-09-06.
+
+   The month and year of incorporation lives inside the entity_data JSON blob,
+   which is where api/soft-pull-approve.mjs puts it. This test reads the SQL the
+   deck actually sends and pins that, because no fixture can. */
+test("the businesses query names only columns the table really has", async () => {
+  /* businesses, per db/schema/001_init.sql and confirmed against the live
+     database on 2026-09-06. Anything outside this list must be reached through
+     entity_data, not asked for by name. */
+  const REAL_COLUMNS = [
+    "id", "org_id", "client_id", "name", "age_months",
+    "entity_data", "created_at", "updated_at"
+  ];
+
+  let bizSql = null;
+  const spy = {
+    async query(sql) {
+      const s = String(sql);
+      if (/FROM businesses/i.test(s) && !/FROM clients c/i.test(s)) bizSql = s;
+      if (/FROM clients c/i.test(s)) return { rows: [CLIENT] };
+      return { rows: [] };
+    }
+  };
+  await buildCloserDeck(spy, { orgId: ORG, clientId: CID });
+  assert.ok(bizSql, "the deck must read the client's companies");
+
+  // The select list, between SELECT and FROM.
+  const selectList = bizSql.slice(
+    bizSql.toUpperCase().indexOf("SELECT") + 6,
+    bizSql.toUpperCase().indexOf("FROM")
+  );
+
+  assert.ok(
+    /entity_data\s*->>\s*'incorporated_date'/.test(selectList),
+    "the incorporation date must be read out of entity_data"
+  );
+
+  /* What is left after the output names (`AS foo`) and the JSON keys ('foo')
+     are removed is only the things this query asks the TABLE for. */
+  const asked = selectList
+    .replace(/\bAS\s+[a-z_][a-z0-9_]*/gi, " ")
+    .replace(/'[^']*'/g, " ");
+
+  assert.ok(
+    !/\bincorporated_date\b/i.test(asked),
+    "incorporated_date must never be asked for as a bare column — it is not one"
+  );
+
+  // Everything the query asks the table for has to be a real column.
+  const ALLOWED = new Set(REAL_COLUMNS);
+  const identifiers = asked.match(/[a-z_][a-z0-9_]*/gi) || [];
+  for (const id of identifiers) {
+    assert.ok(
+      ALLOWED.has(id.toLowerCase()),
+      `the businesses query names "${id}", which is not a column on businesses`
+    );
+  }
+});
+
 /* ═══════════════════════════════════════════════════════════════════════════
    THE LETTERS HAVE TO SURVIVE THE CALL.
 

@@ -1,0 +1,18 @@
+{
+  "name": "FundHub Client Portal",
+  "short_name": "FundHub",
+  "description": "Your funding file, your documents and your payments, in one place.",
+  "id": "/app/client-portal.html",
+  "start_url": "/app/client-portal.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "categories": ["finance"],
+  "icons": [
+    { "src": "/app/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/app/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/app/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

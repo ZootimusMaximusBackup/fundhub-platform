@@ -7,6 +7,17 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- INSTALLABLE. The manifest is what lets a client put this page on their home
+     screen and open it without a browser bar. It is linked from THIS page only —
+     no staff screen references it, and none may (owner: "OKAY NO CRM APP"). -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0A0A0A">
+<!-- iPhone reads these two rather than the manifest's display mode. Without them
+     an iPhone home-screen icon opens in a Safari window with a URL bar, and web
+     push does not work there at all. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="FundHub">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -292,6 +303,14 @@ body.no-dispute-consent #dispute-auth-card{display:none !important}
 .promo-price .pu{display:block;font-family:var(--sans);font-size:var(--fs-caption);font-weight:500;color:var(--text-faint);letter-spacing:0}
 .btn-book{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:11px 14px;font-size:var(--fs-body);font-weight:700;transition:background .12s,border-color .12s}
 .btn-book:hover{background:var(--soft);border-color:var(--ink)}
+/* Notifications card. NO font-size here on purpose: fundhub-brand.css force-feeds
+   every size inside .app and a px value written here would paint nothing
+   (UI-STANDARDS §12.7). .card-title and .support-note already carry the sizes. */
+.push-card .btn-unlock{min-height:44px;margin-top:11px}
+.push-steps{margin:10px 0 0 18px;color:var(--text-dim)}
+.push-steps li{margin:4px 0}
+#push-status:empty{display:none}
+#push-status{margin-top:9px}
 
 /* ── 6 · booking / 7 · advisor ──────────────────────────────────────────── */
 .book-card{border:1px solid var(--line);background:var(--surface)}
@@ -900,6 +919,28 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
                   style="margin-top:11px">Ask for a call</button>
         </section>
       </div>
+
+      <!-- ══ 8 · NOTIFICATIONS ═══════════════════════════════════════════
+           HIDDEN UNTIL THE SCRIPT KNOWS THERE IS SOMETHING TRUE TO SAY.
+           UI-STANDARDS §5: a control that cannot work does not render. A
+           browser with no push support gets nothing here, not a greyed-out
+           button; an iPhone that has not been added to the home screen gets
+           the instructions and NO button, because asking that phone for
+           permission throws and burns the only prompt it will ever give. -->
+      <section class="card push-card" id="push-card" aria-labelledby="push-t" hidden>
+        <div class="card-title" id="push-t">Notifications on your phone</div>
+        <div class="support-note" id="push-copy">
+          Get a nudge when something on your file needs you. No amounts, no card
+          names — just a tap through to this page.
+        </div>
+        <ol class="push-steps" id="push-steps" hidden>
+          <li>Tap the share button at the bottom of Safari.</li>
+          <li>Choose <strong>Add to Home Screen</strong>.</li>
+          <li>Open FundHub from your home screen, then come back here.</li>
+        </ol>
+        <button class="btn-unlock" type="button" id="push-btn" hidden>Turn on notifications</button>
+        <div class="support-note" id="push-status" role="status" aria-live="polite"></div>
+      </section>
 
     </div>
   </main>
@@ -2724,6 +2765,369 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.addEventListener("DOMContentLoaded", load);
   } else {
     load();
+  }
+})();
+</script>
+<script>
+/* ══ INSTALL + NOTIFICATIONS ═══════════════════════════════════════════════
+ *
+ * Two jobs, and they are separate on purpose.
+ *
+ *   INSTALL      register the service worker so this page can be added to a
+ *                home screen and opened with no browser bar. Runs on load.
+ *   NOTIFICATIONS ask for permission and register the device. Runs ONLY after
+ *                a deliberate tap.
+ *
+ * WHY THE PERMISSION ASK IS NEVER ON LOAD. A browser gives a site ONE
+ * notification prompt, ever. Refuse it and there is no second ask — not next
+ * week, not after a reinstall. The prompt is a one-shot resource, so it is spent
+ * only when the client has read what it is for and pressed the button.
+ *
+ * WHY IPHONE IS ITS OWN BRANCH. On iPhone, web push works only on iOS 16.4 and
+ * newer AND only after the page has been added to the home screen. Calling
+ * Notification.requestPermission() in Safari before that THROWS. So an iPhone in
+ * Safari is shown the add-to-home-screen steps and no button at all — offering a
+ * button that throws would look like our bug and would teach the client the
+ * feature is broken.
+ *
+ * AND THE VERSION IS READ BEFORE ANYTHING IS ASKED OF ANYBODY. An iPhone on
+ * 16.0 to 16.3 is too old for push but new enough to look modern, and it used to
+ * be handed the three add-to-home-screen steps and then, once it had done them,
+ * an empty space where the card had been. Every iPhone this page cannot serve is
+ * told so up front, in one sentence, whether it is installed or not.
+ *
+ * THE KILL SWITCH LIVES HERE TOO. Loading this page with ?push=off unregisters
+ * every service worker on this origin and empties their caches. The other half
+ * is KILL_SWITCH in client-portal-sw.js, which does the same thing from a single
+ * deploy without anyone having to visit a URL.
+ */
+(function () {
+  "use strict";
+
+  var SW_URL = "/app/client-portal-sw.js";
+  /* SCOPE IS ONE PAGE, NOT THE WHOLE /app/ FOLDER, AND THAT IS THE SAFETY
+     PROPERTY. Everything under /app/ is a staff CRM screen except this file. A
+     worker scoped to "/app/" would sit in front of the entire CRM, and a bad one
+     could not be fixed by deploying — the stale worker serves the page that
+     would load the fix. Scoped to this one URL it can never touch a staff
+     screen, and it can never see a request to /api/, because /api/ is not
+     inside the scope. */
+  var SW_SCOPE = "/app/client-portal.html";
+
+  var card = document.getElementById("push-card");
+  var copy = document.getElementById("push-copy");
+  var steps = document.getElementById("push-steps");
+  var btn = document.getElementById("push-btn");
+  var statusEl = document.getElementById("push-status");
+  if (!card || !btn) return;
+
+  function say(text) { if (statusEl) statusEl.textContent = text || ""; }
+  function show(el, on) { if (el) el.hidden = !on; }
+
+  function token() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+
+  function api(path, options) {
+    var init = options || {};
+    init.headers = init.headers || {};
+    init.headers["accept"] = "application/json";
+    var t = token();
+    if (t) init.headers["authorization"] = "Bearer " + t;
+    if (init.body !== undefined) {
+      init.headers["content-type"] = "application/json";
+      init.body = JSON.stringify(init.body);
+    }
+    init.credentials = "same-origin";
+    return fetch(path, init).then(function (r) {
+      return r.json().then(
+        function (b) { return { status: r.status, body: b }; },
+        function () { return { status: r.status, body: null }; }
+      );
+    }, function () { return { status: 0, body: null }; });
+  }
+
+  /* ── what kind of machine is this ───────────────────────────────────────── */
+  var ua = navigator.userAgent || "";
+  var isIOS = /iP(hone|od|ad)/.test(ua)
+    /* An iPad on iPadOS 13+ reports itself as a Mac. The touch-point count is
+       the only reliable way to tell it apart, and getting it wrong means an iPad
+       user is offered a button that cannot work. */
+    || (/Macintosh/.test(ua) && typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 1);
+
+  /* iOS 16.4 is the first version with web push at all. Below it the feature
+     does not exist, home screen or not, and telling somebody to add an icon
+     first is sending them on an errand that cannot work. */
+  var PUSH_MIN = { major: 16, minor: 4 };
+
+  function iosVersion() {
+    /* Only an honest iOS user agent carries a version worth reading. An iPad on
+       iPadOS 13+ says "Macintosh; Intel Mac OS X 10_15_7", and taking the 10 out
+       of that would tell a current iPad it is nine years out of date. */
+    if (!/iP(hone|od|ad)/.test(ua)) return null;
+    var m = /OS (\d+)[._](\d+)/.exec(ua);
+    return m ? { major: Number(m[1]), minor: Number(m[2]) } : null;
+  }
+
+  /* True only when we KNOW the version and know it is too old. An unreadable
+     version is not a reason to tell somebody their phone is out of date. */
+  function iosTooOldForPush() {
+    if (!isIOS) return false;
+    var v = iosVersion();
+    if (!v) return false;
+    return v.major < PUSH_MIN.major || (v.major === PUSH_MIN.major && v.minor < PUSH_MIN.minor);
+  }
+
+  function installed() {
+    if (navigator.standalone === true) return true;           // iPhone / iPad
+    try { return window.matchMedia("(display-mode: standalone)").matches; }
+    catch (e) { return false; }
+  }
+
+  function deviceLabel() {
+    if (/iPhone|iPod/.test(ua)) return "iphone";
+    if (/iPad/.test(ua) || (isIOS && !/iPhone|iPod/.test(ua))) return "ipad";
+    if (/Android/.test(ua)) return "android";
+    return "desktop";
+  }
+
+  /* Browsers hand the VAPID key back as base64url text and want raw bytes. */
+  function keyBytes(base64url) {
+    var pad = "=".repeat((4 - (base64url.length % 4)) % 4);
+    var b64 = (base64url + pad).replace(/-/g, "+").replace(/_/g, "/");
+    var raw = atob(b64);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  /* ── the kill switch: /app/client-portal.html?push=off ───────────────────── */
+  function killSwitchRequested() {
+    try { return new URLSearchParams(window.location.search).get("push") === "off"; }
+    catch (e) { return false; }
+  }
+
+  function tearEverythingDown() {
+    var jobs = [];
+    if ("serviceWorker" in navigator) {
+      jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+        return Promise.all(regs.map(function (r) { return r.unregister(); }));
+      }).catch(function () {}));
+    }
+    if (window.caches && caches.keys) {
+      jobs.push(caches.keys().then(function (names) {
+        return Promise.all(names.map(function (n) { return caches.delete(n); }));
+      }).catch(function () {}));
+    }
+    return Promise.all(jobs);
+  }
+
+  /* ── register the worker (install), separately from any permission ask ──── */
+  function ensureWorker() {
+    if (!("serviceWorker" in navigator)) return Promise.resolve(null);
+    return navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE }).then(function (reg) {
+      /* Ask the browser to re-check the worker file on every load. Without this
+         a replaced worker — including the kill-switch version — can sit unnoticed
+         behind the browser's own 24-hour check. */
+      try { reg.update(); } catch (e) {}
+      return reg;
+    }).catch(function () { return null; });
+  }
+
+  /* ── paint ──────────────────────────────────────────────────────────────── */
+  function supported() {
+    return ("serviceWorker" in navigator) && ("PushManager" in window) && ("Notification" in window);
+  }
+
+  /* THE OLD-IPHONE MESSAGE, AND WHY IT COMES FIRST.
+     An iPhone on 16.0 to 16.3 used to be shown the three add-to-home-screen
+     steps, because the only version check was "below 16". The client did the
+     three taps, the page reloaded as an installed app, and the whole card then
+     vanished with no message at all — because the installed path needs
+     PushManager, which does not exist before 16.4. Three taps for nothing, then
+     silence. So the version is checked BEFORE anybody is asked to do anything,
+     and it is checked whether or not the app is already installed. */
+  function paintIphoneTooOld() {
+    show(card, true);
+    show(btn, false);
+    show(steps, false);
+    // Honest and specific. "Your browser can't" would send them looking for a
+    // different browser, and on iPhone every browser is Safari underneath.
+    copy.textContent = "Notifications need iPhone software version 16.4 or newer. "
+      + "This phone is on an older version, so it cannot show them yet. "
+      + "Updating the phone's software is all it takes.";
+    say("");
+  }
+
+  /* An iPhone new enough for push, in Safari, not yet on the home screen. */
+  function paintIphoneNotInstalled() {
+    show(card, true);
+    show(btn, false);
+    show(steps, true);
+    copy.textContent = "iPhone only allows notifications once FundHub is on your home screen. "
+      + "Three taps and you are done:";
+  }
+
+  /* Last resort on an iPhone: new enough by its user agent, installed, and the
+     browser still has no push. Better a sentence than an empty space where a
+     card was — the client has already been told to expect one. */
+  function paintIphoneUnavailable() {
+    show(card, true);
+    show(btn, false);
+    show(steps, false);
+    copy.textContent = "This iPhone cannot show notifications yet. "
+      + "They need iPhone software version 16.4 or newer, with FundHub opened from your home screen.";
+    say("");
+  }
+
+  function paintReady(reg) {
+    show(card, true);
+    show(steps, false);
+    copy.textContent = "Get a nudge when something on your file needs you. "
+      + "No amounts, no card names — just a tap through to this page.";
+
+    if (Notification.permission === "denied") {
+      // Permanent from our side. Say so plainly rather than offering a button
+      // that silently does nothing.
+      show(btn, false);
+      say("Notifications are blocked for this site. You can turn them back on in your browser's settings for fundhub.");
+      return;
+    }
+
+    return reg.pushManager.getSubscription().then(function (sub) {
+      if (sub) {
+        btn.textContent = "Turn notifications off";
+        btn.setAttribute("data-mode", "off");
+        show(btn, true);
+        say("Notifications are on for this device.");
+      } else {
+        btn.textContent = "Turn on notifications";
+        btn.setAttribute("data-mode", "on");
+        show(btn, true);
+        say("");
+      }
+    });
+  }
+
+  /* ── the two actions ────────────────────────────────────────────────────── */
+  function turnOn(reg) {
+    say("Checking…");
+    return api("/api/push/key").then(function (res) {
+      if (res.status !== 200 || !res.body || res.body.ok !== true) {
+        say("We could not switch notifications on just now. Please try again in a few minutes.");
+        return null;
+      }
+      if (res.body.configured !== true || !res.body.public_key) {
+        // Configuration is missing on the server. Do NOT spend the permission
+        // prompt on a subscription we would then refuse to store.
+        show(btn, false);
+        say("Notifications are not switched on for this site yet.");
+        return null;
+      }
+      return Notification.requestPermission().then(function (permission) {
+        if (permission !== "granted") {
+          say("You said no to notifications. Your browser will not ask again, so you would need to allow them in its settings.");
+          return null;
+        }
+        return reg.pushManager.subscribe({
+          // Required by every browser: a push must always show something the
+          // person can see. Silent pushes are refused at subscribe time.
+          userVisibleOnly: true,
+          applicationServerKey: keyBytes(res.body.public_key)
+        });
+      });
+    }).then(function (sub) {
+      if (!sub) return;
+      return api("/api/push/subscribe", {
+        method: "POST",
+        body: { subscription: sub.toJSON(), device_label: deviceLabel() }
+      }).then(function (saved) {
+        if (saved.status !== 200 && saved.status !== 201) {
+          // Roll the browser side back so the two sides cannot disagree: a
+          // subscription the phone holds and the server does not is a phone we
+          // will never send to and a client who thinks we will.
+          return sub.unsubscribe().catch(function () {}).then(function () {
+            say((saved.body && saved.body.message) || "We could not switch notifications on just now.");
+          });
+        }
+        btn.textContent = "Turn notifications off";
+        btn.setAttribute("data-mode", "off");
+        say("Notifications are on for this device.");
+      });
+    }).catch(function () {
+      say("We could not switch notifications on just now. Please try again in a few minutes.");
+    });
+  }
+
+  function turnOff(reg) {
+    say("Turning off…");
+    return reg.pushManager.getSubscription().then(function (sub) {
+      var endpoint = sub ? sub.endpoint : "";
+      var stop = sub ? sub.unsubscribe().catch(function () { return false; }) : Promise.resolve(true);
+      return stop.then(function () {
+        return api("/api/push/unsubscribe", {
+          method: "POST",
+          body: endpoint ? { endpoint: endpoint } : { all: true }
+        });
+      });
+    }).then(function () {
+      btn.textContent = "Turn on notifications";
+      btn.setAttribute("data-mode", "on");
+      say("Notifications are off for this device.");
+    }).catch(function () {
+      say("We could not switch notifications off just now. Please try again in a few minutes.");
+    });
+  }
+
+  /* ── start ──────────────────────────────────────────────────────────────── */
+  function start() {
+    if (killSwitchRequested()) {
+      return tearEverythingDown().then(function () {
+        show(card, true);
+        show(btn, false);
+        show(steps, false);
+        copy.textContent = "Notifications and the offline copy of this page have been removed from this device.";
+        say("");
+      });
+    }
+
+    // Signed out: this card has nothing true to say, and registering a worker
+    // for somebody who is not signed in gains nothing.
+    if (!token()) return Promise.resolve();
+
+    /* Version first. An iPhone that cannot do this at any point must never be
+       sent to do the three taps, and must not be left with a blank space after
+       it has done them. */
+    if (iosTooOldForPush()) { paintIphoneTooOld(); return Promise.resolve(); }
+
+    if (isIOS && !installed()) { paintIphoneNotInstalled(); return Promise.resolve(); }
+
+    // Everything else, iPhone included once it is on the home screen.
+    if (!supported()) {
+      /* On a laptop or an Android with no push there is nothing the person can
+         do about it, so the card stays away rather than showing a dead end. On
+         an iPhone there is: it is a software update, and they have already read
+         the card once. */
+      if (isIOS) paintIphoneUnavailable();
+      return Promise.resolve();
+    }
+
+    return ensureWorker().then(function (reg) {
+      if (!reg) return;
+      btn.addEventListener("click", function () {
+        btn.disabled = true;
+        var mode = btn.getAttribute("data-mode");
+        var job = mode === "off" ? turnOff(reg) : turnOn(reg);
+        Promise.resolve(job).then(function () { btn.disabled = false; });
+      });
+      return paintReady(reg);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
   }
 })();
 </script>

@@ -256,3 +256,85 @@ test("sendCase portal confirm starts call clock from portalUploadedAt", async ()
   assert.equal(portalAttempt.params[4], "uploaded");
   assert.match(String(portalAttempt.params[5]), /experian_ref:EX-PORTAL-99/);
 });
+
+/* ── Blocked is a reading, not a sentence ──────────────────────────────────
+ * Until 2026-09-06 this refused on the STORED status before it looked at the
+ * papers, and nothing in the send path ever wrote that status back down. An
+ * agent watched the "still needed" list fall from three items to one as the
+ * client uploaded, and Send stayed grey. It would have stayed grey forever.
+ */
+import { missingPacketMessage } from "./send.mjs";
+
+const FULL_PACKET = [
+  { kind: "client_upload", subtype: "id_document" },
+  { kind: "client_upload", subtype: "proof_of_address" },
+  { kind: "authorization", subtype: "soft_pull_consent" }
+];
+
+test("sendCase: a Blocked case whose packet is now complete sends, and unblocks", async () => {
+  const caseRow = {
+    id: "11111111-1111-4111-8111-111111111111",
+    org_id: "22222222-2222-4222-8222-222222222222",
+    client_id: "33333333-3333-4333-8333-333333333333",
+    selected_bureaus_raw: "EX",
+    case_status: "Blocked"
+  };
+  const db = fakeDb({
+    caseRow,
+    docs: FULL_PACKET,
+    inquiries: [{ id: "55555555-5555-4555-8555-555555555555" }]
+  });
+  const out = await sendCase(db, {
+    caseId: caseRow.id,
+    staffId: "44444444-4444-4444-8444-444444444444",
+    orgId: caseRow.org_id,
+    mail: true
+  });
+  assert.equal(out.attempts.length, 1, "the letter attempt was logged");
+  const unblock = db.updates.find((u) => /case_status = 'Queued'/.test(u.sql));
+  assert.ok(unblock, "the block is lifted in its own statement, so the trail shows it");
+  const reblock = db.updates.find((u) => /case_status = 'Blocked'/.test(u.sql));
+  assert.equal(reblock, undefined, "a complete packet must never be written back to Blocked");
+});
+
+test("sendCase: a short packet still refuses, and now names what is missing", async () => {
+  const caseRow = {
+    id: "11111111-1111-4111-8111-111111111111",
+    org_id: "22222222-2222-4222-8222-222222222222",
+    client_id: "33333333-3333-4333-8333-333333333333",
+    selected_bureaus_raw: "EX",
+    case_status: "Queued"
+  };
+  const db = fakeDb({
+    caseRow,
+    docs: [{ kind: "client_upload", subtype: "id_document" }]
+  });
+  await assert.rejects(
+    () => sendCase(db, {
+      caseId: caseRow.id,
+      staffId: "44444444-4444-4444-8444-444444444444",
+      orgId: caseRow.org_id,
+      mail: true
+    }),
+    (err) => {
+      assert.equal(err.code, "docs_blocked");
+      assert.equal(err.status, 409);
+      assert.deepEqual(err.missing, ["proof_of_address", "authorization"]);
+      assert.match(err.message, /proof of address/);
+      assert.match(err.message, /signed authorization/);
+      return true;
+    }
+  );
+  assert.equal(db.attempts.length, 0, "nothing may leave on a short packet");
+  assert.ok(db.updates.some((u) => /case_status = 'Blocked'/.test(u.sql)));
+});
+
+test("missingPacketMessage speaks plainly, and never prints a column name", () => {
+  assert.equal(
+    missingPacketMessage(["id_document"]),
+    "Send disabled — this client's identity packet is still missing: government photo identification."
+  );
+  assert.match(missingPacketMessage(["ssn_card"]), /Social Security card/);
+  assert.match(missingPacketMessage([]), /Identity packet incomplete/);
+  assert.equal(/_/.test(missingPacketMessage(["id_document", "proof_of_address"])), false);
+});
