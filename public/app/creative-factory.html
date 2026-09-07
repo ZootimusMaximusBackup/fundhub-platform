@@ -575,6 +575,51 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="cap">Brand kits are read-only here.</div>
       </div>
 
+      <!-- Video performance — YouTube watch-time, org-wide (no partner scope; this
+           is Chris's own channel, not any one partner's). GET /api/read/video-stats,
+           staff-only, and independent of the partner picker above — it loads once at
+           boot and again after Connect or Sync now, never when the partner changes. -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">Video performance</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono" id="vidConnBadge">loading…</span>
+          <button class="btn sm mono fh-tap" type="button" id="vidSyncBtn">Sync now</button>
+        </div>
+        <div class="cap" id="vidConnCap">Loading the connection…</div>
+        <div class="tblscroll">
+          <table class="grid" id="vidTable">
+            <thead><tr>
+              <th>Video</th><th>Date</th><th>Views</th><th>Watch time</th><th>Avg view duration</th><th>Avg view %</th>
+            </tr></thead>
+            <tbody id="vidBody"><tr><td colspan="6"><div class="empty">Loading…</div></td></tr></tbody>
+          </table>
+        </div>
+        <div class="cap">One row per video per day, newest first.</div>
+        <div class="card-bd" style="padding:16px;border-top:1px solid var(--line)">
+          <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:end">
+            <div class="selwrap" style="flex:1 1 200px"><label for="ytClientId">Client ID</label>
+              <input id="ytClientId" autocomplete="off">
+            </div>
+            <div class="selwrap" style="flex:1 1 200px"><label for="ytClientSecret">Client secret</label>
+              <input id="ytClientSecret" type="password" autocomplete="off">
+            </div>
+            <div class="selwrap" style="flex:1 1 200px"><label for="ytRefreshToken">Refresh token</label>
+              <input id="ytRefreshToken" type="password" autocomplete="off">
+            </div>
+            <button class="btn dark mono fh-tap" type="button" id="ytConnectBtn">Connect</button>
+            <span class="hint mono" id="ytConnectMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
+          </div>
+        </div>
+        <div class="cap">
+          <b>Where these three values come from.</b> In Google Cloud Console, make a new OAuth
+          client for the YouTube Data/Analytics API — that page gives you the client ID and
+          client secret. Then open Google's OAuth Playground, sign in with the YouTube channel's
+          Google account, authorize the YouTube Analytics scope, and exchange it for a refresh
+          token. Paste all three in above and press Connect.
+        </div>
+      </div>
+
       <!-- Reference — read once, then leave closed. §9: the daily 20% is above,
            everything else is one click deeper. -->
       <div class="card">
@@ -2289,10 +2334,140 @@ function wireCreative(){
   });
 }
 
+/* ══ VIDEO PERFORMANCE — YouTube watch-time, org-wide ══════════════════════
+   Not partner-scoped: analytics_connections/video_watch_stats carry no
+   partner_id (302_analytics_connections.sql), so this panel does not read
+   S.partner or currentPartnerId() anywhere, and does not reload when the
+   partner picker changes. It loads once at boot and again after Connect or
+   Sync now. GET /api/read/video-stats, staff-only. */
+var VID_RES = null;
+var CONN_BADGE = { pending:'b-gray', active:'b-ok', expired:'b-warn', revoked:'b-gray', error:'b-alert' };
+
+/* Over 60 minutes shows hours+minutes; otherwise plain minutes. Never a raw
+   decimal — the API returns estimated_minutes_watched as a numeric. */
+function fmtWatchTime(mins){
+  if(mins==null) return null;
+  var m = Math.round(Number(mins));
+  if(m > 60){
+    var h = Math.floor(m/60), rem = m%60;
+    return h + 'h ' + rem + 'm';
+  }
+  return m + 'm';
+}
+
+function renderVideoStats(){
+  var badge = document.getElementById('vidConnBadge');
+  var cap = document.getElementById('vidConnCap');
+  var body = document.getElementById('vidBody');
+  if(!badge || !body) return;
+
+  if(!VID_RES){
+    badge.className = 'badge b-gray mono';
+    badge.textContent = 'loading…';
+    cap.textContent = 'Loading the connection…';
+    body.innerHTML = '<tr><td colspan="6"><div class="empty">Loading…</div></td></tr>';
+    return;
+  }
+  if(!VID_RES.ok){
+    badge.className = 'badge b-alert mono';
+    badge.textContent = 'not loaded';
+    cap.textContent = 'This could not be loaded just now. ' + plainCreative(VID_RES);
+    body.innerHTML = '<tr><td colspan="6"><div class="empty">This could not be loaded just now. ' + esc(plainCreative(VID_RES)) + ' Nothing is shown, rather than an old or made-up number.</div></td></tr>';
+    return;
+  }
+  var d = VID_RES.data || {};
+  var conn = d.connection || null;
+  if(!conn){
+    badge.className = 'badge b-gray mono';
+    badge.textContent = 'not connected';
+    cap.innerHTML = '<b>Not connected.</b> Fill in the three fields below and press Connect.';
+  } else {
+    badge.className = 'badge mono ' + (CONN_BADGE[conn.state] || 'b-gray');
+    badge.textContent = conn.state;
+    if(conn.state !== 'active'){
+      cap.innerHTML = '<b>' + esc(conn.state) + '.</b>' +
+        (conn.last_error ? ' ' + esc(conn.last_error) : '') +
+        (conn.last_synced_at ? ' Last synced ' + esc(fmt(conn.last_synced_at)) + '.' : ' Never synced yet.');
+    } else {
+      cap.innerHTML = 'Connected. Last synced ' + (conn.last_synced_at ? esc(fmt(conn.last_synced_at)) : 'never') + '.';
+    }
+  }
+
+  var videos = d.videos || [];
+  if(!videos.length){
+    body.innerHTML = '<tr><td colspan="6"><div class="empty">No video stats on file yet.</div></td></tr>';
+    return;
+  }
+  body.innerHTML = videos.map(function(v){
+    var wt = fmtWatchTime(v.estimated_minutes_watched);
+    return '<tr>' +
+      '<td>' + (v.video_title ? esc(v.video_title) : nul('untitled')) + '</td>' +
+      '<td class="mono">' + esc(v.stat_date) + '</td>' +
+      '<td class="mnum">' + (v.views==null ? nul('—') : v.views) + '</td>' +
+      '<td class="mnum">' + (wt==null ? nul('—') : esc(wt)) + '</td>' +
+      '<td class="mnum">' + (v.average_view_duration_sec==null ? nul('—') : Math.round(v.average_view_duration_sec) + 's') + '</td>' +
+      '<td class="mnum">' + (v.average_view_percentage==null ? nul('—') : Number(v.average_view_percentage).toFixed(1) + '%') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function loadVideoStats(){
+  VID_RES = null;
+  renderVideoStats();
+  apiGet('/api/read/video-stats').then(function(res){
+    VID_RES = res;
+    renderVideoStats();
+  });
+}
+
+document.getElementById('ytConnectBtn').addEventListener('click', function(){
+  var msg = document.getElementById('ytConnectMsg');
+  var clientId = document.getElementById('ytClientId').value.trim();
+  var clientSecret = document.getElementById('ytClientSecret').value.trim();
+  var refreshToken = document.getElementById('ytRefreshToken').value.trim();
+  if(!clientId || !clientSecret || !refreshToken){ msg.textContent = 'Fill in all three fields first.'; return; }
+  msg.textContent = 'Connecting…';
+  fetch('/api/analytics/youtube-connect', {
+    method: 'POST',
+    headers: cfAuthHeaders(),
+    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken })
+  }).then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
+    .then(function(res){
+      /* Google's own error message is shown as-is when the server hands one
+         back — that is what tells Chris which of the three fields is wrong.
+         Only fall back to a translated sentence when there is no message. */
+      if(!res.ok){ msg.textContent = 'Could not connect. ' + (res.message || plainCreative(res)); return; }
+      document.getElementById('ytClientSecret').value = '';
+      document.getElementById('ytRefreshToken').value = '';
+      msg.textContent = 'Connected. Syncing…';
+      fetch('/api/analytics/youtube-sync', { method:'POST', headers: cfAuthHeaders(), body: JSON.stringify({}) })
+        .then(function(r2){ return r2.json().catch(function(){ return { ok:false }; }); })
+        .then(function(sres){
+          msg.textContent = sres.ok ? 'Connected and synced.' : ('Connected, but the sync failed. ' + (sres.message || plainCreative(sres)));
+          loadVideoStats();
+        })
+        .catch(function(){ msg.textContent = 'Connected, but could not reach the server to sync. Try Sync now in a moment.'; loadVideoStats(); });
+    })
+    .catch(function(){ msg.textContent = 'Could not reach the server. Try again in a moment.'; });
+});
+
+document.getElementById('vidSyncBtn').addEventListener('click', function(){
+  var msg = document.getElementById('ytConnectMsg');
+  msg.textContent = 'Syncing…';
+  fetch('/api/analytics/youtube-sync', { method:'POST', headers: cfAuthHeaders(), body: JSON.stringify({}) })
+    .then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
+    .then(function(res){
+      msg.textContent = res.ok ? 'Synced.' : ('Could not sync. ' + (res.message || plainCreative(res)));
+      loadVideoStats();
+    })
+    .catch(function(){ msg.textContent = 'Could not reach the server. Try again in a moment.'; });
+});
+
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 renderStaticTables();
 renderRules();
 loadPartnerPicker();
+loadVideoStats();
 document.getElementById('partnerSel').addEventListener('change', function(){
   S.partner = parseInt(this.value, 10) || 0;
   var p = PARTNERS[S.partner];

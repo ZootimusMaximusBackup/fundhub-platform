@@ -143,6 +143,25 @@ const ALLOWED_RAW_FETCH = {
   "src/climate/connectors.mjs":
     "Reads FRED/BLS/Census/NOAA/geocode public series for the climate engine. " +
     "No client data leaves; no client or vendor record is written.",
+  "src/analytics/clickfunnels.mjs":
+    "Reads Chris's own ClickFunnels workspace: funnels, pages, page stats. " +
+    "GET only — listFunnels/listPages/fetchPageStats never POST, PUT or DELETE " +
+    "anything. No client is contacted and no vendor record is changed; this can " +
+    "neither reach a client nor spend money the way the ad-platform adapters " +
+    "above can.",
+  "src/analytics/youtube.mjs":
+    "Reads watch time on Chris's own YouTube channel via the Analytics/Data " +
+    "APIs. refreshAccessToken exchanges an OAuth token (matching " +
+    "src/company-brain/auth.mjs's already-allowed pattern for the same kind of " +
+    "call); listChannelVideos and fetchVideoStats are GET only. No client " +
+    "contact, no video upload, no channel write of any kind.",
+  "api/analytics/youtube-connect.mjs":
+    "One small GET (channels?part=id&mine=true) to resolve the channel id " +
+    "at connect time, alongside the two calls already allowed via " +
+    "src/analytics/youtube.mjs above. Same read-only, no-client-contact " +
+    "reasoning. Worth moving into youtube.mjs later so every outbound call " +
+    "for this integration sits in one already-allowed file — not done "
+    + "tonight to keep this change small.",
   "src/pulse/daily-pulse.mjs":
     "Read-only daily health audit. GET fundhub.ai pages and optional prove Gmail. " +
     "Does not send. Client SMS/WhatsApp go through messaging providers.",

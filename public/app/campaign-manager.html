@@ -394,6 +394,33 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="cap" id="adBooksCap"></div>
       </div>
 
+      <!-- ══ CM-10 · FUNNEL PAGES — ClickFunnels page performance ══════════
+           GET /api/read/funnel-pages. Org-wide (no partner_id on the endpoint,
+           same as CM-09 above), staff-only, so it loads whether or not a
+           partner is picked above and is not one of the "0 of 5 panels
+           loaded" five. connection is analytics_connections for
+           platform='clickfunnels', or null when nothing has been connected. -->
+      <div class="card" id="secFunnelPages">
+        <div class="card-hd">
+          <div class="eyebrow">FUNNEL PAGES</div>
+          <div class="spacer"></div>
+          <button class="btn sm mono" id="funnelSyncBtn" type="button" title="Pull the latest page stats from ClickFunnels.">Sync now</button>
+        </div>
+        <div class="cap" id="funnelConnCap"></div>
+        <div class="tblscroll">
+          <table class="grid">
+            <thead><tr>
+              <th>Funnel</th><th>Page</th><th>Date</th><th>Views</th><th>Conversions</th>
+            </tr></thead>
+            <tbody id="funnelPagesRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="funnelPagesFoot"></div>
+        <div class="cap">
+          <b>Conversions</b> shows a dash when ClickFunnels did not answer for that page and date — never a zero it did not report.
+        </div>
+      </div>
+
       <!-- ══ CM-03 · SPEND vs CEILINGS ════════════════════════════════════ -->
       <div class="card" id="secSpend">
         <div class="card-hd">
@@ -519,6 +546,29 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
             <button type="button" class="btn dark mono" id="metaAgencyBtn">Request access</button>
           </div>
           <p class="note" id="metaAgencyMsg" style="margin:10px 0 0"></p>
+        </div>
+        <!-- CONN-07 · Connect ClickFunnels. Feeds CM-10 above, not this table —
+             analytics_connections is a separate table from ad_platform_connections
+             and this screen's read/write panels above never touch it. -->
+        <div class="card-bd" id="cfConnectBox" style="border-top:1px solid var(--line)">
+          <div class="eyebrow" style="margin-bottom:8px">CONNECT CLICKFUNNELS</div>
+          <p class="note" style="margin:0 0 10px;max-width:52rem">
+            Paste the workspace's API key and subdomain (the X in X.myclickfunnels.com). Fundhub stores the key encrypted and pulls funnel page stats into the panel above.
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+            <div class="selwrap" style="min-width:220px">
+              <label for="cfApiKey">API key</label>
+              <input id="cfApiKey" type="password" autocomplete="off"
+                     placeholder="API key" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#fff">
+            </div>
+            <div class="selwrap" style="min-width:200px">
+              <label for="cfSubdomain">Subdomain</label>
+              <input id="cfSubdomain" type="text" autocomplete="off"
+                     placeholder="workspace" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#fff">
+            </div>
+            <button type="button" class="btn dark mono" id="cfConnectBtn">Connect</button>
+          </div>
+          <p class="note" id="cfConnectMsg" style="margin:10px 0 0"></p>
         </div>
         <div class="cap">
           Fix blockers in the ad platform’s own Business Manager — nothing here changes them. The same blocker can show more than once. A blank expiry means we do not know, not forever.
@@ -648,6 +698,8 @@ var CEILINGS    = [];   /* GET /api/campaigns/spend       → items[] */
 var FATIGUE     = [];   /* GET /api/campaigns/fatigue     → items[] */
 var ACTIONS     = [];   /* GET /api/campaigns/action-log  → items[] */
 var ADBOOKS     = null; /* GET /api/read/ad-books → the whole response body, or null while unread */
+var FUNNEL_PAGES = [];  /* GET /api/read/funnel-pages → pages[] */
+var FUNNEL_CONN  = null;/* GET /api/read/funnel-pages → connection, or null when nothing is connected */
 
 /* GET /api/campaigns/spend → items[] over v_partner_spend_vs_ceiling.
    ACTIVE ceilings only — the view filters on sc.active, so an inactive ceiling
@@ -1135,6 +1187,71 @@ function renderAdBooks(){
   if(cap) cap.textContent = unk.length
     ? unk.length + ' ad id' + (unk.length===1?' has':'s have') + ' never been named.'
     : '';
+}
+
+/* ══ CM-10 · FUNNEL PAGES — ClickFunnels page performance ════════════════
+   GET /api/read/funnel-pages → { ok, pages:[{funnel_name,page_name,stat_date,
+   views,conversions}], connection:{state,last_synced_at,last_error} or null }.
+   Org-wide, staff-only — SRC.funnelPages follows the same shape as CM-09's
+   SRC.adbooks above: not one of the five partner-scoped PANELS, not part of
+   the "X of 5 panels loaded" count or the loadWarn banner. */
+function renderFunnelPages(){
+  var unread = panelUnread('funnelPages');
+  var cap = document.getElementById('funnelConnCap');
+  if(cap){
+    /* Silent while the read is still in flight — connection state is a claim
+       about a row this screen has not seen yet. Filled in only once the read
+       has answered, same rule as spendGapCap. */
+    if(unread){
+      cap.textContent = '';
+    } else if(!FUNNEL_CONN || FUNNEL_CONN.state !== 'active'){
+      cap.innerHTML = '<b>Not connected yet — see Connections below.</b>' +
+        (FUNNEL_CONN && FUNNEL_CONN.last_error ? ' ' + esc(FUNNEL_CONN.last_error) : '');
+    } else {
+      cap.innerHTML = 'Connected · last synced ' +
+        (FUNNEL_CONN.last_synced_at ? dt(FUNNEL_CONN.last_synced_at, true) : nul());
+    }
+  }
+
+  document.getElementById('funnelPagesRows').innerHTML = FUNNEL_PAGES.length ? FUNNEL_PAGES.map(function(p){
+    return '<tr>'+
+      '<td><b>'+(p.funnel_name ? esc(p.funnel_name) : nul())+'</b></td>'+
+      '<td>'+(p.page_name ? esc(p.page_name) : nul())+'</td>'+
+      '<td class="mono">'+(p.stat_date ? day(p.stat_date) : nul())+'</td>'+
+      '<td class="mnum">'+int(p.views)+'</td>'+
+      '<td class="mnum">'+int(p.conversions)+'</td>'+
+    '</tr>';
+  }).join('') : panelRow(5, 'funnelPages', 'No funnel page stats yet.');
+
+  document.getElementById('funnelPagesFoot').textContent = unread ? unread :
+    FUNNEL_PAGES.length + ' page' + (FUNNEL_PAGES.length===1?'':'s') + ' · most recent first';
+}
+
+function readFunnelPages(){
+  return apiGet('/api/read/funnel-pages').then(function(res){
+    var s = SRC.funnelPages;
+    if(res.ok){
+      delete PANEL_MSG.funnelPages;
+      s.source = 'api'; s.note = '';
+      var pages = (res.data && res.data.pages) || [];
+      s.rows = pages.length;
+      try {
+        FUNNEL_PAGES = pages;
+        FUNNEL_CONN = (res.data && res.data.connection) || null;
+        renderFunnelPages();
+      } catch(e){
+        PANEL_MSG.funnelPages = 'This could not be shown. Press Reload to try again.';
+        s.source = 'error'; s.note = PANEL_MSG.funnelPages; s.rows = null;
+        try { FUNNEL_PAGES = []; FUNNEL_CONN = null; renderFunnelPages(); } catch(e2){}
+      }
+    } else {
+      PANEL_MSG.funnelPages = readFailureText(res);
+      s.source = res.source; s.note = PANEL_MSG.funnelPages; s.rows = null;
+      try { FUNNEL_PAGES = []; FUNNEL_CONN = null; renderFunnelPages(); } catch(e){}
+    }
+    renderSources();
+    return res;
+  });
 }
 
 /* ══ CM-07 · CONNECTIONS ═════════════════════════════════════════════════ */
@@ -1777,6 +1894,9 @@ PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'', rows:null }; }
    and not part of the "X of 5 panels loaded" count. It gets its own SRC entry
    so panelUnread('adbooks') and panelRow() work exactly like every other panel. */
 SRC.adbooks = { source:'…', note:'', rows:null };
+/* CM-10 funnel pages is the same shape as CM-09 just above: org-wide, staff-
+   only, its own SRC entry, not one of the five and not in the loadWarn banner. */
+SRC.funnelPages = { source:'…', note:'', rows:null };
 /* '…' is the in-flight marker wireAll seeds every panel with, not an outcome —
    painting it like a failure reports six errors while nothing has failed yet. */
 function tone(src){ return src==='api' ? 'real' : src==='…' ? 'reading'
@@ -2035,6 +2155,7 @@ function wireAll(){
   PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'', rows:null }; });
   SRC.detail = { source:'…', note:'', rows:null };
   SRC.adbooks = { source:'…', note:'', rows:null };
+  SRC.funnelPages = { source:'…', note:'', rows:null };
   renderSources();
 
   /* Ad performance (CM-09) is org-wide, not this partner book — the endpoint
@@ -2056,6 +2177,17 @@ function wireAll(){
     readAdBooks();
   }
 
+  /* Funnel pages (CM-10) is the same shape: org-wide, staff-only, reads here
+     regardless of the branch below. */
+  if (isPartnerLogin()) {
+    PANEL_MSG.funnelPages = 'This report is for staff. It is not part of a partner login.';
+    SRC.funnelPages = { source:'forbidden', note:PANEL_MSG.funnelPages, rows:null };
+    try { renderFunnelPages(); } catch(e){}
+  } else {
+    readFunnelPages();
+  }
+  funnelScopeUi();
+
   /* Staff with no partner in the address: do not call the five reads.
      They answer 400 and the panels used to look like a broken book.
      A partner login has no partner_id in the address — the server pins
@@ -2072,11 +2204,13 @@ function wireAll(){
     try { renderConn(); } catch(e){}
     try { renderLog(); } catch(e){}
     try { renderAdBooks(); } catch(e){}
+    try { renderFunnelPages(); } catch(e){}
     try { renderTiles(); } catch(e){}
     try { renderAttention(); } catch(e){}
     renderSources();
     renderScope();
     syncScopeUi();
+    funnelScopeUi();
     document.getElementById('footNote').textContent = '0 of 5 panels loaded';
     if (window.FHData && FHData.banner) FHData.banner('sample', 'Campaigns — pick a partner to load their ads.', 'campaigns');
     return;
@@ -2131,6 +2265,7 @@ function wireAll(){
        scope panel and the write control now that they have answered */
     renderScope();
     syncScopeUi();
+    funnelScopeUi();
   });
 }
 document.getElementById('reloadBtn').addEventListener('click', wireAll);
@@ -2148,6 +2283,90 @@ function syncScopeUi(){
   else if(msg.textContent === 'Pick a partner first — this needs to know whose ad account to pull.') msg.textContent = '';
 }
 syncScopeUi();
+
+/* CM-10 / CONN-07 — ClickFunnels is org-wide, not partner-scoped, so there is
+   no partner check here (unlike syncScopeUi above). The only gate is staff vs
+   partner login, same as the ad performance panel. */
+function funnelScopeUi(){
+  var partner = isPartnerLogin();
+  var syncBtn = document.getElementById('funnelSyncBtn');
+  var connectBtn = document.getElementById('cfConnectBtn');
+  if(syncBtn) syncBtn.disabled = partner;
+  if(connectBtn) connectBtn.disabled = partner;
+  var msg = document.getElementById('cfConnectMsg');
+  if(msg){
+    if(partner) msg.textContent = 'Staff only. Not part of a partner login.';
+    else if(msg.textContent === 'Staff only. Not part of a partner login.') msg.textContent = '';
+  }
+}
+funnelScopeUi();
+
+function authHeaders(extra){
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch(e){ t = ''; }
+  var h = Object.assign({ accept:'application/json' }, extra || {});
+  if(t && t !== 'demo') h.authorization = 'Bearer ' + t;
+  return h;
+}
+
+document.getElementById('funnelSyncBtn').addEventListener('click', function () {
+  var btn = this;
+  var cap = document.getElementById('funnelConnCap');
+  btn.disabled = true;
+  var prev = btn.textContent;
+  btn.textContent = 'Syncing…';
+  fetch('/api/analytics/clickfunnels-sync', {
+    method: 'POST',
+    headers: authHeaders({ 'content-type': 'application/json' }),
+    body: '{}'
+  }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+    .then(function (res) {
+      btn.disabled = isPartnerLogin();
+      btn.textContent = prev;
+      if (!res.ok) {
+        if (cap) cap.innerHTML = '<b>Sync failed.</b> ' + esc(res.message || res.error || 'Press Sync now to try again.');
+        return;
+      }
+      readFunnelPages();
+    });
+});
+
+document.getElementById('cfConnectBtn').addEventListener('click', function () {
+  var msg = document.getElementById('cfConnectMsg');
+  var key = (document.getElementById('cfApiKey').value || '').trim();
+  var sub = (document.getElementById('cfSubdomain').value || '').trim();
+  if (!key || !sub) {
+    msg.textContent = 'Enter both the API key and the subdomain first.';
+    return;
+  }
+  msg.textContent = 'Connecting…';
+  fetch('/api/analytics/clickfunnels-connect', {
+    method: 'POST',
+    headers: authHeaders({ 'content-type': 'application/json' }),
+    body: JSON.stringify({ api_key: key, subdomain: sub })
+  }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+    .then(function (res) {
+      if (!res.ok) {
+        /* ClickFunnels' own words, verbatim, per the contract other lanes build
+           to — never reworded here (same rule as connRows' errbox above). */
+        msg.textContent = res.message || res.error || 'Nothing was saved. Try again.';
+        return;
+      }
+      document.getElementById('cfApiKey').value = '';
+      msg.textContent = 'Connected. Syncing now…';
+      return fetch('/api/analytics/clickfunnels-sync', {
+        method: 'POST',
+        headers: authHeaders({ 'content-type': 'application/json' }),
+        body: '{}'
+      }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+        .then(function (res2) {
+          msg.textContent = res2.ok
+            ? 'Connected and synced.'
+            : 'Connected, but the first sync did not finish. ' + (res2.message || res2.error || 'Press Sync now above to try again.');
+          readFunnelPages();
+        });
+    });
+});
 
 document.getElementById('syncMetaBtn').addEventListener('click', function () {
   var msg = document.getElementById('syncMetaMsg');
@@ -2230,6 +2449,7 @@ renderAttention();
 renderCampaigns(true);
 renderFatigue();
 renderAdBooks();
+renderFunnelPages();
 renderConn();
 renderLog();
 loadPartnerPicker();

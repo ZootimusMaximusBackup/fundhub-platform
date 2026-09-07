@@ -14,7 +14,12 @@ export const ALLOWED_UNMONITORED = {
   "trials/convert": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a partner agreement or pause a partner. Day 8 is a human decision, not an uptime probe.",
   "campaigns/meta-agency": "POST only. A GET answers 405 by design, and pinging it with a body would store a Meta Business id against a partner and fire a real agency-access request at Meta on their behalf. The monitored door for this surface is campaigns/connections, which reports whether the access actually landed.",
   "training-progress": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a compliance certification against a partner nobody assessed. The monitored door for the training is read/partner-training, which is what a partner actually opens.",
-  "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk."
+  "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk.",
+  "analytics/clickfunnels-connect": "POST only. A GET answers 405 by design, and pinging it with a body would try to save an org's ClickFunnels credential from whatever junk the pinger sent, and validates by calling the real ClickFunnels API before saving — a scheduled ping would burn a real API call against Chris's account every time it ran. The monitored door for this surface is read/funnel-pages, which reports the connection's real state.",
+  "analytics/clickfunnels-sync": "POST only. A GET answers 405 by design, and pinging it with a body would trigger a real sync against ClickFunnels' API on a schedule nobody asked for, and updates last_synced_at/last_error whether or not anyone wanted a sync to run right then. The monitored door is read/funnel-pages.",
+  "analytics/youtube-connect": "POST only, same reasoning as analytics/clickfunnels-connect — it exchanges a real OAuth refresh token with Google before saving, so a scheduled ping would spend a real Google API call. The monitored door is read/video-stats.",
+  "analytics/youtube-sync": "POST only, same reasoning as analytics/clickfunnels-sync — it refreshes a real Google OAuth token and calls the YouTube Analytics API. The monitored door is read/video-stats.",
+  "ops/weekly-brief": "POST only. A GET answers 405 by design, and pinging it with a body would generate a real brief every time — a real model call, a real write into Company Brain (brain_files/brain_chunks) — on whatever schedule the pulse runs, not the weekly cadence Chris actually wants. This is meant to be run when a person (or a job Chris explicitly schedules) asks for it, not pinged for uptime."
 };
 
 const API_KEYS = [
@@ -196,6 +201,7 @@ const API_KEYS = [
   "read/finance-command",
   "read/finance-os",
   "read/funding-rounds",
+  "read/funnel-pages",
   "read/inbox",
   "read/inquiries",
   "read/inquiry-cases",
@@ -227,6 +233,7 @@ const API_KEYS = [
   "read/transactions",
   "read/underwrite",
   "read/unrecorded-calls",
+  "read/video-stats",
   "read/workflows",
   "repair/enroll",
   "repair/exceptions",
