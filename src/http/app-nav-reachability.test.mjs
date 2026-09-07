@@ -175,14 +175,17 @@ describe("app shell — the lists this test reads", () => {
         "agent-editor.html",
         "automations.html",
         "brand-studio.html",
-        "campaign-manager.html",
         /* company-brain.html was here until 2026-08-27, when the owner put the
            row back. Removed from this fixture rather than the assertion being
            loosened: the point of the list is that a row cannot appear or vanish
            from the sidebar without someone editing this line on purpose. */
+        /* campaign-manager.html, content-admin.html, creative-factory.html and
+           social-studio.html were here until 2026-09-07, when the owner unhid
+           the Marketing menu heading so owner/admin/partner logins can click
+           to these screens instead of typing the address. Removed from this
+           fixture the same way company-brain.html was, on purpose, not by
+           loosening the assertion. */
         "consent-capture.html",
-        "content-admin.html",
-        "creative-factory.html",
         "finance-os.html",
         "galaxy.html",
         "hiring.html",
@@ -192,8 +195,7 @@ describe("app shell — the lists this test reads", () => {
         /* The partner classroom (docs/specs/W7-curriculum.md). Like
            partner-galaxy.html it is a principal screen no employee sidebar
            offers; unlike it, there is no row in the markup at all. */
-        "partner-training.html",
-        "social-studio.html"
+        "partner-training.html"
       ].sort()
     );
     for (const s of NAV_HIDDEN) {

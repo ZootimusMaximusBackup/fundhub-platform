@@ -239,6 +239,12 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 .kv .v{font-size:var(--fs-body);font-weight:600;margin-top:2px;word-break:break-word}
 .kv .v.mono{font-family:var(--mono);font-size:var(--fs-caption);font-weight:500}
 
+/* A written ad has no file, so it gets no preview tile — it gets its own words
+   instead. Kept visually close to .kv so a copy asset still reads as "the same
+   kind of screen", not a special case bolted on. */
+.copy-body{border:1px solid var(--line);border-radius:9px;background:#fff;padding:13px 15px;font-size:var(--fs-body);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.copy-snippet{font-size:var(--fs-caption);line-height:1.4;color:var(--gray);padding:8px 10px;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+
 /* §11 — a table that must stay a table scrolls inside its own box and never
    widens the page. max-width caps the box; min-width:max-content keeps the
    table itself from being squeezed into unreadable columns. */
@@ -1487,9 +1493,15 @@ var RATIO = {'1x1':'1 / 1', '4x5':'4 / 5', '9x16':'9 / 16', '16x9':'16 / 9'};
    object from a missing one — redact() strips has_storage_key. The second line is
    derived from `kind`, which IS returned. */
 function assetCard(a){
+  /* Copy has no file, so it has no preview image — it has the words
+     themselves. a.copy_text is null only while a job is still running or
+     when it was never written, which is genuinely "not ready yet", not a
+     UI bug, so the placeholder line only shows then. */
+  var body = a.kind==='copy'
+    ? (a.copy_text ? '<div class="copy-snippet">' + esc(a.copy_text) + '</div>' : '<span class="np">no words saved yet</span>')
+    : '<span class="np">no preview available<br>no file on this screen</span>';
   var tile = '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + '">' +
-      '<span class="np">no preview available<br>' +
-      (a.kind==='copy' ? 'copy has no file' : 'no file on this screen') + '</span>' +
+      body +
       '<span class="fmt" style="background:var(--soft);color:var(--gray);border:1px solid var(--line)">' + esc(a.format) + '</span>' +
       (a.duration_sec ? '<span class="dur" style="background:var(--soft);color:var(--gray);border:1px solid var(--line)">' + esc(a.duration_sec) + 's</span>' : '') +
     '</div>';
@@ -1998,20 +2010,28 @@ function openAsset(a){
     ['Reference', a.id, 1]
   ]) + '</div>';
 
-  html += '<div class="dw-sec"><h3>Preview</h3>' +
-    '<div style="max-width:230px">' +
-    '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + ';border-radius:9px;border:1px solid var(--line)"><span class="np">no preview available</span></div>' +
-    '</div>' +
-    '<p class="note" style="margin-top:9px">' +
-      'The file itself is never sent to this screen, so no preview can be shown and this screen cannot even ' +
-      'tell whether a file was saved.' +
-      (a.kind==='copy'
-        ? ' This is written copy, so there is no file at all — and the words themselves are not sent here either.'
-        : '') +
-    '</p>' +
-    '<p class="note" style="margin-top:7px;color:var(--gray2)">Shape <b>' + esc(a.format) +
-      '</b>. Exact pixel sizes are not recorded.</p>' +
-  '</div>';
+  if(a.kind==='copy'){
+    /* Written copy has no file to preview — the words are the asset.
+       Shown even when blocked: a stopped script is the one Chris has to
+       rewrite, and he cannot rewrite what he cannot read. */
+    html += '<div class="dw-sec"><h3>The words</h3>' +
+      (a.copy_text
+        ? '<div class="copy-body">' + esc(a.copy_text) + '</div>'
+        : '<p class="note">Nothing saved yet. The job may still be running, or it failed before it wrote anything.</p>') +
+    '</div>';
+  } else {
+    html += '<div class="dw-sec"><h3>Preview</h3>' +
+      '<div style="max-width:230px">' +
+      '<div class="tile none" style="aspect-ratio:' + RATIO[a.format] + ';border-radius:9px;border:1px solid var(--line)"><span class="np">no preview available</span></div>' +
+      '</div>' +
+      '<p class="note" style="margin-top:9px">' +
+        'The file itself is never sent to this screen, so no preview can be shown and this screen cannot even ' +
+        'tell whether a file was saved.' +
+      '</p>' +
+      '<p class="note" style="margin-top:7px;color:var(--gray2)">Shape <b>' + esc(a.format) +
+        '</b>. Exact pixel sizes are not recorded.</p>' +
+    '</div>';
+  }
 
   html += '<div class="dw-sec"><h3>Disclosure flags</h3>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
