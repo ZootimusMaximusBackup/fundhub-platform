@@ -1133,7 +1133,7 @@ function renderAdBooks(){
   var unk = (ADBOOKS && ADBOOKS.unknown_ad_ids) || [];
   var cap = document.getElementById('adBooksCap');
   if(cap) cap.textContent = unk.length
-    ? unk.length + ' ad id' + (unk.length===1?' has':'s have') + ' never been named — see docs/ads/registry.json.'
+    ? unk.length + ' ad id' + (unk.length===1?' has':'s have') + ' never been named.'
     : '';
 }
 
@@ -2039,8 +2039,22 @@ function wireAll(){
 
   /* Ad performance (CM-09) is org-wide, not this partner book — the endpoint
      takes no partner_id — so it reads here regardless of which branch below
-     runs, and is not one of the "0 of 5 panels loaded" five. */
-  readAdBooks();
+     runs, and is not one of the "0 of 5 panels loaded" five.
+
+     STAFF ONLY. Found by adversarial review 2026-09-07: this used to fire
+     for every session, but /api/read/ad-books gates on ROLE_SETS.STAFF,
+     which a partner login is never in — the request always 403s for one.
+     Firing it anyway showed "you are not signed in for this data," which is
+     false; a partner IS signed in, just not staff. A partner never sees this
+     card long enough to matter (this screen redirects them home), but the
+     message should still be true for the moment it is visible. */
+  if (isPartnerLogin()) {
+    PANEL_MSG.adbooks = 'This report is for staff. It is not part of a partner login.';
+    SRC.adbooks = { source:'forbidden', note:PANEL_MSG.adbooks, rows:null };
+    try { renderAdBooks(); } catch(e){}
+  } else {
+    readAdBooks();
+  }
 
   /* Staff with no partner in the address: do not call the five reads.
      They answer 400 and the panels used to look like a broken book.
