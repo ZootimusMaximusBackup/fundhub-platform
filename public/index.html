@@ -599,7 +599,15 @@
       </div>
 
       <div>
-        <form class="appform" id="appform" novalidate data-survey="homepage" aria-live="polite">
+        <!-- Masked for Clarity session recording: this survey's steps include
+             annual_business_revenue and annual_personal_income (real dollar
+             bands, see public/js/homepage-survey.js). The whole form is
+             masked rather than picking individual steps, since its content is
+             rewritten wholesale on every step change (root.innerHTML) and a
+             later step added to the survey would otherwise silently ship
+             unmasked. See public/js/clarity.js for the rest of the masking
+             posture. -->
+        <form class="appform" id="appform" novalidate data-survey="homepage" aria-live="polite" data-clarity-mask="true">
           <!-- Multi-step survey rendered by /js/homepage-survey.js -->
           <noscript>
             <p>This application needs JavaScript enabled. Turn it on and refresh, or email <a href="mailto:support@fundhub.ai">support@fundhub.ai</a> and we'll take your details directly.</p>
@@ -772,5 +780,6 @@
 
 </script>
 <script src="/js/homepage-survey.js?v=a2p-20260825-neg" defer></script>
+<script src="/js/clarity.js" defer></script>
 </body>
 </html>

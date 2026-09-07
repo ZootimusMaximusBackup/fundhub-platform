@@ -1115,7 +1115,7 @@ function loadCfUsage(){
         '<div class="stat"><div class="eyebrow">Left</div><div class="sv">' + (d.remaining == null ? '—' : d.remaining) + '</div></div>' +
         '<div class="stat"><div class="eyebrow">Monthly limit</div><div class="sv">' + (d.cap == null ? '—' : d.cap) + '</div></div>' +
       '</div>' +
-      (d.enabled ? '' : '<p class="note">The owner has not turned this on for this partner. Generate stays off so you do not hit a wall.</p>');
+      (d.enabled ? '' : '<p class="note">The owner has not turned this on for this partner. Generate stays off so you do not hit a wall. The switch is on the <a href="brand-studio.html">Brand Studio</a> screen — owner-only.</p>');
     setWriteControls(canWriteCreative());
   }).catch(function () {
     CF_SUITE.error = 'Could not reach the allowance.';
@@ -1152,7 +1152,7 @@ function setWriteControls(enabled){
     : (CF_SUITE.error
       ? CF_SUITE.error
       : (CF_SUITE.loaded && !CF_SUITE.enabled
-        ? 'The owner has not turned this on for this partner.'
+        ? 'The owner has not turned this on for this partner. It turns on in Brand Studio, owner-only.'
         : 'These buttons stay off until the allowance has loaded.'));
   ['genMsg','actMsg'].forEach(function(id){ var m = document.getElementById(id); if(m) m.textContent = reason; });
 }
@@ -2312,7 +2312,7 @@ document.getElementById('genBtn').addEventListener('click', function () {
   if (!canWriteCreative()) {
     msg.textContent = CF_SUITE.error
       || (CF_SUITE.loaded && !CF_SUITE.enabled
-        ? 'The owner has not turned this on for this partner.'
+        ? 'The owner has not turned this on for this partner. It turns on in Brand Studio, owner-only.'
         : 'Need a partner first.');
     return;
   }
