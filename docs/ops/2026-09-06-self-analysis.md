@@ -856,6 +856,12 @@ has a "Why it was stopped" panel plus a reference table of all 29 reasons.
 
 ## What this means for the ad-script build
 
+**Owner decision, 2026-09-07: image and video generation is off the list. Not blocked —
+not wanted.** Chris films himself, "super old school," and wants it that way until he
+decides otherwise. The three image/video gaps below are the audit's honest record of
+what the screen cannot do today. They are not a to-do. No agent should propose building
+the vendor row, the file upload, or the picture preview unless Chris asks for it by name.
+
 The generator lands here as planned. Three of the seven do not touch it at all, because
 they are about images: the vendor row, the file upload, and the picture preview.
 
