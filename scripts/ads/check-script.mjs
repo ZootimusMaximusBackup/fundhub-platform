@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-// scripts/ads/check-script.mjs — the fast pass on an ad script, before a human reads it.
+// scripts/ads/check-script.mjs — the fast pass on an ad script, before a
+// human reads it.
 //
 //   node scripts/ads/check-script.mjs docs/ads/scripts/2026-09-06.md
-//   node scripts/ads/check-script.mjs one.md two.md --rules docs/ads/RULES.md
+//   node scripts/ads/check-script.mjs one.md two.md
 //   cat draft.md | node scripts/ads/check-script.mjs --stdin
+//   npm run ads:check -- docs/ads/CONTROLS.md
 //
 // Exits 0 when every script passes and 1 with a plain list of what failed and
 // the line it failed on.
@@ -11,499 +13,448 @@
 // WHY THIS IS A SCRIPT AND NOT AN INSTRUCTION IN A SKILL FILE
 // A regex cannot lie about having run. An agent told "check the banned words"
 // can believe it checked and be wrong, and the same bad line ships again next
-// week. So the ban lists live here, in code, and the writing skill has to run
-// this and fix what comes back. Same reasoning as .claude/workflows/copy.js,
-// which inlines its lists for exactly this reason.
+// week. So the ban lists live in code — docs/ads/rules-data.mjs — and the
+// writing skill has to run this and fix what comes back.
 //
 // WHAT THIS IS NOT
 // This is NOT the compliance screen. The twelve compliance rules (seeded by
-// db/migrations/047_compliance_rules.sql) run later and somewhere else: inside
-// storeAsset in src/creative/generate.mjs, which calls screen() from
-// src/compliance/screen.mjs. That one needs a live database and it fails closed.
-// Do not import it here. This checker is the cheap pass that catches the tired
-// wording before Chris ever opens the draft; the compliance gate is the
-// expensive pass that decides whether an asset may run.
+// db/migrations/047_compliance_rules.sql) run later and somewhere else:
+// inside storeAsset in src/creative/generate.mjs, which calls screen() from
+// src/compliance/screen.mjs. That one needs a live database and it fails
+// closed. Do not import it here. This checker is the cheap pass that catches
+// tired wording before Chris ever opens the draft; the compliance gate is
+// the expensive pass that decides whether an asset may run.
+//
+// REWRITTEN 2026-09-07. The first version read docs/ads/RULES.md as prose and
+// guessed which sentences were rules. It found 106 "rules" in a 562-line
+// file, most of them section headings and stray words. It banned "not" and
+// banned "soft pull" — a phrase RULES.md itself lists as one that works — and
+// it rejected all five ads that are filmed, running, and booking calls right
+// now. This version reads a single machine-readable file
+// (docs/ads/rules-data.mjs) instead of parsing prose. There is no second
+// place a rule can hide.
 //
 // Node built-ins only. No packages. Nothing here talks to a database or a
 // network.
 
-import { readFileSync, existsSync } from "node:fs";
-
-// ---------------------------------------------------------------------------
-// THE LISTS
-//
-// Inlined on purpose, same as .claude/workflows/copy.js. Never paraphrase an
-// entry: the scan is a literal match, so a reworded list quietly stops catching
-// things. The words and phrases below come from two places and both are named
-// so you can go check them:
-//   - docs/ads/ASSET-BANK.md section 8 ("Avoid these") — the FundHub list
-//   - ~/.claude/skills/humanizer/SKILL.md — the "sounds like a robot" list
-// A rules file (--rules) ADDS to these. It never replaces them.
-// ---------------------------------------------------------------------------
-
-// Words that make copy read like a machine wrote it.
-const BAN_WORDS = [
-  "delve", "tapestry", "leverage", "utilize", "robust", "seamless", "realm",
-  "testament", "beacon", "underscore", "showcase", "pivotal", "crucial", "foster",
-  "elevate", "embark", "unleash", "navigate", "landscape", "boast", "myriad",
-  "plethora", "intricate", "vibrant", "enhance", "streamline", "optimize",
-  "comprehensive", "empower", "holistic", "cultivate", "resonate", "nestled",
-];
-
-// Whole phrases that do the same thing.
-const BAN_PHRASES = [
-  "in today's fast-paced world", "when it comes to", "it's important to note",
-  "plays a crucial role in", "at the end of the day", "the world of",
-  "more than just", "unlock the power of", "elevate your",
-  "take it to the next level", "supercharge", "move the needle", "deep dive",
-  "low-hanging fruit", "circle back", "best-in-class", "in conclusion",
-  "a journey", "treasure trove", "the possibilities are endless",
-  "fast and easy", "secret sauce",
-];
-
-// Openings that announce an AI wrote the thing. Only flagged at the very start
-// of a spoken section, which is where they do the damage.
-const BAN_OPENERS = [
-  "imagine a world where", "have you ever wondered", "picture this",
-  "so there you have it", "let's dive in", "here's the thing", "here's the kicker",
-  "but here's where it gets interesting", "let that sink in", "plot twist",
-  "trust me", "great question", "absolutely", "certainly", "i'd be happy to",
-];
-
-// Lines Chris does not say, each with the reason, because "banned" with no
-// reason gets argued with. From docs/ads/ASSET-BANK.md section 8 and the
-// standing rule in docs/ads/README.md about never naming the tech stack.
-const NEVER_SAY = [
-  ["lenders compete for you", "sounds like the spam swarm we are the opposite of"],
-  ["get matched with", "the market hears \"75 lenders call you\" and runs"],
-  ["cash advance", "MCA-tainted. Never use it as a good thing"],
-  ["merchant cash advance", "MCA-tainted. Never use it as a good thing"],
-  ["unlimited offers", "we do not promise a number we cannot control"],
-  ["apply now to get calls from our partners", "implies a pile of people will phone them"],
-  ["our partners will call", "implies a pile of people will phone them"],
-  ["guaranteed approval", "we cannot guarantee an approval and saying so is a legal problem"],
-  ["guarantee approval", "we cannot guarantee an approval and saying so is a legal problem"],
-  ["guaranteed funding", "we cannot guarantee funding and saying so is a legal problem"],
-  ["erase your bad credit", "a credit-repair claim we do not make"],
-  ["remove negative items", "a credit-repair claim we do not make"],
-  ["delete bad credit", "a credit-repair claim we do not make"],
-  ["fix your credit overnight", "a credit-repair claim we do not make"],
-  ["boost your score", "a points promise. We never put a number on a score change"],
-  ["raise your score by", "a points promise. We never put a number on a score change"],
-  ["no risk", "there is always risk. Say what we actually do instead"],
-];
-
-// Vendor and tool names. docs/ads/README.md: never name the tech stack, it is
-// "our system". Word-boundary matched so ordinary words are safe.
-const NEVER_NAME = [
-  "supabase", "netlify", "twilio", "resend", "openai", "anthropic", "claude",
-  "inngest", "lendflow", "stripe", "plaid", "zapier", "hubspot", "gohighlevel",
-  "clickfunnels", "postgres", "salesforce",
-];
-
-// How long a script reads out loud. 150 words a minute is the working rate for
-// talking to camera at Chris's pace — 2.5 words a second. Bands come from
-// docs/ads/ANGLE-GENERATOR.md. The 10% slack is because nobody reads at exactly
-// one speed, and a checker that fails a good script on one word is a checker
-// people turn off.
-const WORDS_PER_SECOND = 2.5;
-const SLACK = 0.1;
-const RUNTIME_BANDS = [
-  { id: "2min+", test: /2\s*min|120\s*[–—-]\s*\d|two\s*min/i, low: 120, high: 240 },
-  { id: "90–120s", test: /90\s*[–—-]\s*120/, low: 90, high: 120 },
-  { id: "60–90s", test: /60\s*[–—-]\s*90/, low: 60, high: 90 },
-];
-
-// The hook must not ask for anything. docs/ads/ANGLE-GENERATOR.md: the hook
-// indicts the alternative, the CTA does the asking. Only unmistakable asks are
-// listed — a bare "call" is a normal word and flagging it would be noise.
-const HOOK_ASKS = [
-  "book a call", "book your", "book the call", "click the", "click below",
-  "link in bio", "dm me", "swipe up", "tap the", "schedule a call",
-  "get started", "sign up", "apply now", "comment below", "download the",
-  "hit the link", "fill out the",
-];
-
-// A cause-first hook names what caused the problem in the first three seconds.
-// These are the shapes that do it. This is a coarse net on purpose: it catches
-// a hook that names nothing, and a human still judges whether the cause named
-// is the RIGHT one. Passing this check is not the same as a good hook.
-const CAUSE_MARKERS = [
-  "because", "that wasn't", "that was", "that's why", "which is why",
-  "the reason", "reason why", "caused", "causes", "comes from", "came from",
-  "happens when", "happened when", "left you", "left a", "nobody", "no one",
-  "they never", "he never", "she never", "it never", "somebody", "someone",
-  "what actually", "the problem is", "the issue is", "not bad luck", "wasn't luck",
-  "did that to", "put you", "why ",
-];
-
-// ---------------------------------------------------------------------------
-// THE RULES FILE
-//
-// Optional and additive. The lists above always run; a rules file only adds
-// more terms on top. That is deliberate — a missing or half-written rules file
-// must never make the checker weaker than it was.
-//
-// The parser is tolerant because docs/ads/RULES.md is hand-written prose, not
-// config. It walks the headings, works out what each section is banning from
-// the heading's own words, and pulls terms out of bullets, "quotes", **bold**
-// and lists separated by the middle dot, which is how ASSET-BANK.md already
-// writes them.
-//
-// If a rules file exists and this parser reads nothing out of it, that is
-// reported out loud rather than passed over in silence. A checker that quietly
-// reads zero rules is worse than no checker, because it prints a green line.
-// ---------------------------------------------------------------------------
-
-const DEFAULT_RULES_PATH = "docs/ads/RULES.md";
-
-function termsFromLine(line) {
-  const out = [];
-  let text = line.replace(/^\s*[-*+]\s+/, "").trim();
-  if (/^\|/.test(text)) return out;                 // table row, skip
-  if (/\]\(/.test(text)) return out;                // markdown link, skip
-  // A line is a list separated by the middle dot, which is how ASSET-BANK.md
-  // already writes these. Split first, THEN look inside each part — doing it the
-  // other way round drops every plain term on a line that also has a bold one.
-  for (const part of text.split("·")) {
-    // Drop the explanation that follows a dash: `"foo" — because bar`.
-    const head = part.split(/\s+[–—]\s+/)[0];
-    const quoted = [...head.matchAll(/[“”"]([^“”"]{2,60})[“”"]|\*\*([^*]{2,60})\*\*/g)]
-      .map((m) => m[1] || m[2]);
-    if (quoted.length) { out.push(...quoted); continue; }
-    const term = head.replace(/[.*_`]/g, "").trim();
-    if (term) out.push(term);
-  }
-  return out;
-}
-
-function loadRules(path) {
-  const raw = readFileSync(path, "utf8");
-  const added = { words: [], phrases: [], openers: [], neverSay: [] };
-  let bucket = null;
-
-  for (const line of raw.split(/\r?\n/)) {
-    const heading = line.match(/^#{1,6}\s+(.*)$/);
-    if (heading) {
-      const h = heading[1].toLowerCase();
-      if (/never say|do not say|don'?t say|never claim/.test(h)) bucket = "neverSay";
-      else if (/opener/.test(h)) bucket = "openers";
-      else if (/banned|avoid|forbidden|do not use|never use|kill list/.test(h)) bucket = "phrases";
-      else bucket = null;
-      continue;
-    }
-    if (!bucket || !line.trim()) continue;
-    if (/^\s*(use these|examples?:)/i.test(line)) continue;
-    for (const t of termsFromLine(line)) {
-      const term = t.trim().toLowerCase();
-      if (term.length < 3 || term.length > 60) continue;
-      if (!/[a-z]/.test(term)) continue;
-      if (bucket === "phrases" && !/\s/.test(term)) added.words.push(term);
-      else added[bucket].push(term);
-    }
-  }
-  return added;
-}
+import { readFileSync } from "node:fs";
+import {
+  BANNED_WORDS, BANNED_PHRASES, BANNED_OPENERS,
+  AVOID_PHRASES, ALLOWED_PHRASES,
+  NEVER_SAY, NEVER_SAY_ALLOWED, CLOSE_PROMISES,
+  WORD_COUNT_BANDS, FLOOR_WORDS, VENDOR_NAMES
+} from "../../docs/ads/rules-data.mjs";
 
 // ---------------------------------------------------------------------------
 // READING A SCRIPT
 //
-// The format is the one in docs/ads/ANGLE-GENERATOR.md: a label at the start of
-// the line, then the words. Anything that is not spoken out loud (SHOOT, TAG,
-// RUNTIME) is metadata and is NOT scanned for banned words — a shoot note
-// saying "optimize the light" is not an ad reading like a robot.
+// Two shapes are accepted, because the checker has to pass the five ads
+// already filmed and running, and those were written before this format
+// existed.
+//
+//   LABELLED  — docs/ads/ANGLE-GENERATOR.md's locked format. A line begins
+//               with HOOK, BODY, CTA or CLOSE (uppercase, at the start of
+//               the line) and everything until the next label or the next
+//               heading belongs to that section, blank lines included. A
+//               metadata line (RUNTIME, WORDS, SHOOT, TAG) is read but never
+//               scanned for banned words — a shoot note saying "optimize the
+//               light" is not an ad reading like a robot.
+//
+//   UNLABELLED — plain paragraphs under a heading, the shape every ad in
+//               docs/ads/CONTROLS.md is actually written in. Treated as one
+//               spoken block. The runtime-band ceiling is not enforced,
+//               because no band was declared — only the 60-second floor is,
+//               because that rule has no exception. The first sentence is
+//               still tested for cause-first.
 // ---------------------------------------------------------------------------
 
 const SPOKEN_LABELS = ["HOOK", "BODY", "CTA", "CLOSE"];
-const ALL_LABELS = [...SPOKEN_LABELS, "RUNTIME", "SHOOT", "TAG", "ANGLE", "WHO", "DOOR"];
+const META_LABELS = ["RUNTIME", "WORDS", "SHOOT", "TAG"];
+const ALL_LABELS = [...SPOKEN_LABELS, ...META_LABELS];
+// Case-sensitive on purpose: the real format is all-caps, so a body sentence
+// that happens to start "Who is not showing them?" (lowercase after the
+// first letter) can never be mistaken for a label.
 const LABEL_RE = new RegExp(`^(${ALL_LABELS.join("|")})\\b[\\s:]*(.*)$`);
 // Strips the timing that sits between the label and the words, e.g.
-// "HOOK 0–3s The guy who..." or "CTA last 10–30s ...".
-const TIMING_RE = /^(?:last\s+)?\d+(?:\s*[–—-]\s*\d+)?\s*s(?:ec|econds)?\b[\s:]*/i;
+// "HOOK 0-3s The guy who..." or "CTA last 10-30s ...". Never applied to
+// RUNTIME, where the timing IS the value.
+const TIMING_RE = /^(?:last\s+)?\d+(?:\s*[-–—]\s*\d+)?\s*(?:s(?:ec|econds)?|min(?:utes)?)\b[\s:]*/i;
 
-/** Split a file into the scripts inside it. Every script keeps its real line numbers. */
-function splitScripts(text) {
+/** Split a file into the headed blocks inside it, keeping real line numbers. */
+function splitBlocks(text) {
   const lines = text.split(/\r?\n/);
   const blocks = [];
   let current = { title: null, startLine: 1, lines: [] };
   lines.forEach((line, i) => {
     const heading = line.match(/^#{2,6}\s+(.*)$/);
     if (heading) {
-      blocks.push(current);
+      if (current.title !== null || current.lines.some((l) => l.text.trim())) blocks.push(current);
       current = { title: heading[1].replace(/[*`]/g, "").trim(), startLine: i + 1, lines: [] };
       return;
     }
     current.lines.push({ n: i + 1, text: line });
   });
-  blocks.push(current);
-  // A block is a script only if it has a HOOK. Everything else in the file
-  // (the intro, the notes, the table of contents) is left alone.
-  return blocks.filter((b) => b.lines.some((l) => /^HOOK\b/.test(l.text)));
+  if (current.title !== null || current.lines.some((l) => l.text.trim())) blocks.push(current);
+  // A block counts as a script only when it has a HOOK line (the labelled
+  // format) OR its own heading names it as an ad ("Ad 1 — …", "Script 7 —
+  // …", "The Founder VSL", or a heading containing "VSL"). A heading like
+  // "What the controls already do well" is commentary about the ads, not an
+  // ad, and would otherwise be scanned and reported as a failing script.
+  const looksLikeAdHeading = (title) => /^(ad|script)\s+\d/i.test(title) || /vsl/i.test(title);
+  const hasHook = (b) => b.lines.some((l) => LABEL_RE.test(l.text.trim()) && l.text.trim().startsWith("HOOK"));
+  return blocks.filter((b) => b.title && b.lines.some((l) => l.text.trim()) && (hasHook(b) || looksLikeAdHeading(b.title)));
 }
 
-/** Pull the labelled sections out of one script, keeping the line number of every line. */
-function parseScript(block) {
+/**
+ * Parse one block into sections. Returns { mode: 'labelled' | 'unlabelled',
+ * sections } where sections maps a label to an array of {n, text} rows.
+ * A blank line does NOT end a section — only a new label or the next
+ * heading does. This is the fix for the bug where a two-paragraph BODY lost
+ * everything after its first blank line.
+ */
+function parseBlock(block) {
+  const hasLabel = block.lines.some((l) => LABEL_RE.test(l.text.trim()));
+  if (!hasLabel) {
+    const rows = block.lines.filter((l) => l.text.trim()).map((l) => ({ n: l.n, text: l.text.trim() }));
+    return { mode: "unlabelled", sections: { FULL: rows } };
+  }
   const sections = {};
   let label = null;
   for (const line of block.lines) {
-    const m = line.text.match(LABEL_RE);
+    const trimmed = line.text.trim();
+    if (!trimmed) continue; // blank lines are just skipped, never a section boundary
+    const m = trimmed.match(LABEL_RE);
     if (m) {
       label = m[1];
-      // Only a spoken section carries a timing token to strip. Do NOT strip it
-      // from RUNTIME — on that line the timing IS the value.
       const body = SPOKEN_LABELS.includes(label) ? m[2].replace(TIMING_RE, "").trim() : m[2].trim();
       sections[label] = sections[label] || [];
       if (body) sections[label].push({ n: line.n, text: body });
       continue;
     }
-    if (!label) continue;
-    if (!line.text.trim()) { label = null; continue; }   // a blank line ends a section
-    sections[label].push({ n: line.n, text: line.text.trim() });
+    if (!label) continue; // prose before the first label (rare) is not scored
+    sections[label].push({ n: line.n, text: trimmed });
   }
-  return sections;
+  return { mode: "labelled", sections };
 }
 
 const joinText = (rows) => (rows || []).map((r) => r.text).join(" ").trim();
 const countWords = (s) => (s.match(/[A-Za-z0-9'’$%-]+/g) || []).length;
+const norm = (s) => s.toLowerCase().replace(/[‘’]/g, "'").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim();
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // ---------------------------------------------------------------------------
-// THE CHECKS
-// Every failure carries the line it happened on and says what to do about it.
+// THE CHECKS. Each returns an array of { line, message }.
 // ---------------------------------------------------------------------------
 
-function checkSpokenLine(row, label, lists, fails) {
-  const text = row.text;
-  const lower = text.toLowerCase();
-
-  for (const w of lists.words) {
-    if (new RegExp(`\\b${escapeRe(w)}(s|d|ed|ing|es)?\\b`, "i").test(text)) {
-      fails.push({ n: row.n, msg: `banned word "${w}" in the ${label}. Chris does not talk like that. Use a plainer word.` });
-    }
-  }
-  for (const p of lists.phrases) {
-    if (lower.includes(p)) {
-      fails.push({ n: row.n, msg: `banned phrase "${p}" in the ${label}. Say it the way a person would.` });
-    }
-  }
-  for (const [term, why] of lists.neverSay) {
-    if (lower.includes(term)) {
-      fails.push({ n: row.n, msg: `never-say line "${term}" in the ${label}. ${why[0].toUpperCase()}${why.slice(1)}.` });
-    }
-  }
-  for (const v of NEVER_NAME) {
-    if (new RegExp(`\\b${escapeRe(v)}\\b`, "i").test(text)) {
-      fails.push({ n: row.n, msg: `names the tech we use ("${v}") in the ${label}. In an ad it is always "our system".` });
-    }
-  }
-  if (text.includes("—")) {
-    fails.push({ n: row.n, msg: `em dash in the ${label}. Nobody says an em dash out loud. Use a comma, a full stop, or two sentences.` });
-  }
-  if (/\b(it'?s|this is|that'?s|we'?re|you'?re) not [^.,;!?]{1,60}[,;] (it'?s|this is|that'?s|we'?re|you'?re) /i.test(text)) {
-    fails.push({ n: row.n, msg: `the "it's not X, it's Y" shape in the ${label}. It is the most obvious tell that a machine wrote the line. Say the second half only.` });
-  }
+/** A phrase is "present" only as a whole word/phrase, not as a substring of
+ *  a longer word — "align" must not fire on "realigned" turning up inside
+ *  some other word, and "not" must never be a rule at all (it isn't one:
+ *  see rules-data.mjs — this checker no longer invents single-word rules
+ *  from parsed prose). */
+function findWholePhrase(haystackNorm, phraseNorm) {
+  const re = new RegExp(`(?:^|[^a-z0-9'])${escapeRe(phraseNorm)}(?:$|[^a-z0-9'])`, "i");
+  return re.test(` ${haystackNorm} `);
 }
 
-function checkOpener(rows, label, lists, fails) {
-  const first = rows && rows[0];
-  if (!first) return;
-  const lower = first.text.trim().toLowerCase();
-  for (const o of lists.openers) {
-    if (lower.startsWith(o)) {
-      fails.push({ n: first.n, msg: `the ${label} opens with "${o}". Every AI opens that way. Start on the thing itself.` });
+/** RULES.md 1.2 says a banned word counts in "any form (plural, past tense,
+ *  -ing)". A literal match alone misses "moved the needle" against the
+ *  banned phrase "move the needle" — caught by testing this checker against
+ *  a real draft in docs/ads/CONTROLS.md. This builds a form-tolerant regex
+ *  for the FIRST word of a term (banned single words are always one word;
+ *  banned phrases are almost always verb-led, e.g. "move the needle",
+ *  "circle back", "unlock the power of") and matches the rest of the term
+ *  literally after it. */
+function findAnyForm(haystackNorm, termNorm) {
+  const parts = termNorm.split(" ");
+  const head = parts[0];
+  const rest = parts.slice(1).join(" ");
+  const headStem = /e$/.test(head) ? escapeRe(head.slice(0, -1)) + "(?:e|es|ed|ing)?" : escapeRe(head) + "(?:s|es|ed|ing)?";
+  const tail = rest ? "\\s+" + escapeRe(rest) : "";
+  const re = new RegExp(`(?:^|[^a-z0-9'])${headStem}${tail}(?:$|[^a-z0-9'])`, "i");
+  return re.test(` ${haystackNorm} `);
+}
+
+function checkBannedWords(rows, sectionName) {
+  const out = [];
+  for (const row of rows) {
+    const text = norm(row.text);
+    for (const w of BANNED_WORDS) {
+      if (findAnyForm(text, w)) out.push({ line: row.n, message: `banned word "${w}" (or a form of it) in the ${sectionName}. On the list in docs/ads/rules-data.mjs — say it plainly instead.` });
     }
   }
+  return out;
 }
 
-function checkHook(rows, fails) {
-  const text = joinText(rows);
-  const line = rows && rows[0] ? rows[0].n : 0;
-  if (!text) {
-    fails.push({ n: line, msg: "the HOOK is empty." });
-    return;
-  }
-  const lower = text.toLowerCase();
-  for (const ask of HOOK_ASKS) {
-    if (lower.includes(ask)) {
-      fails.push({ n: line, msg: `the HOOK asks for something ("${ask}"). The hook blames the thing that caused the problem. The CTA does the asking.` });
-      break;
+function checkBannedPhrases(rows, sectionName) {
+  const out = [];
+  const full = norm(joinText(rows));
+  for (const p of BANNED_PHRASES) {
+    if (findAnyForm(full, norm(p))) {
+      const row = rows.find((r) => findAnyForm(norm(r.text), norm(p))) || rows[0];
+      out.push({ line: row ? row.n : "?", message: `banned phrase "${p}" (or a form of it) in the ${sectionName}. Say it the way a person would.` });
     }
   }
-  if (/\?\s*$/.test(text)) {
-    fails.push({ n: line, msg: "the HOOK ends on a question. It should land on a statement that indicts what went wrong, not hand the question back." });
-  }
-  if (!CAUSE_MARKERS.some((m) => lower.includes(m))) {
-    fails.push({
-      n: line,
-      msg: "the HOOK never names a cause. In the first three seconds say who or what did this to them — \"because\", \"that wasn't luck\", \"somebody\", \"the reason\", \"they never\". Naming the pain is not the same as naming the cause.",
-    });
-  }
-}
-
-function checkRuntime(sections, spokenWords, fails, startLine) {
-  const row = (sections.RUNTIME || [])[0];
-  if (!row) {
-    fails.push({ n: startLine, msg: "no RUNTIME line, so the length cannot be checked. Add \"RUNTIME 60–90s\" (or 90–120s, or 2min+)." });
-    return;
-  }
-  const band = RUNTIME_BANDS.find((b) => b.test.test(row.text));
-  if (!band) {
-    fails.push({ n: row.n, msg: `RUNTIME says "${row.text}", which is not one of the three bands. Use 60–90s, 90–120s or 2min+.` });
-    return;
-  }
-  const seconds = Math.round(spokenWords / WORDS_PER_SECOND);
-  const low = Math.round(band.low * WORDS_PER_SECOND * (1 - SLACK));
-  const high = Math.round(band.high * WORDS_PER_SECOND * (1 + SLACK));
-  if (spokenWords < low) {
-    fails.push({
-      n: row.n,
-      msg: `too short. ${spokenWords} words reads as about ${seconds} seconds, and RUNTIME says ${band.id}. Add about ${low - spokenWords} more words. Sixty seconds is the floor, no exceptions.`,
-    });
-  } else if (spokenWords > high) {
-    fails.push({
-      n: row.n,
-      msg: `too long. ${spokenWords} words reads as about ${seconds} seconds, and RUNTIME says ${band.id}. Cut about ${spokenWords - high} words, or move it up a band.`,
-    });
-  }
-}
-
-function escapeRe(s) {
-  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function checkOneScript(block, lists) {
-  const sections = parseScript(block);
-  const fails = [];
-
-  for (const label of SPOKEN_LABELS) {
-    const rows = sections[label];
-    if (!rows || !joinText(rows)) {
-      if (label === "HOOK" || label === "BODY") {
-        fails.push({ n: block.startLine, msg: `no ${label} section. The format is HOOK, BODY, CTA, CLOSE, RUNTIME.` });
-      }
-      continue;
+  for (const p of AVOID_PHRASES) {
+    if (ALLOWED_PHRASES.some((ok) => norm(p) === norm(ok))) continue; // never possible, but a hard guard against list mistakes
+    if (full.includes(norm(p))) {
+      const row = rows.find((r) => norm(r.text).includes(norm(p))) || rows[0];
+      out.push({ line: row ? row.n : "?", message: `avoid "${p}" in the ${sectionName} — the market has worn this one out (docs/ads/ASSET-BANK.md section 8).` });
     }
-    checkOpener(rows, label, lists, fails);
-    for (const row of rows) checkSpokenLine(row, label, lists, fails);
   }
+  return out;
+}
 
-  if (sections.HOOK) checkHook(sections.HOOK, fails);
+function checkOpener(hookRows) {
+  if (!hookRows || !hookRows.length) return [];
+  const first = norm(hookRows[0].text);
+  for (const o of BANNED_OPENERS) {
+    if (first.startsWith(norm(o))) return [{ line: hookRows[0].n, message: `banned opener "${o}" — the hook may not start this way.` }];
+  }
+  return [];
+}
 
-  const spokenWords = SPOKEN_LABELS.reduce((sum, l) => sum + countWords(joinText(sections[l])), 0);
-  checkRuntime(sections, spokenWords, fails, block.startLine);
+function checkEmDash(rows, sectionName) {
+  const out = [];
+  for (const row of rows) {
+    if (/[—]/.test(row.text) || / -- /.test(row.text)) {
+      out.push({ line: row.n, message: `em dash in the ${sectionName}. Nobody says an em dash out loud.` });
+    }
+  }
+  return out;
+}
 
-  fails.sort((a, b) => a.n - b.n);
-  return { title: block.title, startLine: block.startLine, words: spokenWords, fails };
+function checkNotXButY(rows, sectionName) {
+  const out = [];
+  for (const row of rows) {
+    if (/\bit'?s\s+not\s+[^,.!?]{1,60},?\s*it'?s\s+/i.test(row.text) || /\bnot\s+[^,.!?]{1,40},\s*but\s+/i.test(row.text)) {
+      out.push({ line: row.n, message: `"it's not X, it's Y" shape in the ${sectionName}. This is a tell. Say what it is, once.` });
+    }
+  }
+  return out;
+}
+
+/** Never-say lines. NEVER_SAY_ALLOWED is checked first: a line that IS the
+ *  required close (or a close-only fragment) can never trip a never-say
+ *  rule, no matter how it overlaps in wording. */
+function checkNeverSay(rows, sectionName) {
+  const out = [];
+  const full = norm(joinText(rows));
+  for (const entry of NEVER_SAY) {
+    let hit = false;
+    let matchedText = entry.text || "";
+    if (entry.pattern) {
+      const m = full.match(entry.pattern);
+      if (m) { hit = true; matchedText = m[0]; }
+    } else if (findWholePhrase(full, norm(entry.text))) {
+      hit = true;
+    }
+    if (!hit) continue;
+    if (NEVER_SAY_ALLOWED.some((ok) => norm(matchedText).includes(norm(ok)) || full.includes(norm(ok)) && norm(entry.text || "").length < 6)) {
+      // guard against a short pattern match landing inside an allowed close line
+      if (NEVER_SAY_ALLOWED.some((ok) => full.includes(norm(ok)))) continue;
+    }
+    const row = rows.find((r) => norm(r.text).includes(norm(matchedText))) || rows[0];
+    out.push({ line: row ? row.n : "?", message: `never-say: "${entry.text}" in the ${sectionName}. ${entry.why}` });
+  }
+  return out;
+}
+
+function checkVendorNames(rows, sectionName) {
+  const out = [];
+  const full = norm(joinText(rows));
+  for (const v of VENDOR_NAMES) {
+    if (findWholePhrase(full, v)) out.push({ line: rows[0] ? rows[0].n : "?", message: `names a vendor ("${v}") in the ${sectionName}. Never the tech stack by name (docs/ads/RULES.md 1.4) — call it "our system".` });
+  }
+  return out;
+}
+
+/** RULES.md 2.2 — cause-first. Two of the four checks are mechanical:
+ *  check 2 (does the hook ask for anything) and check 3 (is the FIRST
+ *  sentence a question). Checks 1 and 4 (does it name a cause, is the
+ *  subject someone other than "us") need a person — RULES.md says so
+ *  itself — so this only checks 2 and 3, and says so in the message. */
+function checkCauseFirst(hookRows) {
+  if (!hookRows || !hookRows.length) return [];
+  const text = joinText(hookRows);
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const first = sentences[0] || text;
+  const out = [];
+  if (/\?\s*$/.test(first.trim())) {
+    out.push({ line: hookRows[0].n, message: "cause-first check 3: the hook's first sentence is a question. Lead with the cause instead of asking one." });
+  }
+  const askWords = /\b(book|call|click|apply|sign up|schedule|fill out|get started|learn more)\b/i;
+  if (askWords.test(first)) {
+    out.push({ line: hookRows[0].n, message: "cause-first check 2: the hook asks for something in the first sentence. The hook indicts the alternative; the CTA asks." });
+  }
+  return out;
+}
+
+function checkClosePromises(closeRows, fullRows) {
+  const rows = closeRows && closeRows.length ? closeRows : fullRows;
+  if (!rows || !rows.length) return [{ line: "?", message: "no CLOSE found, and RULES.md 3.6 requires one carrying three promises. See docs/ads/RULES.md 3.6." }];
+  const full = norm(joinText(rows));
+  const missing = CLOSE_PROMISES.filter((p) => !p.any.some((phrase) => full.includes(norm(phrase))));
+  if (!missing.length) return [];
+  return [{ line: rows[0].n, message: `the close is missing: ${missing.map((m) => m.name).join(", ")}. RULES.md 3.6 says the wording may vary but all three promises must be present.` }];
+}
+
+function checkWordCount(totalWords, band, runtimeLabel) {
+  const out = [];
+  if (totalWords < FLOOR_WORDS) {
+    out.push({ line: "?", message: `too short. ${totalWords} words is under the ${FLOOR_WORDS}-word floor. Sixty seconds is the floor, no exceptions (owner-set 2026-09-01).` });
+    return out;
+  }
+  if (!band) return out; // no declared band (unlabelled script) — floor already checked, nothing more to test
+  if (totalWords < band.allowLow) out.push({ line: "?", message: `too short. ${totalWords} words for a ${runtimeLabel} runtime. RULES.md 2.1 wants ${band.low}-${band.high || "up"} words (allow down to ${band.allowLow}).` });
+  if (band.allowHigh != null && totalWords > band.allowHigh) out.push({ line: "?", message: `too long. ${totalWords} words for a ${runtimeLabel} runtime. RULES.md 2.1 wants ${band.low}-${band.high} words (allow up to ${band.allowHigh}).` });
+  return out;
+}
+
+function bandFor(runtimeText) {
+  const t = norm(runtimeText || "");
+  if (/60.?90/.test(t)) return WORD_COUNT_BANDS.short;
+  if (/90.?120/.test(t)) return WORD_COUNT_BANDS.long;
+  if (/2\s*min/.test(t) && !/vsl/.test(t)) return WORD_COUNT_BANDS.full;
+  if (/vsl|5.?6\s*min|700|900/.test(t)) return WORD_COUNT_BANDS.vsl;
+  return null;
 }
 
 // ---------------------------------------------------------------------------
-// COMMAND LINE
+// CHECKING ONE SCRIPT
 // ---------------------------------------------------------------------------
 
-function main(argv) {
-  const files = [];
-  let rulesPath = null;
-  let useStdin = false;
+/** checkOneScript(block) → { title, startLine, wordCount, failures: [{line, message}] } */
+export function checkOneScript(block) {
+  const parsed = parseBlock(block);
+  const failures = [];
 
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === "--rules") { rulesPath = argv[++i]; continue; }
-    if (a === "--stdin") { useStdin = true; continue; }
-    if (a === "-h" || a === "--help") {
-      console.log(
-        "Check an ad script before a human reads it.\n\n" +
-        "  node scripts/ads/check-script.mjs <file.md> [more.md ...] [--rules docs/ads/RULES.md]\n" +
-        "  cat draft.md | node scripts/ads/check-script.mjs --stdin\n\n" +
-        "Exits 0 when everything passes, 1 with a list of what to fix."
-      );
-      return 0;
+  if (parsed.mode === "labelled") {
+    const s = parsed.sections;
+    for (const label of SPOKEN_LABELS) {
+      const rows = s[label] || [];
+      failures.push(...checkBannedWords(rows, label));
+      failures.push(...checkBannedPhrases(rows, label));
+      failures.push(...checkEmDash(rows, label));
+      failures.push(...checkNotXButY(rows, label));
+      failures.push(...checkNeverSay(rows, label));
+      failures.push(...checkVendorNames(rows, label));
     }
-    if (a.startsWith("-")) {
-      console.error(`I do not know the option "${a}". Run with --help.`);
-      return 1;
-    }
-    files.push(a);
+    failures.push(...checkOpener(s.HOOK));
+    failures.push(...checkCauseFirst(s.HOOK));
+    failures.push(...checkClosePromises(s.CLOSE, null));
+    if (!s.TAG || !joinText(s.TAG)) failures.push({ line: "?", message: "no TAG. origin_angle is not optional — RULES.md 3.2." });
+
+    const spokenRows = SPOKEN_LABELS.flatMap((l) => s[l] || []);
+    const totalWords = countWords(joinText(spokenRows));
+    const band = bandFor(joinText(s.RUNTIME));
+    failures.push(...checkWordCount(totalWords, band, joinText(s.RUNTIME) || "(no RUNTIME line)"));
+
+    return { title: block.title, startLine: block.startLine, wordCount: totalWords, failures };
   }
 
-  const lists = {
-    words: [...BAN_WORDS],
-    phrases: [...BAN_PHRASES],
-    openers: [...BAN_OPENERS],
-    neverSay: [...NEVER_SAY],
+  // Unlabelled — the shape docs/ads/CONTROLS.md is actually written in.
+  const rows = parsed.sections.FULL;
+  failures.push(...checkBannedWords(rows, "script"));
+  failures.push(...checkBannedPhrases(rows, "script"));
+  failures.push(...checkEmDash(rows, "script"));
+  failures.push(...checkNotXButY(rows, "script"));
+  failures.push(...checkNeverSay(rows, "script"));
+  failures.push(...checkVendorNames(rows, "script"));
+  const hookRows = rows.slice(0, 2); // first couple of lines stand in for the hook when nothing is labelled
+  failures.push(...checkOpener(hookRows));
+  failures.push(...checkCauseFirst(hookRows));
+  failures.push(...checkClosePromises(null, rows));
+  const totalWords = countWords(joinText(rows));
+  failures.push(...checkWordCount(totalWords, null, "(unlabelled)"));
+
+  return { title: block.title, startLine: block.startLine, wordCount: totalWords, failures };
+}
+
+// ---------------------------------------------------------------------------
+// FILES AND THE CLI
+// ---------------------------------------------------------------------------
+
+export function loadRules() {
+  // Kept for callers that want the raw lists without re-importing the module
+  // path themselves.
+  return {
+    BANNED_WORDS, BANNED_PHRASES, BANNED_OPENERS,
+    AVOID_PHRASES, ALLOWED_PHRASES,
+    NEVER_SAY, NEVER_SAY_ALLOWED, CLOSE_PROMISES,
+    WORD_COUNT_BANDS, FLOOR_WORDS, VENDOR_NAMES
   };
+}
 
-  // Say out loud which rules are in force. A green result means nothing if you
-  // cannot tell whether the rules file was read.
-  let rulesNote;
-  const resolvedRules = rulesPath || (existsSync(DEFAULT_RULES_PATH) ? DEFAULT_RULES_PATH : null);
-  if (resolvedRules) {
-    if (!existsSync(resolvedRules)) {
-      console.error(`I cannot find the rules file "${resolvedRules}".`);
-      return 1;
-    }
-    const added = loadRules(resolvedRules);
-    const count = added.words.length + added.phrases.length + added.openers.length + added.neverSay.length;
-    lists.words.push(...added.words);
-    lists.phrases.push(...added.phrases);
-    lists.openers.push(...added.openers);
-    lists.neverSay.push(...added.neverSay.map((t) => [t, "the rules file says never say it"]));
-    rulesNote = count > 0
-      ? `Rules: the built-in list plus ${count} more from ${resolvedRules}.`
-      : `Rules: the built-in list only. WARNING: ${resolvedRules} exists but I read no banned terms out of it. Check its headings say "banned", "avoid" or "never say".`;
-  } else {
-    rulesNote = `Rules: the built-in list only (no ${DEFAULT_RULES_PATH} yet).`;
-  }
+function checkFile(path, text) {
+  const blocks = splitBlocks(text);
+  const results = blocks.map(checkOneScript);
+  return { path, results };
+}
 
-  const sources = [];
+function printHelp() {
+  console.log([
+    "check-script.mjs — the fast pass on an ad script, before a human reads it.",
+    "",
+    "  node scripts/ads/check-script.mjs file.md [file2.md ...]",
+    "  cat draft.md | node scripts/ads/check-script.mjs --stdin",
+    "  npm run ads:check -- file.md",
+    "",
+    "Reads rules from docs/ads/rules-data.mjs. Exits 0 if every script in every",
+    "file passes, 1 otherwise. Accepts both the labelled HOOK/BODY/CTA/CLOSE",
+    "format and the plain-paragraph format used in docs/ads/CONTROLS.md."
+  ].join("\n"));
+  return 0;
+}
+
+export function main(argv) {
+  if (!argv.length || argv.includes("--help") || argv.includes("-h")) return printHelp();
+
+  const useStdin = argv.includes("--stdin");
+  const files = argv.filter((a) => a !== "--stdin");
+
+  const inputs = [];
   if (useStdin) {
-    sources.push({ name: "(what you piped in)", text: readFileSync(0, "utf8") });
+    inputs.push({ path: "(stdin)", text: readFileSync(0, "utf8") });
   }
   for (const f of files) {
-    if (!existsSync(f)) {
-      console.error(`I cannot find the file "${f}".`);
-      return 1;
-    }
-    sources.push({ name: f, text: readFileSync(f, "utf8") });
+    inputs.push({ path: f, text: readFileSync(f, "utf8") });
   }
-  if (!sources.length) {
-    console.error("Give me a file to check, or pipe one in with --stdin. Run with --help.");
-    return 1;
-  }
+  if (!inputs.length) return printHelp();
 
-  console.log(rulesNote);
-  let broken = 0;
-  let total = 0;
+  let anyFail = false;
+  let totalScripts = 0;
+  let failedScripts = 0;
 
-  for (const source of sources) {
-    const blocks = splitScripts(source.text);
-    if (!blocks.length) {
-      console.error(
-        `\n${source.name} — I found no scripts in here.\n` +
-        "  Every script needs a line starting with HOOK. The format is in docs/ads/ANGLE-GENERATOR.md."
-      );
-      broken += 1;
+  for (const { path, text } of inputs) {
+    const { results } = checkFile(path, text);
+    if (!results.length) {
+      console.log(`${path} — no scripts found (no headed block with text under it).`);
       continue;
     }
-    const results = blocks.map((b) => checkOneScript(b, lists));
-    const bad = results.filter((r) => r.fails.length);
-    total += results.length;
-    broken += bad.length;
-
-    console.log(
-      `\n${source.name} — ${results.length} script${results.length === 1 ? "" : "s"} checked, ` +
-      `${bad.length === 0 ? "all clean." : `${bad.length} need${bad.length === 1 ? "s" : ""} work.`}`
-    );
-    for (const r of bad) {
-      console.log(`\n  ${r.title ? `"${r.title}"` : "script"} (starts line ${r.startLine}, ${r.words} words)`);
-      for (const f of r.fails) console.log(`    line ${f.n}: ${f.msg}`);
+    totalScripts += results.length;
+    const failing = results.filter((r) => r.failures.length);
+    failedScripts += failing.length;
+    console.log(`\n${path} — ${results.length} script${results.length === 1 ? "" : "s"} checked, ${failing.length} need${failing.length === 1 ? "s" : ""} work.`);
+    for (const r of results) {
+      if (!r.failures.length) continue;
+      anyFail = true;
+      console.log(`\n  "${r.title}" (starts line ${r.startLine}, ${r.wordCount} words)`);
+      for (const f of r.failures) console.log(`    line ${f.line}: ${f.message}`);
     }
   }
 
-  if (broken === 0) {
-    console.log(`\nAll ${total} script${total === 1 ? " passes" : "s pass"}. This is the fast check only — the compliance rules still run before anything can go live.`);
-    return 0;
-  }
-  console.error(`\n${broken} of ${total} script${total === 1 ? "" : "s"} ${broken === 1 ? "needs" : "need"} work. Fix and run this again. Nothing goes to Chris until this exits clean.`);
-  return 1;
+  console.log(
+    anyFail
+      ? `\n${failedScripts} of ${totalScripts} script${totalScripts === 1 ? "" : "s"} needs work. Fix and run this again. Nothing goes to Chris until this exits clean.`
+      : `\nAll ${totalScripts} script${totalScripts === 1 ? "" : "s"} clean.`
+  );
+
+  return anyFail ? 1 : 0;
 }
 
-process.exit(main(process.argv.slice(2)));
+// Only run as a CLI when this file is executed directly — not when a test
+// imports checkOneScript, loadRules or main.
+const isDirectRun = (() => {
+  try { return import.meta.url === `file://${process.argv[1]}`; } catch { return false; }
+})();
+if (isDirectRun) process.exit(main(process.argv.slice(2)));
