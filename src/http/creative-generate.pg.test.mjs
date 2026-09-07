@@ -133,7 +133,7 @@ describe("/api/creative/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
     const idem = "cfgen-staff-1";
     const r = await call({
       partner_id: partnerId, asset_kind: "static", idempotency_key: idem,
-      prompt: "Working capital for owners"
+      prompt: "Working capital for owners", offer_type: "funding"
     }, ownerToken);
 
     // Before 241 this was a 500: the staff id was written into a column that
@@ -156,7 +156,8 @@ describe("/api/creative/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
   test("a partner's enqueue records the partner account, not a staff id", async () => {
     const idem = "cfgen-partner-1";
     const r = await call({
-      partner_id: partnerId, asset_kind: "static", idempotency_key: idem, prompt: "Same, as a partner"
+      partner_id: partnerId, asset_kind: "static", idempotency_key: idem, prompt: "Same, as a partner",
+      offer_type: "funding"
     }, partnerToken);
 
     assert.strictEqual(r.code, 200, `expected 200, got ${r.code} — ${JSON.stringify(r.body)}`);
@@ -194,7 +195,8 @@ describe("/api/creative/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
   test("the same batch name twice makes one job, not two", async () => {
     const idem = "cfgen-staff-1";           // the first test already used this one
     const r = await call({
-      partner_id: partnerId, asset_kind: "static", idempotency_key: idem, prompt: "again"
+      partner_id: partnerId, asset_kind: "static", idempotency_key: idem, prompt: "again",
+      offer_type: "funding"
     }, ownerToken);
     assert.strictEqual(r.code, 200);
     assert.strictEqual(r.body.created, false);
@@ -207,7 +209,8 @@ describe("/api/creative/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
 
   test("the answer says whether anything can actually run", async () => {
     const r = await call({
-      partner_id: partnerId, asset_kind: "static", idempotency_key: "cfgen-note-1", prompt: "x"
+      partner_id: partnerId, asset_kind: "static", idempotency_key: "cfgen-note-1", prompt: "x",
+      offer_type: "funding"
     }, ownerToken);
     assert.strictEqual(r.code, 200);
     /* provider_ready is true, false OR null, and null is not a bug — it is the
@@ -251,5 +254,29 @@ describe("/api/creative/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
     const r = await call({ partner_id: partnerId, asset_kind: "static" }, ownerToken);
     assert.strictEqual(r.code, 400);
     assert.strictEqual(r.body.error, "idempotency_key_required");
+  });
+
+  // ---------------------------------------------------------- offer_type gap
+  //
+  // Every case above now sends offer_type on purpose, but nothing used to. A
+  // caller that posts only a prompt — no spec, no offer_type — is exactly what
+  // the ad-writer skill does. Before this fix that caller got a 200 and a job
+  // that could never pass compliance: src/compliance/screen.mjs blocks it later
+  // with "offer_type must be one of funding, credit_cards, credit_repair; got
+  // undefined", after the row is already saved. This asserts the refusal
+  // happens up front instead, and that nothing is written when it does.
+
+  test("a prompt with no offer_type anywhere is refused before anything is written", async () => {
+    const idem = "cfgen-no-offer-type-1";
+    const r = await call({
+      partner_id: partnerId, idempotency_key: idem, prompt: "some text"
+    }, ownerToken);
+
+    assert.strictEqual(r.code, 400, `expected 400, got ${r.code} — ${JSON.stringify(r.body)}`);
+    assert.match(r.body.error, /offer_type/i);
+    assert.match(r.body.message, /offer_type/i);
+
+    const row = await jobRow(idem);
+    assert.strictEqual(row, undefined, "a refused request must not leave a job row behind");
   });
 });

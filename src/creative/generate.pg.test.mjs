@@ -227,6 +227,34 @@ describe("creative generation", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     assert.ok(queued.some((x) => x.id === asset.id), "blocked asset must appear in the review queue");
   });
 
+  test("a blocked copy asset keeps the exact words it generated (301)", async () => {
+    // 301_creative_copy_text.sql's own comment: storeAsset() writes copy_text
+    // in the same insert as the row, before the screen runs, so a blocked asset
+    // keeps its words like any other. This is a different rule from the test
+    // above (guaranteed-funding-amount, not guaranteed-approval) — proof that
+    // the column survives the block generally, not just for one rule.
+    const COPY_TEXT = "Get $50,000 guaranteed for your business this week.";
+    const { partnerId, out } = await enqueueAndRun("run-blocked-amount", {
+      assetKind: "copy",
+      spec: { prompt: "x", offerType: "funding", variants: 1 },
+      ctx: fakeProviderCtx({ ok: true, copyText: COPY_TEXT })
+    });
+
+    assert.strictEqual(out.status, "succeeded", "the JOB succeeded; the ASSET is blocked");
+    const asset = out.assets[0];
+    assert.strictEqual(asset.compliance_state, "blocked");
+
+    const row = await asPartner(partnerId, (tx) =>
+      tx.query(`SELECT compliance_state, copy_text, blocked_reasons FROM creative_assets WHERE id = $1`, [asset.id])
+        .then((r) => r.rows[0]));
+    assert.strictEqual(row.compliance_state, "blocked");
+    assert.ok(row.blocked_reasons.some((r) => r.code === "guaranteed-funding-amount"),
+      "must actually be blocked by the rule this test names, not some other one");
+    assert.ok(row.copy_text, "a blocked copy asset with no words is one nobody can fix");
+    assert.strictEqual(row.copy_text, COPY_TEXT,
+      "the stored words must be the real generated text, not stripped or replaced by the screen");
+  });
+
   test("every screen leaves an audit row", async () => {
     const n = await asStaff((tx) =>
       tx.query(`SELECT count(*)::int AS n FROM compliance_screenings`).then((r) => r.rows[0].n));

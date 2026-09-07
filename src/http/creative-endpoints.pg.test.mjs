@@ -124,6 +124,40 @@ describe("creative read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false
     }
   });
 
+  test("the library returns copy_text for both a passed and a blocked copy asset", async () => {
+    // 301_creative_copy_text.sql: a blocked copy asset keeps its words, and the
+    // library must show them. src/http/read-api.mjs's redactor drops any field
+    // whose NAME contains storage_key/storage_path/s3_key/object_key/password/
+    // token_hash — this proves copy_text is not caught by that net, through the
+    // real HTTP-shaped read (fetchRows, same as the handler calls), not by
+    // reading the code.
+    const PASSED_TEXT = "Business funding for qualified applicants, terms apply.";
+    const BLOCKED_TEXT = "Guaranteed approval for everyone, no credit check ever.";
+    const inserted = await asStaff((tx) => tx.query(
+      `INSERT INTO creative_assets (org_id, partner_id, kind, format, ai_generated,
+                                     compliance_state, copy_text, blocked_reasons)
+       VALUES
+         ($1,$2,'copy','1x1',true,'passed',$3,'[]'::jsonb),
+         ($1,$2,'copy','1x1',true,'blocked',$4,'[{"code":"guaranteed-approval","message":"no"}]'::jsonb)
+       RETURNING id, compliance_state`,
+      [org, owner, PASSED_TEXT, BLOCKED_TEXT])).then((r) => r.rows);
+    const passedId = inserted.find((r) => r.compliance_state === "passed").id;
+    const blockedId = inserted.find((r) => r.compliance_state === "blocked").id;
+
+    const { fetchRows } = await import("../../api/creative/library.mjs");
+    const rows = await asPartner(owner, (tx) =>
+      fetchRows(tx, { limit: 50, offset: 0, query: { kind: "copy" }, partnerId: owner }));
+
+    const passed = rows.find((r) => r.id === passedId);
+    const blocked = rows.find((r) => r.id === blockedId);
+    assert.ok(passed, "the passed copy asset must appear in the library");
+    assert.ok(blocked, "the blocked copy asset must appear in the library");
+    assert.strictEqual(passed.copy_text, PASSED_TEXT,
+      "the library must show the passed asset's words, not strip them");
+    assert.strictEqual(blocked.copy_text, BLOCKED_TEXT,
+      "the library must show the blocked asset's words too — a blocked ad nobody can read is one nobody can fix");
+  });
+
   test("connections never carry token ciphertext, before or after redaction", async () => {
     const { fetchRows } = await import("../../api/campaigns/connections.mjs");
     const rows = await asPartner(owner, (tx) =>
