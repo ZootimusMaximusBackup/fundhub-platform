@@ -71,7 +71,7 @@ here.
 
 ## 1.2 Banned words
 
-Source: `.claude/workflows/copy.js` lines 33–47, copied there verbatim from the humanizer skill.
+Source: `.claude/workflows/copy.js` lines 34–47, copied there verbatim from the humanizer skill.
 These are the words that make copy read like a machine wrote it. Copied again here so an ad writer
 has one file to open. **If this list changes, change it in `copy.js` too.**
 
@@ -382,18 +382,31 @@ Every concept gets a gate. Default is 600.
 | Gate | Share of the set |
 |---|---|
 | 600+ | ~55% |
-| 700+, clean file | ~20% |
+| 700+, no negatives | ~20% |
 | Premium / strict | ~15% |
 | Open, no gate | ~10% |
 
-### 3.6 The close never changes
+### 3.6 The close carries two promises, always
 
-Every cold ad ends the same way. Do not reword it, do not improve it, do not vary it for freshness.
-It is the trust line and it is the same in all five running ads:
+**Corrected 2026-09-07 after checking all five running ads by hand.** An earlier draft of this
+rule said the close is "the same in all five running ads" and quoted one exact sentence. That was
+wrong — only 2 of the 5 use that literal sentence. The other 3 use a real variant:
 
-> **No hard inquiry. No obligation. Nothing moves until you say so.**
+- Ad 2: *"Zero score impact. No obligation. Nothing moves until you say so."*
+- Ad 4: *"Soft pull only. Zero impact on your score. Nothing moves until you say so."*
+- The Founder VSL: *"There's no hard inquiry. There's no obligation. Nothing moves on your file
+  until you tell us to move it."*
 
-Where a soft pull is named, "Soft pull only. Zero impact on your score." goes with it.
+**The wording may vary. Two promises may never be missing:**
+
+1. **No hard pull.** Say it as "no hard inquiry", "soft pull only", or "zero score impact" — any of
+   the three.
+2. **Nothing happens without their say-so.** Say it as "no obligation", "nothing moves until you say
+   so", or both. Ad 4 proves these two are interchangeable: it never says the words "no obligation"
+   at all, and it is filmed, running, and booking calls at $32–36 today.
+
+Do not reword either promise into something new. Pick from the phrasings above, or match their
+shape exactly.
 
 ### 3.7 Proof, and the limit on it
 
@@ -451,8 +464,11 @@ Read straight off the Founder VSL. Keep the order. Beats can be short; none can 
 - **Cause-first still governs the first fifteen seconds.** Beats 1–4 have to land the cause before
   the founder story earns its place.
 - **The mechanism is explained once.** Beat 12. Not sprinkled through.
-- **The refusal is mandatory.** Beat 15 is the single line Chris named as "the voice". A VSL without
-  it is not our VSL.
+- **The refusal is mandatory.** Beat 15, quoted in `docs/ads/CONTROLS.md`: *"I know there are a lot
+  of people in this space who will tell you whatever you want to hear to get you on a call. We're
+  not going to do that."* A VSL without it is not our VSL. (Corrected 2026-09-07: an earlier draft
+  said Chris named this line "the voice" — that could not be traced to anything he actually said,
+  so the attribution is cut. The rule itself stands; only the source line is real.)
 - **Never promise the call outcome.** Beat 13 says what he will *show* them, never what they will
   *get*.
 - **One case study minimum, real.** Today that is Koi Poke.
@@ -460,6 +476,12 @@ Read straight off the Founder VSL. Keep the order. Beats can be short; none can 
 ---
 
 ## Section 3 — Evergreen backend-selling ads
+
+**PROPOSED — not yet confirmed by Chris. Every other block in this file traces to a source file or
+a direct quote. This one does not: the word "evergreen" appears nowhere in `docs/ads/` or
+`docs/flywheel/`, and the five beats below (3.13) are this document's own proposal, built from
+Chris's two-sentence description and nothing else. Needs a yes or no from Chris before a checker
+enforces 3.13–3.16 as hard rules, the way it already enforces Sections 1 and 2.**
 
 **Content-first.** Chris: *"really simple, but you don't have to do a lot of those. Maybe just swap
 out variations every now and then. Those ads are really going to be evergreen forever."*
@@ -530,23 +552,33 @@ person who claims to have counted 34 banned words is guessing.
 
 Fail the script, rewrite it, do not show Chris.
 
-1. Word count inside the band for its runtime (2.1).
-2. No banned word, phrase or opener (1.2).
-3. No avoid-list phrase (1.3).
-4. No never-say line (1.1).
-5. The cause-first checks 2, 3 and 4 — no ask in the hook, no opening question, no self-referential
-   opening subject (2.2).
-6. The close is present, word for word (3.6).
-7. `origin_angle` is filled in (3.2).
-8. The twelve compliance patterns, by calling the rules that already run in
-   `src/compliance/screen.mjs` rather than re-implementing them (1.5).
-9. Evergreen only: no date, season, scarcity or moving number (3.14).
+1. Word count against the floor always, and against the band for its runtime when one is declared
+   (2.1). Built and running: `scripts/ads/check-script.mjs`.
+2. No banned word or phrase, including a plural/past-tense/-ing form of one (1.2). Built and
+   running.
+3. No avoid-list phrase (1.3), and "words that do work" are never mistakenly flagged. Built and
+   running.
+4. No never-say line (1.1). Built and running.
+5. Cause-first checks 2 and 3 — no ask in the hook, no opening question (2.2). Built and running.
+   **Corrected 2026-09-07: check 4 (the opening subject is not "us") is NOT built.** It needs
+   judgement about what a sentence's real subject is; see 4.2 item 1a.
+6. **Corrected 2026-09-07: the close is checked for its two required promises (3.6), never for one
+   fixed sentence.** Checking for exact wording would have rejected 3 of the 5 ads running today.
+7. `origin_angle` is filled in (3.2). Built and running.
+8. The twelve compliance patterns — NOT run here on purpose. `scripts/ads/check-script.mjs` never
+   imports `src/compliance/screen.mjs`; that gate needs a live database and runs later, inside
+   `storeAsset` in `src/creative/generate.mjs` (1.5).
+9. Evergreen only: no date, season, scarcity or moving number (3.14). **Not yet built** — Section 3
+   is still proposed (see its header). Build this once Chris confirms the section.
 
 ## 4.2 Only a person can check these
 
 Bring these to Chris. Do not claim them as passed.
 
 1. Cause-first check 1 — is the thing named actually the cause, or just words that look like one.
+1a. Cause-first check 4 — is the opening subject someone other than "us". Listed as machine-checkable
+   in an earlier draft; it is not built, and telling a script's real grammatical subject apart from
+   its topic needs judgement a regex does not have.
 2. The mechanism test. A machine cannot tell whether a competitor could run the same ad.
 3. Whether it sounds like Chris. That is what `VOICE.md` is for, and it is a judgement, not a regex.
 4. Whether the angle duplicates another concept's argument.
