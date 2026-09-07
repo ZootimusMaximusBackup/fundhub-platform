@@ -144,7 +144,15 @@ function parseBlock(block) {
 
 const joinText = (rows) => (rows || []).map((r) => r.text).join(" ").trim();
 const countWords = (s) => (s.match(/[A-Za-z0-9'’$%-]+/g) || []).length;
-const norm = (s) => s.toLowerCase().replace(/[‘’]/g, "'").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim();
+/* Hyphens fold to spaces here, found necessary by adversarial review two
+ * ways at once: "Soft-pull only" (a real, natural hyphenated variant of the
+ * required close) was wrongly rejected as missing the promise, and
+ * "low hanging fruit" with no hyphen was wrongly let through the avoid-list
+ * because the banned entry was hyphenated and matching was literal. Folding
+ * both sides to the same form fixes both directions in one place. This never
+ * touches row.text directly (only the normalized copy used for matching),
+ * so checkEmDash — which reads row.text raw — is unaffected. */
+const norm = (s) => s.toLowerCase().replace(/[‘’]/g, "'").replace(/[–—]/g, " ").replace(/-/g, " ").replace(/\s+/g, " ").trim();
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // ---------------------------------------------------------------------------
@@ -201,8 +209,13 @@ function checkBannedPhrases(rows, sectionName) {
   }
   for (const p of AVOID_PHRASES) {
     if (ALLOWED_PHRASES.some((ok) => norm(p) === norm(ok))) continue; // never possible, but a hard guard against list mistakes
-    if (full.includes(norm(p))) {
-      const row = rows.find((r) => norm(r.text).includes(norm(p))) || rows[0];
+    /* FIXED 2026-09-07, found by adversarial review: this used to be a plain
+       substring .includes(), the one list in the file checked that way — it
+       fired on "fast and easygoing" and "cash advancement", neither of
+       which is the phrase it was meant to catch. Switched to the same whole-
+       word/phrase boundary logic every other list in this file already uses. */
+    if (findWholePhrase(full, norm(p))) {
+      const row = rows.find((r) => findWholePhrase(norm(r.text), norm(p))) || rows[0];
       out.push({ line: row ? row.n : "?", message: `avoid "${p}" in the ${sectionName} — the market has worn this one out (docs/ads/ASSET-BANK.md section 8).` });
     }
   }
@@ -231,7 +244,14 @@ function checkEmDash(rows, sectionName) {
 function checkNotXButY(rows, sectionName) {
   const out = [];
   for (const row of rows) {
-    if (/\bit'?s\s+not\s+[^,.!?]{1,60},?\s*it'?s\s+/i.test(row.text) || /\bnot\s+[^,.!?]{1,40},\s*but\s+/i.test(row.text)) {
+    /* FIXED 2026-09-07, found by adversarial review: this used to also ban
+       any plain "not X, but Y" contrast, which rejected RULES.md 3.3's own
+       recommended hook stem — "Not another ___, but the first one that…" —
+       and ordinary sentences like "not because they lack revenue, but
+       because nobody read the file." The real AI tell is specifically
+       "it's not X, it's Y", both sides anchored on "it's". A plain
+       not-X-but-Y contrast is normal, useful writing and stays allowed. */
+    if (/\bit'?s\s+not\s+[^,.!?]{1,60},?\s*it'?s\s+/i.test(row.text)) {
       out.push({ line: row.n, message: `"it's not X, it's Y" shape in the ${sectionName}. This is a tell. Say what it is, once.` });
     }
   }
@@ -241,24 +261,39 @@ function checkNotXButY(rows, sectionName) {
 /** Never-say lines. NEVER_SAY_ALLOWED is checked first: a line that IS the
  *  required close (or a close-only fragment) can never trip a never-say
  *  rule, no matter how it overlaps in wording. */
+/** Delete every allowed-phrase occurrence from the text before never-say
+ *  patterns ever see it. FIXED 2026-09-07, found by adversarial review: the
+ *  old guard just checked whether an allowed phrase appeared somewhere in
+ *  the matched text, which had it backwards on a pattern with a wide window
+ *  — "you can get $50,000, no obligation, ... it will land" let the inserted
+ *  "no obligation" clause ride inside the matched span and then trip the
+ *  guard, hiding a real guaranteed-dollar-amount violation. Stripping the
+ *  allowed phrases out first means they can never sit inside a match window
+ *  and never suppress one either. */
+function stripAllowed(s) {
+  let out = s;
+  for (const ok of NEVER_SAY_ALLOWED) {
+    out = out.replace(new RegExp(escapeRe(norm(ok)), "gi"), " ");
+  }
+  return out;
+}
+
 function checkNeverSay(rows, sectionName) {
   const out = [];
   const full = norm(joinText(rows));
+  const stripped = stripAllowed(full);
   for (const entry of NEVER_SAY) {
     let hit = false;
     let matchedText = entry.text || "";
     if (entry.pattern) {
-      const m = full.match(entry.pattern);
+      const m = stripped.match(entry.pattern);
       if (m) { hit = true; matchedText = m[0]; }
-    } else if (findWholePhrase(full, norm(entry.text))) {
+    } else if (findWholePhrase(stripped, norm(entry.text))) {
       hit = true;
+      matchedText = entry.text;
     }
     if (!hit) continue;
-    if (NEVER_SAY_ALLOWED.some((ok) => norm(matchedText).includes(norm(ok)) || full.includes(norm(ok)) && norm(entry.text || "").length < 6)) {
-      // guard against a short pattern match landing inside an allowed close line
-      if (NEVER_SAY_ALLOWED.some((ok) => full.includes(norm(ok)))) continue;
-    }
-    const row = rows.find((r) => norm(r.text).includes(norm(matchedText))) || rows[0];
+    const row = rows.find((r) => norm(stripAllowed(r.text)).includes(norm(matchedText))) || rows[0];
     out.push({ line: row ? row.n : "?", message: `never-say: "${entry.text}" in the ${sectionName}. ${entry.why}` });
   }
   return out;
@@ -287,7 +322,15 @@ function checkCauseFirst(hookRows) {
   if (/\?\s*$/.test(first.trim())) {
     out.push({ line: hookRows[0].n, message: "cause-first check 3: the hook's first sentence is a question. Lead with the cause instead of asking one." });
   }
-  const askWords = /\b(book|call|click|apply|sign up|schedule|fill out|get started|learn more)\b/i;
+  /* FIXED 2026-09-07, found by adversarial review: the old check matched an
+     ask word ANYWHERE in the sentence, which fired on "book" and "call"
+     used as ordinary nouns or past-tense verbs about someone else — "the
+     bank never called this a denial" and "the book they show you" both
+     wrongly failed. A genuine ask is an imperative aimed at the reader, and
+     that almost always leads the sentence (allowing one short filler word
+     first, like "so" or "now"). Anchored to the start of the sentence
+     instead of matched anywhere in it. */
+  const askWords = /^(?:\s*(?:so|now|and|then|okay|ok)[,\s]+)?\s*(book|call|click|apply|sign up|schedule|fill out|get started|learn more)\b/i;
   if (askWords.test(first)) {
     out.push({ line: hookRows[0].n, message: "cause-first check 2: the hook asks for something in the first sentence. The hook indicts the alternative; the CTA asks." });
   }
@@ -375,10 +418,43 @@ export function checkOneScript(block) {
       failures.push(...checkNeverSay(rows, label));
       failures.push(...checkVendorNames(rows, label));
     }
-    failures.push(...checkOpener(s.HOOK));
-    failures.push(...checkCauseFirst(s.HOOK));
+    /* FIXED 2026-09-07, found by adversarial review: a script with no HOOK
+       section (or an empty one) used to skip the opener and cause-first
+       checks entirely, since both took only s.HOOK and returned clean on
+       nothing. Banned openers are otherwise only ever checked against the
+       hook, so "Imagine a world where..." opening the BODY instead slipped
+       through untouched. RULES.md 3.2 requires a HOOK, so a missing one is
+       now its own failure, AND whatever the first real spoken content is
+       (BODY, then CTA, then CLOSE) still gets the opener and cause-first
+       checks run against it — a banned opener does not get a pass just for
+       landing in the wrong section. */
+    const openingRows = (s.HOOK && s.HOOK.length) ? s.HOOK
+      : (s.BODY && s.BODY.length) ? s.BODY
+      : (s.CTA && s.CTA.length) ? s.CTA
+      : (s.CLOSE && s.CLOSE.length) ? s.CLOSE
+      : null;
+    if (!s.HOOK || !s.HOOK.length) {
+      failures.push({ line: openingRows ? openingRows[0].n : "?", message: "no HOOK found. RULES.md 3.2 requires one — the first three seconds, verbatim." });
+    }
+    failures.push(...checkOpener(openingRows));
+    failures.push(...checkCauseFirst(openingRows));
     failures.push(...checkClosePromises(s.CLOSE, null));
-    if (!s.TAG || !joinText(s.TAG)) failures.push({ line: "?", message: "no TAG. origin_angle is not optional — RULES.md 3.2." });
+    /* FIXED 2026-09-07, found by adversarial review: a body sentence that
+       happened to start a line with the capitalized word "TAG" (e.g. "TAG
+       teams of closers used to split this work...") got parsed as the TAG
+       label, and its ordinary-English content satisfied the "TAG is
+       present" check with no real origin_angle anywhere in the script. A
+       real tag is a slug — lower case, digits and underscores, no spaces —
+       exactly like RULES.md 3.2's own example, "denial_angle". Anything
+       else is treated as not a real tag, so a coincidental match cannot
+       pass this check. */
+    const tagText = joinText(s.TAG).trim();
+    const isRealSlug = /^[a-z][a-z0-9_]{1,48}$/.test(tagText);
+    if (!tagText) {
+      failures.push({ line: "?", message: "no TAG. origin_angle is not optional — RULES.md 3.2." });
+    } else if (!isRealSlug) {
+      failures.push({ line: s.TAG[0].n, message: `TAG "${tagText}" does not look like a real origin_angle slug (lower case, digits, underscores only — e.g. "denial_angle"). RULES.md 3.2.` });
+    }
 
     const spokenRows = SPOKEN_LABELS.flatMap((l) => s[l] || []);
     const isEvergreen = /evergreen/i.test(joinText(s.TYPE));

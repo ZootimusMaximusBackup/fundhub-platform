@@ -195,3 +195,128 @@ test("the exact same stale content is NOT flagged when TYPE is cold (or absent)"
   const messages = result.failures.map((f) => f.message).join(" | ");
   assert.doesNotMatch(messages, /RULES\.md 3\.14/);
 });
+
+// The seven fixes below all came from one adversarial-review pass 2026-09-07,
+// where a separate agent actively tried to break the checker. Each test here
+// is a real repro it found. Do not remove one without understanding why the
+// original bug was real — every one of these let a real violation through,
+// or wrongly rejected genuinely fine copy.
+
+const mkRow = (n, text) => ({ n, text });
+const mkBlock = (title, lines) => ({ title, startLine: 1, lines: lines.map((t, i) => mkRow(i + 1, t)) });
+
+test("fix 1: a nearby allowed close phrase no longer hides a real dollar-guarantee violation", () => {
+  const block = mkBlock("Test", [
+    "HOOK you can get $50,000, no obligation, nothing changes up front, it will land in your account within days."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(result.failures.some((f) => /a dollar amount a bank WILL give them/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 1 continued: a nearby allowed close phrase no longer hides a real deletion-promise violation", () => {
+  const block = mkBlock("Test", [
+    "HOOK those late marks will, no obligation, come off your report before your next application goes in."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(result.failures.some((f) => /a bad item WILL come off/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 1 stays fixed: the real required close is never itself flagged as a never-say violation", () => {
+  const block = mkBlock("Test", [
+    "CLOSE No hard inquiry. No obligation. Nothing moves until you say so."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(!result.failures.some((f) => /never-say/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 2: a banned opener in the BODY is caught even with no HOOK section at all", () => {
+  const block = mkBlock("Ad 900", [
+    "BODY Imagine a world where every lender said yes on the first try, every single time, for everyone."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(result.failures.some((f) => /banned opener/.test(f.message)), JSON.stringify(result.failures));
+  assert.ok(result.failures.some((f) => /no HOOK found/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 3: a body line that happens to start with the word TAG does not satisfy the origin_angle check", () => {
+  const block = mkBlock("Test", [
+    "HOOK The guy who got you funded left inquiries all over your file.",
+    "BODY He never built a system to fix that.",
+    "TAG teams of closers used to split this work between two people before it was automated away."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(result.failures.some((f) => /does not look like a real origin_angle slug/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 3 stays fixed: a real slug-shaped TAG passes", () => {
+  const block = mkBlock("Test", [
+    "HOOK The guy who got you funded left inquiries all over your file.",
+    "TAG denial_angle"
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(!result.failures.some((f) => /TAG/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 6: RULES.md 3.3's own recommended hook stem is never flagged as an AI-tell contrast", () => {
+  const block = mkBlock("Test", [
+    "HOOK Not another broker, but the first one that actually reads your file the way a bank does."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(!result.failures.some((f) => /it's not X, it's Y/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 6 stays fixed: the real 'it's not X, it's Y' AI tell is still caught", () => {
+  const block = mkBlock("Test", [
+    "HOOK It's not about your credit score, it's about who actually reads your file before it goes in."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(result.failures.some((f) => /it's not X, it's Y/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 7 & 5: a hyphenated close (Soft-pull only) is accepted the same as the unhyphenated form", () => {
+  const block = mkBlock("Test", [
+    "CLOSE Soft-pull only. Zero impact on your score. Nothing moves until you say so."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(!result.failures.some((f) => /the close is missing/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 5: the avoid-list phrase is caught with or without its hyphen", () => {
+  const hyphenated = checkOneScript(mkBlock("Test", ["HOOK Stop chasing low-hanging fruit and start reading the real file."]));
+  const unhyphenated = checkOneScript(mkBlock("Test", ["HOOK Stop chasing low hanging fruit and start reading the real file."]));
+  assert.ok(hyphenated.failures.some((f) => /low-hanging fruit/.test(f.message)), JSON.stringify(hyphenated.failures));
+  assert.ok(unhyphenated.failures.some((f) => /low-hanging fruit/.test(f.message)), JSON.stringify(unhyphenated.failures));
+});
+
+test("fix 8: 'book' and 'call' used as ordinary nouns do not falsely trip the cause-first ask check", () => {
+  const block = mkBlock("Test", [
+    "HOOK The bank never called this a denial, and nobody wrote it in the book they show you when they turn you down."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(!result.failures.some((f) => /cause-first check 2/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 8 stays fixed: a real imperative ask at the start of the hook is still caught", () => {
+  const block = mkBlock("Test", [
+    "HOOK Book your free call now and we will run your file before anything else happens today."
+  ]);
+  const result = checkOneScript(block);
+  assert.ok(result.failures.some((f) => /cause-first check 2/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("fix 9: the avoid-list uses whole-phrase matching, not a raw substring — no false positive on a longer word", () => {
+  const block = mkBlock("Test", ["HOOK We ran a cash advancement program that helped nobody at all, honestly."]);
+  const result = checkOneScript(block);
+  assert.ok(!result.failures.some((f) => /"cash advance"/.test(f.message)), JSON.stringify(result.failures));
+});
+
+test("known limitation, documented not silently dropped: the stemmer only inflects the leading word of a phrase, so an irregular verb elsewhere in it (took vs take) is not caught — 'deep dive' variants and regular -ed/-ing/-s forms ARE caught", () => {
+  // This is intentionally an accepted gap, not a bug fix. Recorded so nobody
+  // re-discovers it as a surprise and re-litigates the same investigation.
+  const block = mkBlock("Test", ["HOOK That one change took your file to the next level of what a lender actually sees."]);
+  const result = checkOneScript(block);
+  // Documents current behavior (does not catch "took ... to the next level").
+  // If this ever starts passing (someone builds real irregular-verb handling),
+  // this assertion will fail loudly and should be updated, not deleted.
+  assert.ok(!result.failures.some((f) => /the next level/.test(f.message)));
+});

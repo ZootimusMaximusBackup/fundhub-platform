@@ -590,6 +590,13 @@ Bring these to Chris. Do not claim them as passed.
 3. Whether it sounds like Chris. That is what `VOICE.md` is for, and it is a judgement, not a regex.
 4. Whether the angle duplicates another concept's argument.
 5. Whether the proof used is a proof we actually have in writing.
+6. **A banned word or phrase hidden behind an irregular verb.** The checker inflects the *leading*
+   word of a phrase for regular endings ("dive" catches "diving", "dived"), so "deep dive" catches
+   "deep diving" but a genuinely irregular verb ("took" for "take") is not recognised as the same
+   word. Found by adversarial review 2026-09-07 and left as a known, documented gap rather than
+   built out — a real irregular-verb-aware checker is a bigger job than one night's build. If this
+   ever bites for real, tell Chris and widen the specific phrase's forms by hand in
+   `docs/ads/rules-data.mjs` rather than trying to solve it generally.
 
 ---
 
