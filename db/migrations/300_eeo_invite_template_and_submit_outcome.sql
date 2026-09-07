@@ -29,7 +29,7 @@ Open the survey here:
 If the link does not open, copy and paste it into your browser.
 
 — Fundhub Hiring'))
-  ) AS v(k, ch, subj, body)
+  AS v(k, ch, subj, body)
  WHERE NOT EXISTS (
    SELECT 1 FROM message_templates t
     WHERE t.org_id = o.id AND t.template_key = v.k

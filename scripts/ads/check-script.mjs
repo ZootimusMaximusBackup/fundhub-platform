@@ -69,7 +69,12 @@ import {
 // ---------------------------------------------------------------------------
 
 const SPOKEN_LABELS = ["HOOK", "BODY", "CTA", "CLOSE"];
-const META_LABELS = ["RUNTIME", "WORDS", "SHOOT", "TAG"];
+// TYPE is optional metadata: cold | vsl | evergreen. RULES.md 3.14's no-stale
+// rule (dates, seasons, scarcity, moving numbers) only applies to a script
+// that declares itself evergreen — running it against a cold ad would wrongly
+// flag a real dollar figure like "$25 million secured", which is fine in a
+// cold ad and only a problem in a piece meant to run for a year unchanged.
+const META_LABELS = ["RUNTIME", "WORDS", "SHOOT", "TAG", "TYPE"];
 const ALL_LABELS = [...SPOKEN_LABELS, ...META_LABELS];
 // Case-sensitive on purpose: the real format is all-caps, so a body sentence
 // that happens to start "Who is not showing them?" (lowercase after the
@@ -291,11 +296,42 @@ function checkCauseFirst(hookRows) {
 
 function checkClosePromises(closeRows, fullRows) {
   const rows = closeRows && closeRows.length ? closeRows : fullRows;
-  if (!rows || !rows.length) return [{ line: "?", message: "no CLOSE found, and RULES.md 3.6 requires one carrying three promises. See docs/ads/RULES.md 3.6." }];
+  if (!rows || !rows.length) return [{ line: "?", message: "no CLOSE found, and RULES.md 3.6 requires one carrying two promises. See docs/ads/RULES.md 3.6." }];
   const full = norm(joinText(rows));
   const missing = CLOSE_PROMISES.filter((p) => !p.any.some((phrase) => full.includes(norm(phrase))));
   if (!missing.length) return [];
-  return [{ line: rows[0].n, message: `the close is missing: ${missing.map((m) => m.name).join(", ")}. RULES.md 3.6 says the wording may vary but all three promises must be present.` }];
+  return [{ line: rows[0].n, message: `the close is missing: ${missing.map((m) => m.name).join(", ")}. RULES.md 3.6 says the wording may vary but both promises must be present.` }];
+}
+
+/** RULES.md 3.14 — an evergreen ad may not contain anything that expires.
+ *  Only run against a script whose TYPE line says "evergreen"; see the note
+ *  on META_LABELS above for why. Not exhaustive — this catches the common,
+ *  mechanical cases; a subtler staleness (an example that will feel dated in
+ *  six months even with no literal date in it) still needs a person, the
+ *  same way RULES.md 4.2 already admits for other judgement calls. */
+function checkNoStale(rows, sectionName) {
+  const out = [];
+  const MONTHS = "january|february|march|april|may|june|july|august|september|october|november|december";
+  const SEASONS = "spring|summer|fall|autumn|winter";
+  const PATTERNS = [
+    [new RegExp(`\\b(19|20)\\d{2}\\b`), "a specific year"],
+    [new RegExp(`\\b(${MONTHS})\\b`, "i"), "a specific month"],
+    [new RegExp(`\\b(${SEASONS})\\b`, "i"), "a season"],
+    [/\bthis year\b/i, "\"this year\""],
+    [/\bright now\b/i, "\"right now\""],
+    [/\btoday only\b/i, "\"today only\""],
+    [/\bthis week\b/i, "\"this week\""],
+    [/\blimited spots?\b/i, "\"limited spots\""],
+    [/\bbefore the deadline\b/i, "\"before the deadline\""],
+    [/\binterest rates?\b/i, "a reference to interest rates"],
+    [/\bsecured\b[^.!?]{0,40}\$[\d,]+|\$[\d,]+(?:\s*(?:million|k|thousand))?[^.!?]{0,40}\bsecured\b/i, "a client-count or revenue figure that will change (RULES.md 3.14 — leave the number to the cold ads)"]
+  ];
+  for (const row of rows) {
+    for (const [re, label] of PATTERNS) {
+      if (re.test(row.text)) out.push({ line: row.n, message: `evergreen ad contains ${label} in the ${sectionName}. RULES.md 3.14: an evergreen ad may not contain anything that expires.` });
+    }
+  }
+  return out;
 }
 
 function checkWordCount(totalWords, band, runtimeLabel) {
@@ -345,6 +381,9 @@ export function checkOneScript(block) {
     if (!s.TAG || !joinText(s.TAG)) failures.push({ line: "?", message: "no TAG. origin_angle is not optional — RULES.md 3.2." });
 
     const spokenRows = SPOKEN_LABELS.flatMap((l) => s[l] || []);
+    const isEvergreen = /evergreen/i.test(joinText(s.TYPE));
+    if (isEvergreen) failures.push(...checkNoStale(spokenRows, "script"));
+
     const totalWords = countWords(joinText(spokenRows));
     const band = bandFor(joinText(s.RUNTIME));
     failures.push(...checkWordCount(totalWords, band, joinText(s.RUNTIME) || "(no RUNTIME line)"));

@@ -344,7 +344,13 @@ RUNTIME 60–90s | 90–120s | 2min+     (60 seconds is the floor, always)
 WORDS   see 2.1
 SHOOT   Outfit + location note
 TAG     origin_angle value for CRM message match
+TYPE    cold | vsl | evergreen        (optional; only "evergreen" changes what the checker enforces)
 ```
+
+**`TYPE` added 2026-09-07.** It tells `scripts/ads/check-script.mjs` whether to run the no-stale
+check (3.14). Leave it off, or set it to `cold` or `vsl`, and the script is checked as an ordinary
+ad — a real dollar figure or a seasonal reference is fine there. Set it to `evergreen` and the script
+gets held to 3.14: no dates, no seasons, no "right now", no growing number.
 
 **`origin_angle` is not optional.** The setter and closer scripts mirror the angle the lead came in
 on. A lead from the broker-burn ad gets opened differently from a speed lead. The CRM carries the
@@ -477,11 +483,12 @@ Read straight off the Founder VSL. Keep the order. Beats can be short; none can 
 
 ## Section 3 — Evergreen backend-selling ads
 
-**PROPOSED — not yet confirmed by Chris. Every other block in this file traces to a source file or
-a direct quote. This one does not: the word "evergreen" appears nowhere in `docs/ads/` or
-`docs/flywheel/`, and the five beats below (3.13) are this document's own proposal, built from
-Chris's two-sentence description and nothing else. Needs a yes or no from Chris before a checker
-enforces 3.13–3.16 as hard rules, the way it already enforces Sections 1 and 2.**
+**CONFIRMED — owner-set 2026-09-07.** Chris asked directly for the backend-selling ad generator to
+be built alongside cold direct-response and VSL, which answers the open question this section
+carried. The five-beat spine (3.13) and the no-stale rule (3.14) are now enforced exactly like
+Sections 1 and 2. This section was still built from Chris's own two-sentence description rather
+than a longer source file — say so plainly if he ever wants the spine reworded, since there is no
+second document to check it against.
 
 **Content-first.** Chris: *"really simple, but you don't have to do a lot of those. Maybe just swap
 out variations every now and then. Those ads are really going to be evergreen forever."*
@@ -568,8 +575,8 @@ Fail the script, rewrite it, do not show Chris.
 8. The twelve compliance patterns — NOT run here on purpose. `scripts/ads/check-script.mjs` never
    imports `src/compliance/screen.mjs`; that gate needs a live database and runs later, inside
    `storeAsset` in `src/creative/generate.mjs` (1.5).
-9. Evergreen only: no date, season, scarcity or moving number (3.14). **Not yet built** — Section 3
-   is still proposed (see its header). Build this once Chris confirms the section.
+9. Evergreen only: no date, season, scarcity or moving number (3.14). Built and running, only for a
+   script marked as the evergreen type — a cold or VSL script is never checked against this rule.
 
 ## 4.2 Only a person can check these
 

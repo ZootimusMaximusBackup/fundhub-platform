@@ -153,3 +153,45 @@ test("loadRules returns the shared lists, and they still match .claude/workflows
     assert.ok(copyJs.includes(`'${w}'`), `"${w}" is in rules-data.mjs but not in .claude/workflows/copy.js any more — the two have drifted, fix one to match the other`);
   }
 });
+
+// RULES.md 3.14, confirmed as an owner-set rule 2026-09-07, alongside the
+// evergreen backend-selling generator Chris asked to be built tonight.
+
+test("an evergreen script (TYPE evergreen) is flagged for a date, a season, and a growing dollar figure", () => {
+  const block = {
+    title: "Test — stale evergreen ad",
+    startLine: 1,
+    lines: [
+      { n: 1, text: "HOOK Most owners make this mistake going into 2026, and it costs them every single quarter." },
+      { n: 2, text: "BODY This is the mistake that shows up every fall, and it is a reasonable one to make because nobody explains it. Here is the one thing to do instead, and it works whether or not you ever call us. We have secured $25 million for our clients and the number keeps climbing." },
+      { n: 3, text: "CTA If you want us to run it for you, the link is below." },
+      { n: 4, text: "CLOSE No hard inquiry. No obligation. Nothing moves until you say so." },
+      { n: 5, text: "RUNTIME 60-90s" },
+      { n: 6, text: "TAG evergreen_mistake_1" },
+      { n: 7, text: "TYPE evergreen" }
+    ]
+  };
+  const result = checkOneScript(block);
+  const messages = result.failures.map((f) => f.message).join(" | ");
+  assert.match(messages, /a specific year/);
+  assert.match(messages, /a season/);
+  assert.match(messages, /revenue figure that will change/);
+});
+
+test("the exact same stale content is NOT flagged when TYPE is cold (or absent)", () => {
+  const block = {
+    title: "Test — same content, not evergreen",
+    startLine: 1,
+    lines: [
+      { n: 1, text: "HOOK Most owners make this mistake going into 2026, and it costs them every single quarter." },
+      { n: 2, text: "BODY We have secured $25 million for our clients and the number keeps climbing this fall." },
+      { n: 3, text: "CTA Click the link below and book your free strategy call today, right now." },
+      { n: 4, text: "CLOSE No hard inquiry. No obligation. Nothing moves until you say so." },
+      { n: 5, text: "RUNTIME 60-90s" },
+      { n: 6, text: "TAG cold_test" }
+    ]
+  };
+  const result = checkOneScript(block);
+  const messages = result.failures.map((f) => f.message).join(" | ");
+  assert.doesNotMatch(messages, /RULES\.md 3\.14/);
+});
