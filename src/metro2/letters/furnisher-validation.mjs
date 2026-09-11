@@ -4,6 +4,7 @@
 
 import { LETTER_TYPES } from "./catalog.mjs";
 import { handwrittenSignOff } from "./sign-block.mjs";
+import { requireConsumerName } from "./consumer-name.mjs";
 import { renderLetterPdf } from "./render.mjs";
 
 const COVER =
@@ -71,9 +72,9 @@ function solParagraph(solYears, state) {
   ].join(" ");
 }
 
-function identityLines(identity = {}) {
+function identityLines(identity = {}, name) {
   const cityLine = [identity.city, identity.state, identity.zip].filter(Boolean).join(", ");
-  return [identity.fullName || "[Consumer Name]", identity.addressLine1, cityLine].filter(Boolean);
+  return [name, identity.addressLine1, cityLine].filter(Boolean);
 }
 
 function furnisherLines(furnisher = {}) {
@@ -117,7 +118,9 @@ export function buildFurnisherValidationLetter({
 } = {}) {
   const years = resolveSolYears(solYears, identity.state);
   const dateLine = formatAsOf(asOf);
-  const name = identity.fullName || "[Consumer Name]";
+  /* Same rule as the bureau letter: a validation demand mailed to a collector in
+     a name nobody checked is refused, never guessed. ./consumer-name.cjs. */
+  const name = requireConsumerName(identity.fullName, "furnisher validation letter");
   const furnisherName = furnisher.name || "[Collector / Furnisher]";
 
   const text = [
@@ -125,7 +128,7 @@ export function buildFurnisherValidationLetter({
     COVER,
     "",
     dateLine,
-    ...identityLines(identity),
+    ...identityLines(identity, name),
     "",
     "VIA CERTIFIED MAIL, RETURN RECEIPT REQUESTED",
     "",

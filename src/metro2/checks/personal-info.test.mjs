@@ -15,7 +15,9 @@ import {
   checkDateOfBirthMismatch,
   checkOutdatedEmployment,
   sameName,
-  addressLabel
+  addressLabel,
+  dobKey,
+  dobCandidates
 } from "./personal-info.mjs";
 import { cleanContext, blindContext, bareContext, observed, notVisible } from "./fixtures/tradelines.mjs";
 
@@ -154,6 +156,63 @@ test("M2-033 does not fire when either side is not visible", () => {
   assert.deepEqual(checkDateOfBirthMismatch(blindContext()), []);
   const halfBlind = cleanContext({ file: { ...cleanContext().file, dateOfBirth: notVisible() } });
   assert.deepEqual(checkDateOfBirthMismatch(halfBlind), []);
+});
+
+/* ── AN AMBIGUOUS DATE IS UNKNOWN, AND UNKNOWN MAKES NO ACCUSATION ─────────
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * Until 2026-09-06 `dobKey` resolved a two-ways-readable date month-first by
+ * choice. MEASURED BY RUNNING IT: the bureau file's "1985-03-02" against the
+ * consumer's "02/03/1985" — the same day, 2 March 1985, written two ways —
+ * fired M2-033, whose reason paragraph tells a credit bureau that a wrong date
+ * of birth is one of the strongest signs another person's records are in this
+ * file. That pair is pinned first below. */
+
+function dobPair(fileDob, consumerDob) {
+  const base = cleanContext();
+  return checkDateOfBirthMismatch({
+    ...base,
+    file: { ...base.file, dateOfBirth: observed(fileDob) },
+    consumer: { ...base.consumer, dateOfBirth: observed(consumerDob) }
+  });
+}
+
+test("M2-033 does not fire on one day written two ways", () => {
+  assert.deepEqual(dobPair("1985-03-02", "02/03/1985"), [],
+    "2 March 1985 in ISO against the same day written day-first is not a mixed file");
+  assert.deepEqual(dobPair("1985-02-03", "02/03/1985"), [],
+    "and the month-first reading of the same string is equally possible");
+  assert.deepEqual(dobPair("02/03/1985", "03/02/1985"), [],
+    "two ambiguous strings that share a reading stay silent");
+});
+
+test("M2-033 still fires on a date that is wrong however it is read", () => {
+  assert.equal(dobPair("1985-03-02", "12/25/1990").length, 1, "unambiguous and different");
+  assert.equal(dobPair("1985-03-02", "05/06/1990").length, 1, "ambiguous but a different year");
+  assert.equal(dobPair("1985-03-02", "05/06/1985").length, 1,
+    "ambiguous, same year, and neither reading is 2 March");
+  assert.equal(dobPair("1985-03-22", "03/22/1985").length, 0,
+    "22 cannot be a month, so this pair is one day and agrees");
+});
+
+test("dobKey answers null for a date that could be read two ways", () => {
+  assert.equal(dobKey("1985-03-02"), "1985-03-02");
+  assert.equal(dobKey("03/22/1985"), "1985-03-22", "22 is not a month, so this reads one way");
+  assert.equal(dobKey("22/03/1985"), "1985-03-22", "and so does the same day written day-first");
+  assert.equal(dobKey("02/03/1985"), null, "both halves could be the month");
+  assert.equal(dobKey(""), null);
+  assert.equal(dobKey(null), null);
+  assert.equal(dobKey("not a date"), null);
+  assert.equal(dobKey("13/13/1985"), null, "neither half can be a month");
+});
+
+test("dobCandidates lists every day a string could mean", () => {
+  assert.deepEqual(dobCandidates("1985-03-02"), ["1985-03-02"]);
+  assert.deepEqual(dobCandidates("02/03/1985"), ["1985-02-03", "1985-03-02"]);
+  assert.deepEqual(dobCandidates("03/03/1985"), ["1985-03-03"], "both readings are the same day");
+  assert.deepEqual(dobCandidates("03/22/1985"), ["1985-03-22"]);
+  assert.deepEqual(dobCandidates("garbage"), []);
 });
 
 // ── M2-034 — outdated employment ───────────────────────────────────────────

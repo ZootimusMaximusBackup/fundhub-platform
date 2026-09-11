@@ -131,6 +131,27 @@ export function complaintDestination(target, { state } = {}) {
  * filed, so writing it early — at generation, or at "we intend to send" — would
  * put a false sentence in a letter to a credit bureau.
  *
+ * AND THAT IS NOW ENFORCED, NOT ASKED FOR. `providerId` is REQUIRED. It is the
+ * mail provider's own identifier for the piece it accepted, so a caller cannot
+ * open that sentence on our say-so — it has to hold a receipt. A reviewer on
+ * 2026-09-06 rendered Round 6 with two rows in hand and got "On 2026-08-01 a
+ * complaint about this file was mailed to the Consumer Financial Protection
+ * Bureau" printed in a letter to a credit bureau.
+ *
+ * WHO CALLS THIS, ACCURATELY. Exactly one caller in the product:
+ * ../../repair/send.mjs, in the block after the mail provider returned, gated on
+ * `isComplaintTarget(routing.target)`. An earlier draft of this comment said
+ * nothing called it — that was wrong, and it is the kind of wrong that makes a
+ * guard look theoretical when it is live. It is live.
+ *
+ * WHAT THE RECEIPT REQUIREMENT COSTS, STATED PLAINLY. ../../repair/send.mjs:441
+ * reads `sent?.providerId || sent?.id || null`, and its own comment at :449
+ * records that a provider can accept a piece and return no identifier. When that
+ * happens the complaint really was mailed and this function now writes NOTHING,
+ * so Round 6 stays silent about it. That is the intended direction: a true
+ * sentence lost is recoverable, a false one mailed to a credit bureau is not.
+ * The caller reports the refusal as `filingRecorded: "no_provider_receipt"`.
+ *
  * It reuses ./store.mjs `saveLetter`; no second insert path and no new table.
  * `dispute_letters.case_id` is NOT NULL, so a caller with no case writes nothing
  * and says so rather than inventing one.
@@ -150,6 +171,10 @@ export async function recordComplaintFiling(db, {
   if (!caseId) return { ok: false, reason: "no_case" };
   if (!orgId || !clientId) return { ok: false, reason: "no_client" };
   if (!bodyText) return { ok: false, reason: "no_body_text" };
+  // The provider's receipt. See the header: no receipt, no filing row, and so
+  // Round 6 stays silent rather than saying a complaint was filed.
+  const receipt = String(providerId == null ? "" : providerId).trim();
+  if (!receipt) return { ok: false, reason: "no_provider_receipt" };
   try {
     const letter = await saveLetter(db, {
       caseId,
@@ -163,10 +188,10 @@ export async function recordComplaintFiling(db, {
       status: "sent",
       target: t
     });
-    if (providerId && letter?.id) {
+    if (letter?.id) {
       await db.query(
         `UPDATE dispute_letters SET postgrid_letter_id = $2 WHERE id = $1::uuid`,
-        [letter.id, String(providerId)]
+        [letter.id, receipt]
       ).catch(() => {});
     }
     return { ok: true, letter };

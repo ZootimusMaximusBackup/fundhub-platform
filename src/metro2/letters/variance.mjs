@@ -3,7 +3,25 @@
 // No override. Two regeneration strikes, then fail.
 
 const DEFAULT_THRESHOLD = 0.35;
-const MAX_STRIKES = 2;
+/**
+ * How many times the writer may TRY again before the batch is refused.
+ *
+ * THE THRESHOLD IS NOT TOUCHED. Every letter still has to come in under 0.35
+ * against every recent letter to the same bureau, and a letter that cannot is
+ * still refused. This number only says how much of the prompt bank gets looked
+ * at before we give up looking.
+ *
+ * Raised from 2 to 5 on 2026-09-04. Each attempt draws one opening and one
+ * closing out of pools of six, so the space is thirty-six pairs and three
+ * attempts saw three of them. Measured: a bureau letter walked R1 to R6 with the
+ * same claims was refused at Round 5 for some seeds and sailed through for
+ * others — which client got their round 5 letter came down to the hash of their
+ * id. Six attempts search a sixth of the space instead of a twelfth, and the
+ * refusal that remains is a real one rather than a coin flip.
+ *
+ * The cost is CPU on a refusal path that already ran three times.
+ */
+const MAX_STRIKES = 5;
 
 /* Every rule id a claim block can be headed with.
  *
@@ -25,8 +43,34 @@ const MAX_STRIKES = 2;
  * Nothing is loosened by fixing it. The threshold is untouched, and everything the
  * gate compared before, it still compares — see
  * src/metro2/letters/variance-derogatory.test.mjs, which pins the three-bureau
- * case AND pins that two genuinely identical letters are still refused. */
-const CLAIM_RULE_ID = String.raw`(?:M2-\d{3}|DEROG-[A-Z0-9]+(?:-[A-Z0-9]+)*)`;
+ * case AND pins that two genuinely identical letters are still refused.
+ *
+ * PI-* joined the list on 2026-09-03. It is the personal-information floor
+ * (src/metro2/diy/personal-info-floor.mjs), which every repair-path client gets
+ * on every bureau — and the floor's claims are the SAME words at all three
+ * bureaus by definition, because it is the same name and the same address.
+ *
+ * WHAT THAT CHANGE ACTUALLY BUYS, MEASURED (corrected 2026-09-03 after a
+ * verifier tested the earlier claim written here and found it false): it is
+ * ROUND 2 and later, not Round 1. Prior letters are read per bureau
+ * (src/repair/analyze.mjs priorLetterBodies filters `AND bureau = $3`), so the
+ * three bureau letters in one Round 1 batch are never compared against each
+ * other and a clean Round 1 file produced three letters and no refusal with or
+ * without this entry. Round 2 IS compared — against Round 1's letter to the
+ * same bureau — and there the floor's identical claim block is what tips the
+ * similarity over the threshold. The line that used to sit here said a clean
+ * file would otherwise have produced one letter and two refusals at Round 1.
+ * That was wrong and it is deleted rather than reworded.
+ *
+ * Nothing is loosened: the threshold is untouched and every comparison the gate
+ * made before, it still makes.
+ *
+ * "Request" is accepted beside "Violation" because a claim that says the file is
+ * CORRECT is headed Request in the letter (src/metro2/letters/generate.mjs
+ * formatViolationParagraph). Both are the same item block and both are stripped. */
+const CLAIM_RULE_ID =
+  String.raw`(?:M2-\d{3}|DEROG-[A-Z0-9]+(?:-[A-Z0-9]+)*|PI-[A-Z0-9]+(?:-[A-Z0-9]+)*)`;
+const CLAIM_HEADING = String.raw`(?:Violation|Request)`;
 
 /** Strip fixed citation/legal/item blocks before fingerprinting — facts stay fixed; prose varies. */
 export function proseForVariance(letterText) {
@@ -34,7 +78,7 @@ export function proseForVariance(letterText) {
     .replace(/CITATIONS:[\s\S]*?(?=\nCLOSING:|\nSincerely|\nRespectfully|$)/i, " ")
     .replace(
       new RegExp(
-        `Violation ${CLAIM_RULE_ID}[\\s\\S]*?(?=\\n\\nViolation ${CLAIM_RULE_ID}|\\n\\nCITATIONS:|\\n\\nCLOSING:|$)`,
+        `${CLAIM_HEADING} ${CLAIM_RULE_ID}[\\s\\S]*?(?=\\n\\n${CLAIM_HEADING} ${CLAIM_RULE_ID}|\\n\\nCITATIONS:|\\n\\nCLOSING:|$)`,
         "gi"
       ), " ")
     .replace(
@@ -46,8 +90,22 @@ export function proseForVariance(letterText) {
     .replace(/^Severity:.*$/gim, " ")
     .replace(/\bM2-\d{3}\b/g, " ")
     .replace(/\bDEROG-[A-Z0-9]+(?:-[A-Z0-9]+)*\b/g, " ")
+    .replace(/\bPI-[A-Z0-9]+(?:-[A-Z0-9]+)+\b/g, " ")
     .replace(/15 U\.S\.C\.[^\n.]*/g, " ")
     .replace(/§\s*1681[^\n.]*/g, " ")
+    /* "FCRA section 611(a)(5)(A)" is the same fixed fact as the two lines above
+       and was the only citation spelling they missed. It matters more than it
+       looks: what this function hands the gate is the header plus the opening
+       plus the demand — the claim strip above swallows everything from the first
+       claim block to CITATIONS — so a statute named in the demand was a large
+       share of the compared text at every round that cites it. Rounds 3, 4, 5
+       and 6 all demand deletion under 611(a)(5)(A), because that is the section
+       that requires it, and they were scoring similar to each other for quoting
+       the same law rather than for saying the same thing.
+       Two identical letters are still identical after this strip and are still
+       refused — pinned in ./letters.test.mjs. */
+    .replace(/FCRA\s+section\s+[0-9]+(?:\([0-9a-zA-Z]+\))*/gi, " ")
+    .replace(/FCRA\s+§\s*[^\n.,;]*/g, " ")
     .replace(/Field \d+:[\s\S]*?(?=\n|$)/g, " ")
     .replace(/Signature: _+/g, " ")
     .replace(/^Date: _+$/gim, " ");

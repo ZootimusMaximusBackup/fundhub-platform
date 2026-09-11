@@ -10,6 +10,14 @@ const fontkit = require("@pdf-lib/fontkit");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 const { logInfo } = require("./logger");
 const { detectViolations } = require("./crs/metro2-violation-checker");
+/* THE ONE NAME RULE, SHARED WITH src/. This is CommonJS and every renderer in
+   src/metro2/letters is ESM, so the predicate lives in a .cjs both families can
+   load — see src/metro2/letters/consumer-name.cjs for why. This file already
+   reaches out of vendor/ for the gold fonts directly below, so the path is not a
+   new kind of coupling. */
+const { requireConsumerName, realConsumerName } = require(
+  "../../../../src/metro2/letters/consumer-name.cjs"
+);
 
 /** Bundled Inter + JetBrains Mono next to the gold templates. */
 function goldFontsDir() {
@@ -379,7 +387,13 @@ function collectPersonalInfoItems(bureauKey, bureaus, personal) {
     ssnsRaw.length ||
     dobsRaw.length;
   if (!hasFile) return [];
-  const legalName = String(who.name || "").trim();
+  /* THE NAME THIS LETTER ASKS THE BUREAU TO KEEP.
+     A THIRD site in this file, and it is not a letterhead — it is a claim. With
+     `who.name` set to the literal "Client" this block mailed a bureau the
+     sentence "Please keep only my legal name: Client. Remove every other name."
+     Absence of a name produces NO claim; the `else` arm below already says the
+     right thing without naming anybody. */
+  const legalName = realConsumerName(who.name) || "";
   const currentAddress = currentAddressLine(who);
   const currentEmployer = String(who.employer || who.currentEmployer || "").trim();
   const currentDob = String(who.dob || who.dateOfBirth || "").trim();
@@ -791,8 +805,25 @@ function disputeEnclosures(accounts) {
   ];
 }
 
+/**
+ * The sender block at the top of a mailed dispute PDF, and — because every
+ * caller passes the same array as `sig` — the name under the signature line.
+ *
+ * COMPLIANCE REVIEW REQUIRED — credit-repair messaging.
+ *
+ * It used to read `String(personal.name || "Client").trim() || "Client"`. That
+ * meant a dispute letter could go to Experian, TransUnion or Equifax from
+ * "Client", signed "Client". The only caller is `generateLetters` below, reached
+ * from src/underwrite/letter-pack.mjs, which fills `personal.name` from
+ * `clients.first_name` / `clients.last_name` and used to mint the same literal
+ * word when both were empty.
+ *
+ * That caller refuses first now, so this throw is the backstop, not the gate.
+ * Keep it: a refusal is the only safe answer, and it is what the whole family of
+ * renderers in src/metro2/letters does with the same input.
+ */
 function senderLines(personal) {
-  const name = String((personal && personal.name) || "Client").trim() || "Client";
+  const name = requireConsumerName(personal && personal.name, "mailed dispute letter");
   const lines = [name];
   const addr = personal && personal.address;
   if (Array.isArray(personal && personal.addressLines) && personal.addressLines.length) {
