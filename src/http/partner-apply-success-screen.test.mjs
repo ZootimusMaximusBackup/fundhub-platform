@@ -39,7 +39,10 @@ const HTML = fs.readFileSync(PAGE, "utf8");
 const HANDLER_SRC = (() => {
   const start = HTML.indexOf("document.getElementById('pform').addEventListener('submit',");
   assert.notEqual(start, -1, "the apply form's submit handler moved — this test is now blind");
-  const end = HTML.lastIndexOf("</script>");
+  // The FIRST closing tag after the handler, not the last: the page carries
+  // further <script> tags below this block (an analytics tag, for one), and
+  // slicing to the last one swallows them and fails to parse.
+  const end = HTML.indexOf("</script>", start);
   assert.ok(end > start, "could not find the end of the inline script");
   return HTML.slice(start, end);
 })();

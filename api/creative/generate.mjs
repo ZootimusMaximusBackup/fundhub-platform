@@ -9,6 +9,7 @@ import { enqueue } from "../../src/creative/generate.mjs";
 import { resolve } from "../../src/creative/providers/index.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { assertSuiteEnabled, SUITE_OFF } from "../../src/brand/meter.mjs";
+import { OFFER_TYPES } from "../../src/compliance/screen.mjs";
 
 /* WHO ASKED, translated from the principal into the columns 241 added.
 
@@ -93,6 +94,30 @@ export default async function handler(req, res) {
     });
   }
 
+  /* offerType decides which body of law an ad is screened under (docs/ads/RULES.md
+     1.5). The old fallback spec below left it out entirely, so a caller that sent
+     only a prompt — no spec, no offer_type — got a job that could never pass
+     compliance: it came back blocked with "offer_type must be one of funding,
+     credit_cards, credit_repair; got undefined" from src/compliance/screen.mjs,
+     minutes after the job was already saved. Refusing here, before anything is
+     written, is cheaper than that. A caller that sent offer_type at the top level
+     instead of nested in spec is still accepted — see the fold-in below. */
+  const offerType = (body.spec && body.spec.offerType) || body.offer_type || body.offerType;
+  if (!offerType) {
+    return res.status(400).json({
+      ok: false,
+      error: "offer_type_required",
+      message: "Pass offer_type (or spec.offerType) so this can be screened under the right compliance rules."
+    });
+  }
+  if (!OFFER_TYPES.has(offerType)) {
+    return res.status(400).json({
+      ok: false,
+      error: "offer_type_invalid",
+      message: `offer_type must be one of ${[...OFFER_TYPES].join(", ")}; got ${JSON.stringify(offerType)}.`
+    });
+  }
+
   try {
     const result = await withPartnerScope({ kind: "partner", partnerId }, async (tx) => {
       const org = (await tx.query(
@@ -111,11 +136,14 @@ export default async function handler(req, res) {
         ...requesterOf(principal),
         assetKind,
         idempotencyKey,
-        spec: body.spec || {
-          prompt: body.prompt || "",
-          formats: body.formats || ["1x1"],
-          variants: body.variants || 1
-        }
+        spec: body.spec
+          ? (body.spec.offerType ? body.spec : { ...body.spec, offerType })
+          : {
+              prompt: body.prompt || "",
+              formats: body.formats || ["1x1"],
+              variants: body.variants || 1,
+              offerType
+            }
       });
       return { ...out, orgId: org.org_id };
     });

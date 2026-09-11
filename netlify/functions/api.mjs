@@ -113,6 +113,13 @@ import readDealMath from "../../api/read/deal-math.mjs";
 import readCloserDeck from "../../api/read/closer-deck.mjs";
 import readAdAttribution from "../../api/read/ad-attribution.mjs";
 import readAdBooks from "../../api/read/ad-books.mjs";
+import clickfunnelsConnect from "../../api/analytics/clickfunnels-connect.mjs";
+import clickfunnelsSync from "../../api/analytics/clickfunnels-sync.mjs";
+import readFunnelPages from "../../api/read/funnel-pages.mjs";
+import youtubeConnect from "../../api/analytics/youtube-connect.mjs";
+import youtubeSync from "../../api/analytics/youtube-sync.mjs";
+import readVideoStats from "../../api/read/video-stats.mjs";
+import opsWeeklyBrief from "../../api/ops/weekly-brief.mjs";
 import closerDeckWrite from "../../api/closer-deck.mjs";
 import readMyNumbers from "../../api/read/my-numbers.mjs";
 import readSalesFloor from "../../api/read/sales-floor.mjs";
@@ -572,6 +579,13 @@ export const ROUTES = {
      this map exists to stop. */
   "read/ad-attribution": readAdAttribution,
   "read/ad-books": readAdBooks,
+  "read/funnel-pages": readFunnelPages,
+  "read/video-stats": readVideoStats,
+  "analytics/clickfunnels-connect": clickfunnelsConnect,
+  "analytics/clickfunnels-sync": clickfunnelsSync,
+  "analytics/youtube-connect": youtubeConnect,
+  "analytics/youtube-sync": youtubeSync,
+  "ops/weekly-brief": opsWeeklyBrief,
   "closer-deck": closerDeckWrite,
   "read/my-numbers": readMyNumbers,
   "read/sales-floor": readSalesFloor,

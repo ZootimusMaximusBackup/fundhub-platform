@@ -856,6 +856,12 @@ has a "Why it was stopped" panel plus a reference table of all 29 reasons.
 
 ## What this means for the ad-script build
 
+**Owner decision, 2026-09-07: image and video generation is off the list. Not blocked —
+not wanted.** Chris films himself, "super old school," and wants it that way until he
+decides otherwise. The three image/video gaps below are the audit's honest record of
+what the screen cannot do today. They are not a to-do. No agent should propose building
+the vendor row, the file upload, or the picture preview unless Chris asks for it by name.
+
 The generator lands here as planned. Three of the seven do not touch it at all, because
 they are about images: the vendor row, the file upload, and the picture preview.
 
@@ -1080,3 +1086,66 @@ recommendation to get counsel, and no summary carries a rider suggesting he revi
 The compliance screener in `src/compliance/screen.mjs` is untouched. It was never a
 recommendation; it is shipped code that already runs, and nobody asked for it to be
 removed.
+
+---
+
+# The next batch — 2026-09-07, clarified after tonight's build
+
+Chris, after the ad-generator build shipped: **"Yeah, we're just trying to get YouTube
+analytics, ClickFunnels analytics on the funnel itself, VSL analytics — like, how much
+has it been watched — all that shit. All the marketing analytics I want, and then I also
+want to be able to generate the creatives."**
+
+Generating the creatives is done — that was tonight's build, PR #357.
+
+**Filming stays fully manual, by his own choice.** "Don't worry about any video stuff I
+film. We just do it super old school. I like it that way until I get something a little
+bit more streamlined." No agent should propose automating the shoot.
+
+**Finished video goes to Company Brain.** "That way I can just upload it to the company
+brain, all the videos that are done and edited, and it goes right into where it is to
+go." This is a real, named destination already partly specced in this repo — and that
+spec has a live problem, found tonight, not yet fixed.
+
+## What each piece needs before it can be built
+
+**YouTube analytics — watch time on the VSLs.** Nothing exists in this repo for this
+today. Before it can be built: does he host VSLs on YouTube today, or is this
+aspirational? Which channel? A real Google Cloud project and OAuth credentials for the
+YouTube Data API — same one-time setup shape as any other new integration, and per-user
+OAuth, never domain-wide delegation (see below).
+
+**ClickFunnels analytics on the funnel itself.** This repo has one direction only today:
+ClickFunnels pushes booking events IN via a webhook (`src/adapters/clickfunnels.mjs`).
+Nothing reads ClickFunnels' own analytics OUT — page views, step drop-off, time on page.
+That needs a real ClickFunnels API key from Chris. Named as "coming" earlier tonight;
+not yet in hand.
+
+**VSL watch time specifically.** Depends on where the VSL is actually hosted. If it is a
+YouTube embed, YouTube's own API answers this. If it is hosted some other way (Vimeo, a
+raw file, ClickFunnels' own player), the answer is different and needs asking, not
+guessing.
+
+**Company Brain — the video destination.** Partly specced, and the spec is wrong in a
+way that would build the exact thing Chris already banned. `docs/COMPANY-BRAIN-BUILD-SPEC.md`
+line 39 and `docs/STILL-MISSING.md` line 57 both instruct enabling **Google Workspace
+domain-wide delegation** for Drive sync. Chris's own standing rule: no Google Workspace,
+personal Gmail only, per-user OAuth, never domain-wide delegation. An agent following
+that spec today would build the banned thing and be technically correct to the doc while
+doing it. **This has to be corrected before any build starts on Company Brain, not after.**
+
+## Ordering
+
+Copy generation was the right thing to build first — it existed nowhere and blocked the
+most volume. These four are the next batch, and none of them can start blind:
+
+1. Correct the Company Brain spec's Google Workspace instructions to per-user OAuth,
+   since that blocks the one thing Chris just asked for by name (upload finished video,
+   have it land where it goes).
+2. Get the ClickFunnels API key from Chris — the single fastest of the four to unblock,
+   since it needs nothing scoped, just the credential.
+3. Scope YouTube: confirm where VSLs are actually hosted before writing any code against
+   an API that might be answering the wrong question.
+4. Build the marketing-analytics reporting once the above land — this is where YouTube
+   watch time, ClickFunnels page performance, and the ad-books panel already shipped
+   tonight come together into one place.
