@@ -173,9 +173,20 @@ const BASELINE = Object.freeze({
   engineMaxedSuggestions: "d06e816746ef7dddb015f77ebf605b9a7f30f15df1d233b8e47702f4577f2d19",
   engineScoreOnly:        "0fe3f24ebe0560a04fe24fdb14afc974e0725f3e96571ab12b34c5a7e8a589e7",
   engineNoBureaus:        "79f0c7c1d8eb1853e314681051005eeafd3b07550da2855ab9eb6bbffe8a8260",
-  blackReportClient:      "4a0f0fe651ddfa21bdb5c632ef7c80a9fd6778e1632aba56d7344657b9c75f0a",
-  emptyBlackReportClient: "feb8f216fb06c85d9dc0a95170fb71a167ee0963221ff24aef858f681b03009b",
-  generatorScript:        "9d0babe55544aa695cca8505a6a2d0af1370f50d01817c0f8e51af35ba62259d"
+  /* Three below re-measured 2026-09-12, merging lane2/r3-w10-docs-p3 into main.
+     That branch stops the four client documents printing sentences the credit
+     file does not support (F43, F44, F45, F52), so the record that fills them
+     moved, and so did the printer script. Checked before re-pinning: the blank
+     record still invents nothing — its 33 fields are blank, null, false or zero,
+     and it moved only because F44 adds a `business` field, itself correctly
+     blank ({hasEntity: false, ageMonths: null, name: ""}).
+     Previous values, 2026-08-28 on audit/baseline-wf at 4d6cf31b:
+       blackReportClient      4a0f0fe651ddfa21bdb5c632ef7c80a9fd6778e1632aba56d7344657b9c75f0a
+       emptyBlackReportClient feb8f216fb06c85d9dc0a95170fb71a167ee0963221ff24aef858f681b03009b
+       generatorScript        9d0babe55544aa695cca8505a6a2d0af1370f50d01817c0f8e51af35ba62259d */
+  blackReportClient:      "e7524f531582e97274fdf31ff21bbe6c2aa936382ac61681e3ce2001a0882d4d",
+  emptyBlackReportClient: "21826d2ea2496e6674a8bb909de81d2aef49a277c3470c1f854094950fb2ca79",
+  generatorScript:        "5117e669b9b5b5c29fef7d599c403f4240ce6c356b0b9ce3f3b7b732edb4bd3d"
 });
 
 /** The four PDFs the in-process printer produces, and the words inside each. */
@@ -191,10 +202,18 @@ const BASELINE = Object.freeze({
      Bank-Lender-Match-List.pdf      6pp 5985d2dcfb4a563ee0fd55bc3d12ab9b66d4ff82e7f0188e919987c9e8a744fc
      Credit-Optimization-Roadmap.pdf 3pp c44be557e52ac6070fc9cd0eba4ce5560dcab012acd0a61e09ae4ae71a929cc8 */
 const BASELINE_NODE_PDFS = Object.freeze([
-  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "361451cb46f992f176ba98e3990fbd4c5d00b37a085b439f38c57f160c2f3ce9" },
-  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 4, textSha: "21ea81ccfb0e609c8e66c3aa4cc6637ed723f0e5bef061988df9fe773843f80a" },
-  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 3, textSha: "3a02114ed736003193c02743b41b24d5a7b15815ae387019fadcbee1d7f8b37c" },
-  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 5, textSha: "a2bd7ddce9c1e777595db15e7e2fdade195815d17322acd8c080524cc919e939" }
+  /* Re-measured again 2026-09-12 with lane2/r3-w10-docs-p3 (F43/F44/F45/F52 —
+     the documents stop printing what the file does not support). Same four
+     files, same order, same types. Values from the fix/r2-w10-deliverables
+     merge earlier the same day, now superseded:
+       Credit-Analysis-Report.pdf      4pp 361451cb46f992f176ba98e3990fbd4c5d00b37a085b439f38c57f160c2f3ce9
+       Funding-Snapshot.pdf            4pp 21ea81ccfb0e609c8e66c3aa4cc6637ed723f0e5bef061988df9fe773843f80a
+       Bank-Lender-Match-List.pdf      3pp 3a02114ed736003193c02743b41b24d5a7b15815ae387019fadcbee1d7f8b37c
+       Credit-Optimization-Roadmap.pdf 5pp a2bd7ddce9c1e777595db15e7e2fdade195815d17322acd8c080524cc919e939 */
+  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "6880167e040c2158f06a659be8b74166665c343e33ef199c9b1a7c6bde6f4bc6" },
+  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 4, textSha: "ba77f1941cb81826ed45be79d8722202a0fa66b4cea2b9fbb76f4e25a7fb7aa8" },
+  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 8, textSha: "ed59199038ca2f706d9968e3dae1fa4a20fe4fcd08fcc7d2149766ba4d807d2c" },
+  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 5, textSha: "da5c69e97d6f364cad99c19fe14098591d8d48f5f094074d28e3b551fdbc17ff" }
 ]);
 
 /** Every document a client receives, in order. [filename, type, bureau]. */

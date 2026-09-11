@@ -5,7 +5,9 @@
 
 import { esc } from "./escape.mjs";
 import { usd, median, spaced, parseMoney } from "./format.mjs";
-import { rankedRevolving, targetBal, paydownAmt, bureauStatus, heroCard, fastestWins } from "./derive.mjs";
+import { rankedRevolving, targetText, paydownAmt, bureauStatus, heroCard, fastestWins,
+  lenderBuckets, utilTotalsKnown, cardsWithNoTarget, openRevolving, noTargetCell,
+  noTargetCellCap, fileFactSentences, holdingYouBack } from "./derive.mjs";
 import { cover, ctaPage, section, table, PB } from "./chrome.mjs";
 import { svgProjection, svgDisputeFlow } from "./charts.mjs";
 
@@ -27,26 +29,6 @@ function firstName(client) {
   return raw.split(/\s+/)[0];
 }
 
-// What this client actually has, read off their own file. This paragraph used to
-// assert a mortgage, paid-off auto loans and a clean TransUnion for everybody,
-// which was false for anyone who had none of them. Say nothing rather than guess.
-function whatYouHave(c) {
-  const has = [];
-  if ((c.mortgages || []).length) has.push("You have a mortgage.");
-  if ((c.installments || []).length) has.push("You have installment loans.");
-  if ((c.revolving || []).length) has.push("You have revolving cards.");
-  // bureaus rows are [name, status, negatives, note]; anything not DIRTY is clean.
-  const clean = (c.bureaus || [])
-    .filter((b) => Array.isArray(b) && String(b[1] || "").toUpperCase() !== "DIRTY")
-    .map((b) => String(b[0] || "").trim())
-    .filter(Boolean);
-  if (clean.length === 1) has.push(`You have a clean ${clean[0]}.`);
-  else if (clean.length > 1) has.push(`Your ${clean.slice(0, -1).join(", ")} and ${clean[clean.length - 1]} files are clean.`);
-  // Only claim they are ahead when the file shows something they are ahead with.
-  if (!has.length) return "";
-  return `${has.join(" ")} You are not starting from zero. `;
-}
-
 export function buildRoadmap(client) {
   const c = client || {};
   const med = median(c.scores || {});
@@ -58,8 +40,16 @@ export function buildRoadmap(client) {
   const h = [cover(c, "credit optimization roadmap",
     `${first}'s 6-Month Business Readiness Roadmap`)];
 
+  /* F53. This paragraph used to assert a mortgage, paid-off auto loans and a
+     clean TransUnion for EVERY client, whatever the file said. It now says only
+     what this file carries, and on a file that carries none of it, it says that
+     instead of inventing something. */
+  const facts = fileFactSentences(c);
+  const factsTxt = facts.length
+    ? `${facts.join(" ")} You are not starting from zero.`
+    : "There is not much on this file yet, and that is the starting point we work from.";
   h.push(`<div class="callout"><p style="margin:0">A note before we dive in: ${esc(first)}, `
-    + `I have looked at every inch of your credit file. ${esc(whatYouHave(c))}`
+    + `I have looked at every inch of your credit file. ${esc(factsTxt)} `
     + "What we are doing over the next 6 months is clearing the road so the money can "
     + "flow.</p></div>");
 
@@ -77,25 +67,42 @@ export function buildRoadmap(client) {
   h.push(`<div class="note">${esc(spaced("projected median score range · anchored at month 1 and month 6 targets"))}</div>`);
 
   h.push("<h3>Where You Stand Right Now vs. Where You're Going</h3>");
+  /* F55. `score_targets` is initialised to four empty strings in
+     src/underwrite/black-report-client.mjs:32 and, like `llc_fee`, is never
+     assigned anywhere in this repository — grep returns the initialiser and the
+     fixtures and nothing else. So the whole "month 6" column of this table was
+     four BLANK cells on every real client, which reads as a broken document
+     rather than as an unknown. A dash is what every other cell in these four
+     documents uses for "the file does not say" - and the Node printer already
+     answers this exact field in words rather than with a blank
+     (src/underwrite/black-report-node.mjs afterScore()). Its words are used
+     here so the three printers say the same thing about the same gap. */
+  const NO_SCORE_TARGET = "Set at your next pull";
   const st = c.score_targets || {};
   const stand = [
-    ["Median Score", med, st.median || ""],
-    ["Experian Score", c.scores?.experian ?? "", st.experian || ""],
-    ["TransUnion Score", c.scores?.transunion ?? "", st.transunion || ""],
-    ["Equifax Score", c.scores?.equifax ?? "", st.equifax || ""]
+    ["Median Score", med, st.median || NO_SCORE_TARGET],
+    ["Experian Score", c.scores?.experian ?? "", st.experian || NO_SCORE_TARGET],
+    ["TransUnion Score", c.scores?.transunion ?? "", st.transunion || NO_SCORE_TARGET],
+    ["Equifax Score", c.scores?.equifax ?? "", st.equifax || NO_SCORE_TARGET]
   ];
   for (const row of rankedRevolving(c).slice(0, 2)) {
-    const tgt = targetBal(row);
-    stand.push([
-      `${row[0]} Utilization`,
-      `${row[4]} (${usd(row[2])} / ${usd(row[3])})`,
-      tgt !== null ? `Under 10% (${usd(tgt)})` : "Under 10%"
-    ]);
+    const tgt = targetText(row);
+    // F52. No reported limit means no "$X / $Y" and no 10% target. Both cells
+    // say what the file actually holds instead of implying a limit it does not.
+    stand.push(tgt !== null
+      ? [`${row[0]} Utilization`, `${row[4]} (${usd(row[2])} / ${usd(row[3])})`,
+        `Under 10% (${tgt})`]
+      : [`${row[0]} Utilization`, `${usd(row[2])} owed, ${noTargetCell(row)}`,
+        `${noTargetCellCap(row)} - no target`]);
   }
-  stand.push(["Overall Utilization", c.util_pct, "Under 10%"]);
+  // F45. lenders_now are open TODAY. Printing 0 told a client with five matches
+  // that nobody would lend to him.
+  const [lendersNow, lendersAfter] = lenderBuckets(c);
+  stand.push(["Overall Utilization", c.util_pct || "-", "Under 10%"]);
   stand.push(["Negative items", negatives.length, 0]);
   stand.push(["Pre-Approval Estimate", usd(c.preapproval_now), usd(c.preapproval_after)]);
-  stand.push(["Lenders on this shortlist", 0, (c.lenders || []).length]);
+  stand.push(["Lenders on this shortlist", lendersNow.length,
+    lendersNow.length + lendersAfter.length]);
   h.push(table(["", "today", "month 6"], stand.map((r) => r.map(esc))));
 
   // 02 month 1
@@ -106,11 +113,14 @@ export function buildRoadmap(client) {
   h.push(`<p>This is your single biggest score lever. Lenders see ${esc(c.util_pct || "your")} `
     + "utilization and they slow down.</p>");
   const payRows = rankedRevolving(c).map((row) => {
-    const tgt = targetBal(row);
+    const tgt = targetText(row);
     const pd = paydownAmt(row);
+    /* A blank cell reads as "nothing to do here". A dash reads as "we do not
+       know", which is the truth for a card with no reported limit, and is what
+       both other printers put in the same two cells. */
     return [row[0], usd(row[2]), usd(row[3]),
-      tgt !== null ? usd(tgt) : (row[5] || ""),
-      pd !== null ? usd(pd) : ""];
+      tgt !== null ? tgt : "-",
+      pd !== null ? usd(pd) : "-"];
   });
   h.push(table(["account", "balance", "limit", "pay down to", "amount to pay"],
     payRows.map((r) => r.map(esc))));
@@ -119,8 +129,35 @@ export function buildRoadmap(client) {
   const start = hero
     ? `Even getting ${hero[0]} down first moves your score.`
     : "Start with the highest card.";
-  h.push(`<p><b>Total paydown to reach 10% utilization: ${esc(usd(totalPd))}.</b> You do not have `
-    + `to do this all at once. ${esc(start)}</p>`);
+  /* F52. THE PAYDOWN TOTAL IS A CLAIM AND HAS TO BE EARNED.
+     util_target_balance used to be 10% of a total limit the engine reports as 0
+     when no open card states one, so this line printed "$0" — telling a client
+     who owes $5,200 that he owes nothing — while the Node printer's version of
+     the same line printed his ENTIRE balance. Three cases now, and the middle
+     one is the one that is easy to miss: some cards report a limit and some do
+     not, so the total is real for the cards it covers and says what it cannot
+     cover. */
+  if (!openRevolving(c).length) {
+    // No open revolving cards at all is not "no limit reported" — there is
+    // simply no paydown plan to describe, so nothing is said about one.
+  } else if (!utilTotalsKnown(c)) {
+    /* F52b. "reports a credit limit" was false for a card whose limit IS
+       reported, as $0. "above $0" is true in both cases and is the same
+       sentence in all three printers. */
+    h.push("<p><b>No open card on this file reports a credit limit above $0, so there is no "
+      + "10% total to work back to.</b> Keep the balances moving down and we will set a target "
+      + "as soon as a limit reports.</p>");
+  } else {
+    const missing = cardsWithNoTarget(c);
+    const tail = missing
+      ? " That covers the cards that report a limit above $0. "
+        + `${missing} card${missing === 1 ? "" : "s"} on this file `
+        + `${missing === 1 ? "has" : "have"} no 10% target, so nothing for `
+        + `${missing === 1 ? "it" : "them"} is in this number.`
+      : "";
+    h.push(`<p><b>Total paydown to reach 10% utilization: ${esc(usd(totalPd))}.</b>${esc(tail)} `
+      + `You do not have to do this all at once. ${esc(start)}</p>`);
+  }
 
   h.push("<h3>Step 2: Round 1 Dispute Letters - Experian First</h3>");
   const exNegs = negatives.filter((n) => String(n.bureau || "").toLowerCase() === "experian");
@@ -142,9 +179,15 @@ export function buildRoadmap(client) {
   h.push("<h3>Step 4: Inquiry Removal Letters - Experian</h3>");
   h.push("<p>Inquiries do NOT affect your funding. But clean is clean. Send removal letters "
     + "for duplicates and for any inquiry that did not result in an open account.</p>");
+  /* F54. `llc_fee` is initialised to null in
+     src/underwrite/black-report-client.mjs:29 and is never assigned anywhere in
+     this repository, so usd() rendered "-" and every real client read "with the
+     Secretary of State for -." A dash inside a sentence is not an honest
+     rendering of unknown. No fee on the file, no fee in the sentence. */
+  const llcFee = parseMoney(c.llc_fee);
   h.push("<h3>Step 5: Form Your LLC</h3><ul class='plain'>"
-    + `<li>File your LLC in ${esc(c.state)} online with the Secretary of State for `
-    + `${esc(usd(c.llc_fee))}.</li>`
+    + `<li>File your LLC in ${esc(c.state)} online with the Secretary of State`
+    + `${llcFee === null ? "" : ` for ${esc(usd(llcFee))}`}.</li>`
     + `<li>Use your address at ${esc(c.address)}.</li>`
     + "<li>Once filed, the clock starts. LLC age matters for lenders.</li>"
     + "<li>Open a dedicated business checking account. Even $100 in it is fine to start.</li></ul>");
@@ -173,8 +216,21 @@ export function buildRoadmap(client) {
   h.push("<p>Round 2 escalation letters go out for anything that came back verified. Round 2 "
     + "requests the method of verification, cites specific FCRA violations where the "
     + "process was improper, and escalates the charge-off.</p>");
-  h.push("<p><b>Month 3 score projection:</b> Experian 650-665, Equifax 655-670, TransUnion "
-    + "holding at 725. Pre-approval estimate climbs toward $12,000-$15,000.</p>");
+  /* F53. This read "TransUnion holding at 725" for every client, which states a
+     score this file may not carry, and "$12,000-$15,000" regardless of the
+     pre-approval already on the file. The projection now names only the bureaus
+     this file actually scores, and the pre-approval figure is this client's. */
+  const projBits = [];
+  for (const [label, key] of [["Experian", "experian"], ["Equifax", "equifax"],
+    ["TransUnion", "transunion"]]) {
+    const v = Number(c.scores?.[key]);
+    if (!Number.isFinite(v)) continue;
+    projBits.push(`${label} holding at or above ${v}`);
+  }
+  if (projBits.length) {
+    h.push(`<p><b>Month 3 score projection:</b> ${esc(projBits.join(", "))}. Pre-approval `
+      + `estimate climbs toward ${esc(usd(c.preapproval_after))}.</p>`);
+  }
 
   // 04 month 4
   h.push(PB);
@@ -239,9 +295,18 @@ export function buildRoadmap(client) {
     reveal.push([`${n.creditor} ${n.type}`, n.balance || "showing", "Deleted or settled"]);
   }
   for (const row of rankedRevolving(c).slice(0, 2)) {
+    /* A card with no reported limit has no utilization today and no 10% to
+       reach by month 6. "Under 10%" beside a blank cell is a target the client
+       cannot check themselves against. Same rows as
+       scripts/black-reports/fundhub_gen.py:1686-1692. */
+    if (targetText(row) === null) {
+      reveal.push([`${row[0]} balance`, usd(row[2]),
+        `Lower - ${noTargetCell(row)}, so no 10% target`]);
+      continue;
+    }
     reveal.push([`${row[0]} utilization`, row[4], "Under 10%"]);
   }
-  reveal.push(["Overall utilization", c.util_pct, "Under 10%"]);
+  reveal.push(["Overall utilization", c.util_pct || "-", "Under 10%"]);
   const [, exC] = bureauStatus(c, "Experian");
   const [, eqC] = bureauStatus(c, "Equifax");
   reveal.push(["Experian negatives", exC, 0]);
@@ -264,14 +329,15 @@ export function buildRoadmap(client) {
     ["Experian Score", c.scores?.experian ?? "", "690+"],
     ["Equifax Score", c.scores?.equifax ?? "", "670+"],
     ["TransUnion Score", c.scores?.transunion ?? "", "725+"],
-    ["Overall Utilization", c.util_pct, "Under 10%"],
+    ["Overall Utilization", c.util_pct || "-", "Under 10%"],
     ["Negative items", negatives.length, 0],
     ["Experian Negatives", exC, 0],
     ["Equifax Negatives", eqC, "reduced"],
     ["Identity mismatches", personal.length, 0],
     ["Personal Pre-Approval", usd(c.preapproval_now), usd(c.preapproval_after)],
     ["Business Pre-Approval", "$0", "$5K-$20K (LLC dependent)"],
-    ["Lenders Available", 0, `10-${(c.lenders || []).length} unlocked`],
+    ["Lenders Available", lendersNow.length,
+      `${lendersNow.length + lendersAfter.length} unlocked`],
     ["LLC Formed", "No", "Yes (4-6 months old)"],
     ["Business Credit Profile", "None", "Active (Paydex building)"]
   ].map((r) => r.map(esc))));
@@ -313,9 +379,13 @@ export function buildRoadmap(client) {
   // 09 call to action
   h.push(PB);
   h.push(section("09", "call to action", "Your Call to Action"));
-  h.push(`<p>${esc(first)}, the two things holding you back right now are maxed out credit
-      cards - fixable with a paydown plan - and a handful of old negatives - fixable with dispute
-      letters. Neither one is permanent. Both are on the repair list starting Month 1.</p>
+  /* F53. This named maxed-out cards and old negatives for every client. On a
+     file with neither it was simply untrue, so the count and the kind now come
+     off the file, and a file with neither gets no such sentence at all. */
+  const back = holdingYouBack(c);
+  h.push(`<p>${esc(first)}, ${esc(back
+    || "there is nothing on this file to dispute or pay down, so the six months ahead are "
+      + "about building the business side rather than repairing the personal one.")}</p>
       <p>Book your strategy call at ${esc(c.booking_url)}.</p>`);
   h.push('<p class="small">This roadmap was prepared by your FundHub advisor based on your '
     + "current credit profile. Projected scores and pre-approval amounts are estimates "

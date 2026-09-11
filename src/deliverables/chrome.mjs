@@ -8,6 +8,7 @@
 
 import { esc } from "./escape.mjs";
 import { median, spaced } from "./format.mjs";
+import { cleanBureaus, lenderBuckets } from "./derive.mjs";
 import { BASE_CSS, COVER_CSS, PAGE_CSS } from "./css.mjs";
 import { fontFaceCss } from "./fonts.mjs";
 
@@ -48,8 +49,31 @@ export function cover(client, doctype, title) {
 </div>`;
 }
 
-/** Python cta_page(). */
+/**
+ * Python cta_page().
+ *
+ * F53. THE LAST PAGE OF ALL FOUR DOCUMENTS SAID "You have clean bureaus ready
+ * for funding now." to every client, including one whose every bureau this
+ * system had just marked DIRTY. It is the same defect as the roadmap's opening
+ * paragraph and it shipped four times per pack. The lead now comes off the
+ * file: the clean bureaus if there are any, otherwise the lenders already open
+ * today, otherwise no claim about either.
+ */
 export function ctaPage(client) {
+  const clean = cleanBureaus(client);
+  const [openNow] = lenderBuckets(client);
+  let lead;
+  if (clean.length) {
+    lead = `You have ${clean.length === 1 ? "a clean bureau" : "clean bureaus"} ready for `
+      + `funding now - ${clean.join(", ")}. Apply on ${clean.length === 1 ? "it" : "those"} `
+      + "while we repair the rest in parallel.";
+  } else if (openNow.length) {
+    lead = `You have ${openNow.length} lender${openNow.length === 1 ? "" : "s"} you can apply `
+      + "to today. Book the call and we will work the list in the right order.";
+  } else {
+    lead = "Book the call and we will put the fixes in this pack in the order that unlocks the "
+      + "most money.";
+  }
   return `
 <div class="cta-page">
   <div><span class="brand">fundhub.</span>
@@ -57,8 +81,7 @@ export function ctaPage(client) {
              letter-spacing:.3em;color:#7d7d7d;margin-left:10px;">${spaced("next steps")}</span></div>
   <h2>Let Us Build Your Game Plan Together</h2>
   <div class="rule"></div>
-  <p>You have clean bureaus ready for funding now. Apply on those while we repair
-     the rest in parallel.</p>
+  <p>${esc(lead)}</p>
   ${qrHtml()}
   <div class="lbl">${spaced("scan to book your call instantly")}</div>
   <p class="url">${esc(client?.booking_url)}</p>

@@ -129,6 +129,14 @@ When it finishes, Render shows you a web address like
 
 ### Step 7 — tell the website where the printer is
 
+> **Not done yet, as of 2026-09-06.** Checked against the live site with
+> `netlify env:list --context production --plain`: of the 82 settings the site
+> has, neither `BLACK_REPORT_RENDER_URL` nor `FUNDHUB_RENDER_KEY` is one of
+> them, in any of production, deploy-preview, branch-deploy or dev. Until the
+> two lines below are run, the live site prints the short Node documents, not
+> these designed ones, and it says so on every document row and in the function
+> log (`reason=render_service_not_configured`).
+
 This is the part an agent does for you, or you paste into Terminal. Two settings,
 then **one** deploy — never one deploy per setting:
 

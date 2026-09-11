@@ -244,7 +244,19 @@ export async function printBlackReports({
     }
   }
 
-  // ── 3. The render service. This is the production path. ──
+  /* ── 3. The render service. THE INTENDED production path, and as of
+        2026-09-06 NOT the live one. ──
+     MEASURED 2026-09-06 against the real site (`netlify env:list --context
+     production --plain | cut -d= -f1`, 82 variables): neither
+     BLACK_REPORT_RENDER_URL nor FUNDHUB_RENDER_KEY is set, in production,
+     deploy-preview, branch-deploy or dev. resolveRenderService() therefore
+     returns null and every live print falls to the Node printer below with
+     reason `render_service_not_configured`. The netlify env:set line in
+     render-service/README.md has not been run.
+
+     So: do not tell anyone the designed documents are what production prints
+     until those two variables exist. Read the engine on the document row, which
+     is exactly what enginePicked() puts there. */
   if (wantsRemote) {
     const service = resolveRenderService(env);
     if (!service) return nodeFallback(client, `render_service_not_configured (${localWhy})`);
