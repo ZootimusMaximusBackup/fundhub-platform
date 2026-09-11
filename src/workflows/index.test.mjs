@@ -66,7 +66,20 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 70 since the hiring outreach cadence (2026-09-05) — the first thing in this
+  /* 72 since the paid checkout expiry sweeper (2026-09-06) — the clock that
+     ends a hosted checkout invitation nobody accepted. Nothing in this
+     repository ever moved a paid_service_requests row off 'awaiting_payment' on
+     its own: the payment webhook could, and docs/journeys/paid-round-actual.md
+     records that the payment handler is not on the live bus. So the row was
+     permanent — and the waypoint nudge sweeper above was suspending a client's
+     entire overdue-checklist chase behind it, on the stated ground that a
+     checkout link expires. It did not. Measured: 200 such clients starved one
+     live client to zero messages, that day and a year later.
+     Registering it MOVES NO MONEY. A row at awaiting_payment has never been
+     charged — a hosted link is an invitation, not a payment — so closing one
+     takes nothing from anybody and creates no refund. It writes a status, a
+     reason and a resolution time, and nothing else.
+     Was 71 since the hiring outreach cadence (2026-09-05) — the first thing in this
      platform that ever contacts a CANDIDATE. Until the same day's public apply
      door, nothing did: candidate_notified_at was read by two endpoints and
      written by none, and a rejection only ever queued a to-do for a person to
@@ -101,6 +114,12 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      row (042). It also reaches nobody until a partner has an activated_at, which
      db/migrations/282_partner_production_floor.sql deliberately leaves NULL for
      every partner activated before it existed rather than guessing a date.
+     Was 70 since the waypoint nudge sweeper (2026-09-06) — the hourly chase on
+     an overdue checklist row the CLIENT owns. Registering it queues a message
+     and nothing more: what stops it running away is in the database, not in the
+     scheduler — db/migrations/365_waypoint_nudges.sql caps it at four messages
+     per waypoint ever and one client-facing message per client per day, both as
+     unique constraints written before anything is queued.
      Was 67 since the subscription billing sweeper (2026-08-31) — the recurring
      billing rail. Registering it charges nobody: the charge-function registry
      in src/subscriptions/charger.mjs is empty because Commas exposes no
@@ -124,7 +143,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 70, `expected 70, got ${functions.length}`);
+  assert.equal(functions.length, 72, `expected 72, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);

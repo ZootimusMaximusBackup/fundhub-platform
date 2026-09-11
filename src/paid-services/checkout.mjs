@@ -45,6 +45,21 @@
 import { createCheckoutSession, checkoutConfig } from "../payments/commas-api.mjs";
 import { assertCommasSafeCopy } from "../payments/commas-safe-copy.mjs";
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   AN INVITATION NOW HAS AN END, AND THE END IS ./link-ttl.mjs
+
+   The header above already says a minted link is an invitation and not a
+   payment. What it did not say, and what was false everywhere it was implied,
+   is that the invitation ever ran out. Nothing in this repository expired one.
+   src/nudge/ was suspending a client's entire overdue-checklist chase behind
+   "a checkout link is out; it expires; then we chase again", and it never did.
+
+   The number is seven days and it lives in ./link-ttl.mjs — its own file, with
+   no imports, because src/nudge/exits.mjs needs the same number and must not
+   import anything that can reach a processor (CLAUDE.md §12). Re-exported here
+   so a reader of the mint path finds it where they look for it. */
+export { CHECKOUT_LINK_TTL_DAYS, checkoutExpiresAt } from "./link-ttl.mjs";
+
 /** The processor-facing name of a self-serve round. Bland on purpose — see the
  *  header. `roundNo` is the self-serve counter, not the program's cap. */
 export function checkoutTitleFor(roundNo) {

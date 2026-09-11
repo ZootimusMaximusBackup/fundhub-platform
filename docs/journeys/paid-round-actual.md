@@ -241,8 +241,15 @@ second unlock path.
 
 * **The handler is not on the live bus.** `register()` exists and is tested, but the one line that
   calls it belongs in `src/register-all.mjs`, which is not this lane's file. Until that line lands,
-  a real `payment.received` does **not** reach this handler and a paid round stays at
-  `awaiting_payment` forever.
+  a real `payment.received` does **not** reach this handler, so nothing marks a paid round as
+  paid. **It no longer sits at `awaiting_payment` forever, though** — since 2026-09-06 the
+  invitation carries a deadline (`checkout_expires_at`, seven days,
+  `db/migrations/370_checkout_expiry_and_escalation_fk.sql`) and
+  `src/workflows/paid-checkout-expiry-sweeper.mjs` closes the record to `cancelled` with
+  `state_reason = 'checkout_expired'` once it passes. That closes the record, it does not deliver
+  the round: a client who really did pay while the handler is off the bus would have their request
+  cancelled seven days later. **That is a reason to land the handler, and it is the open half of
+  this gap.** No money moves either way — nothing here charges or refunds anything.
 * **`fulfilled` is nobody's job yet.** Nothing in this lane moves a request from `staged` to
   `fulfilled`. The staff send path does not know about `paid_service_requests`.
 * **Rounds 4 and 5 must never read as filed.** Nothing in this system records whether a CFPB or

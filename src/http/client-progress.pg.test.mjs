@@ -612,12 +612,28 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     const before = await load("mid");
     assert.equal(before.paidServices[0].inFlight, false);
     const priced = priceDisputeRound({});
+    /* QUOTED FIRST, THEN MOVED — the only path production has.
+       src/paid-services/round.mjs inserts the row at 'quoted', mints the link,
+       and only then moves it to 'awaiting_payment' with the URL and the
+       deadline. Since db/migrations/370 the deadline is compulsory: a row
+       sitting at 'awaiting_payment' with no checkout_expires_at is refused,
+       because a hold that never ends is what held a client's whole chase
+       ladder open for ever. This test used to insert straight into
+       'awaiting_payment', which is a shortcut no production code takes. */
     await requestPaidService(db, {
       orgId: org, clientId: c.mid.id, serviceKind: "dispute_round",
       requestedByKind: "client", requestedByAccountId: c.mid.accountId,
       components: priced.components,
-      status: "awaiting_payment", idempotencyKey: "cp-pg-test-round-1"
+      idempotencyKey: "cp-pg-test-round-1"
     });
+    await db.query(
+      `UPDATE paid_service_requests
+          SET status = 'awaiting_payment',
+              checkout_url = 'https://checkout.example/one',
+              checkout_expires_at = now() + interval '7 days'
+        WHERE idempotency_key = $1`,
+      ["cp-pg-test-round-1"]
+    );
     const after = await load("mid");
     assert.equal(after.paidServices[0].inFlight, true);
     assert.equal(after.paidServices[0].available, false,
@@ -632,8 +648,17 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       orgId: org, clientId: c.mid.id, serviceKind: "dispute_round",
       requestedByKind: "client", requestedByAccountId: c.mid.accountId,
       components: priced.components,
-      roundNo: 1, status: "awaiting_payment", idempotencyKey: "cp-pg-test-round-2"
+      roundNo: 1, idempotencyKey: "cp-pg-test-round-2"
     });
+    /* Quoted, then the link goes out with its deadline — see the test above. */
+    await db.query(
+      `UPDATE paid_service_requests
+          SET status = 'awaiting_payment',
+              checkout_url = 'https://checkout.example/two',
+              checkout_expires_at = now() + interval '7 days'
+        WHERE idempotency_key = $1`,
+      ["cp-pg-test-round-2"]
+    );
     /* MONEY LANDS. 331's paid_state_ck refuses status='paid' without a paid_at,
        and requestPaidService() does not take one — recording a payment is the
        payment handler's job, not the quoting store's. The UPDATE here is what
