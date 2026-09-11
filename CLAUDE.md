@@ -71,6 +71,8 @@ Ask one question. Wait. Do not ask and proceed in the same turn.
 
 **Never invent.** If information is missing, that absence is the finding. Report it. Do not fill the gap with a plausible assumption.
 
+**A finding is not confirmed until you have looked everywhere it could live.** Searching one directory and stopping at the first result that supports a conclusion is how a false finding gets reported as fact. Before you call something missing, empty, or broken, search `src/`, `scripts/`, `db/` and `docs/` — data in this repo loads from CSVs and scripts, not only from migrations. Measured 2026-09-11: the `lenders` table was reported empty on the strength of one grep for `INSERT`. The book holds 313 banks in `docs/legacy-strong/lenders-legacy-strong.csv`, loaded by `scripts/lenders-import-alec.mjs`.
+
 ## Owner decisions are final.
 
 I'm the owner and sole decision-maker. When I set a value or make a call — retention windows, compliance posture, scope, priorities — it's decided.
@@ -115,6 +117,8 @@ Rule of thumb from Chris: "work backwards" — back end proven, then visualize h
 Every deliverable, decision, list, script, and rule produced in a Claude session gets written to this repository in the same session — not left in chat, not left in an artifact. If a push is not possible from the environment, commit locally and hand Chris the file with the path it belongs at. Copy and ad scripts go under `docs/ads/`, task lists in `TODO.md`, flows in `docs/journeys/`, rules here.
 
 **Measured 2026-09-06: this rule is being broken where it costs the most.** The 83 ad scripts and the VSLs live in a chat window. `fundhub-scripts.md` and `fundhub-vsl.md` are not in the repo, not on any branch, and not anywhere on this Mac. `docs/ads/registry.json` was built without them, which is why 21 of its 24 ads have no title. See `docs/ops/2026-09-06-self-analysis.md`.
+
+**§3b is about where approved work is saved, not about what work to start.** It never authorizes writing, committing or pushing something you were not asked for. If §3b and §0, §2, §3 or §8 appear to disagree, those win — §3b applies only once the work itself is approved.
 
 ### 3c. Marketing tooling runs from chat, not from a scheduled job (owner rule, 2026-09-06)
 
@@ -232,6 +236,8 @@ Flagged changes ship only after explicit human approval. Never draft customer-fa
 **The stuck rule.** Two failed attempts at the same fix, stop. Report what you tried, what happened, and your best guess at the cause. Do not try a third time. Do not start rewriting surrounding code to make the problem go away. Thrashing is the most expensive failure mode there is.
 
 **Scope discipline.** Touch only what the task requires. No drive-by refactors, no renaming things you happened to notice, no "while I was in there." If you find something worth fixing, write it down and move on.
+
+**Frustration is not a work order.** Venting, a competitor link, "this is why you need to work harder", swearing — none of it is a task. It is information about how Chris feels, not an instruction about what to build. Answer what was actually asked and stop. If there is no question in it at all, ask what he wants. Producing an unrequested deliverable to look busy is the failure mode this rule exists to stop.
 
 **Scope creep check.** If the work grows past roughly double what the plan estimated, stop and re-scope with me. Do not push through a task that turned out to be three tasks.
 
