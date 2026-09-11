@@ -18,6 +18,7 @@ import { register as registerInboundMmsDocs } from "./handlers/inbound-mms-docs.
 import { register as registerCommasDisputes } from "./handlers/commas-disputes.mjs";
 import { register as registerCommasSubscriptions } from "./handlers/commas-subscriptions.mjs";
 import { register as registerDiagnosticSoftPull } from "./handlers/diagnostic-soft-pull.mjs";
+import { register as registerCrsDeliverables } from "./handlers/crs-deliverables.mjs";
 import { register as registerContractSigned } from "./handlers/contract-signed.mjs";
 import { register as registerContractConsent } from "./handlers/contract-consent.mjs";
 import { register as registerAgentRuntime } from "./agents/runtime.mjs";
@@ -66,6 +67,13 @@ export function registerAll() {
   /* Soft pull must run even when Inngest is off — same sync rule as card
      placement on entry.captured. After money-chain so the client/tx exist. */
   registerDiagnosticSoftPull();
+  /* The five UnderwriteIQ deliverables, on the pull, for the same reason the
+     soft pull above is here: C-06 is an Inngest function and the fan-out that
+     invokes it is fire-and-forget with a swallowed rejection, so in production
+     it has never run. AFTER registerLifecycle: that handler's
+     onAnalysisCompleted creates the client row this one delivers to, and
+     handler order on the bus is registration order. */
+  registerCrsDeliverables();
   registerContractSigned();
   registerContractConsent();
   // After comms: the inbound message row must exist before the runtime

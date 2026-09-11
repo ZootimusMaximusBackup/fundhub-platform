@@ -1185,7 +1185,12 @@ def build_funding_snapshot(c):
     h.append(PB)
     h.append(section("05", "after optimization", "Where You Could Be - After Optimization"))
     rows = []
-    for nm, cat, typ, lo, hi, sc, tib, rev, why in c["lenders"]:
+    # `*_extra` is load-bearing. These rows are unpacked POSITIONALLY in three
+    # places here, and black-report-client.mjs lenderRow() now appends two more
+    # columns (bucket, whatNeeded) that only the Node printer reads. Without the
+    # star this raises ValueError, black-report-pdf.mjs silently falls back to the
+    # Node printer, and no test or log ever says this printer died.
+    for nm, cat, typ, lo, hi, sc, tib, rev, why, *_extra in c["lenders"]:
         need = f"Score {sc}+" if tib is None else f"LLC + Score {sc}+"
         rows.append((esc(nm), typ, money_range(lo, hi), need))
     h.append(table(["lender", "type", "est. range", "what you need"], rows))
@@ -1224,7 +1229,7 @@ def build_lender_list(c):
 
     # score ladder
     tiers = {}
-    for nm, cat, typ, lo, hi, sc, tib, rev, why in c["lenders"]:
+    for nm, cat, typ, lo, hi, sc, tib, rev, why, *_extra in c["lenders"]:
         tiers.setdefault(sc, []).append(nm)
     rows = []
     for sc in sorted(tiers):
@@ -1249,7 +1254,7 @@ def build_lender_list(c):
         "Business Term Loans": "",
     }
     seen = []
-    for nm, cat, typ, lo, hi, sc, tib, rev, why in c["lenders"]:
+    for nm, cat, typ, lo, hi, sc, tib, rev, why, *_extra in c["lenders"]:
         if cat not in seen:
             seen.append(cat)
             h.append(f'<h3>{esc(cat)}</h3><p class="small">{cat_notes.get(cat,"")}</p>')

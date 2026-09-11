@@ -179,11 +179,22 @@ const BASELINE = Object.freeze({
 });
 
 /** The four PDFs the in-process printer produces, and the words inside each. */
+/* Re-pinned 2026-09-12, merging fix/r2-w10-deliverables into main. That branch's
+   commit "The printed documents match the designed set (F43, F44, F45, F50)"
+   rewrites the in-process printer (587 added lines in black-report-node.mjs) so
+   the four documents match the designed reference set. So every textSha moved and
+   three of the four page counts moved with them. What did NOT move is the part
+   that would signal a loss: the same four files, in the same order, with the same
+   types. Previous values, recorded 2026-08-28 on audit/baseline-wf at 4d6cf31b:
+     Credit-Analysis-Report.pdf      4pp 2a263c90866720920345e355b02dac8991dab9ce746756585a334dbd44a88eb2
+     Funding-Snapshot.pdf            3pp 8c6414699579bb25847d33bc6e44beec88339a9650e978c67c575ffe9de05c42
+     Bank-Lender-Match-List.pdf      6pp 5985d2dcfb4a563ee0fd55bc3d12ab9b66d4ff82e7f0188e919987c9e8a744fc
+     Credit-Optimization-Roadmap.pdf 3pp c44be557e52ac6070fc9cd0eba4ce5560dcab012acd0a61e09ae4ae71a929cc8 */
 const BASELINE_NODE_PDFS = Object.freeze([
-  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "2a263c90866720920345e355b02dac8991dab9ce746756585a334dbd44a88eb2" },
-  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 3, textSha: "8c6414699579bb25847d33bc6e44beec88339a9650e978c67c575ffe9de05c42" },
-  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 6, textSha: "5985d2dcfb4a563ee0fd55bc3d12ab9b66d4ff82e7f0188e919987c9e8a744fc" },
-  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 3, textSha: "c44be557e52ac6070fc9cd0eba4ce5560dcab012acd0a61e09ae4ae71a929cc8" }
+  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "361451cb46f992f176ba98e3990fbd4c5d00b37a085b439f38c57f160c2f3ce9" },
+  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 4, textSha: "21ea81ccfb0e609c8e66c3aa4cc6637ed723f0e5bef061988df9fe773843f80a" },
+  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 3, textSha: "3a02114ed736003193c02743b41b24d5a7b15815ae387019fadcbee1d7f8b37c" },
+  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 5, textSha: "a2bd7ddce9c1e777595db15e7e2fdade195815d17322acd8c080524cc919e939" }
 ]);
 
 /** Every document a client receives, in order. [filename, type, bureau]. */

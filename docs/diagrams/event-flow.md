@@ -124,7 +124,7 @@ flowchart LR
 | `entry.captured` | journey spine | `onEntryCaptured` | 5 |
 | `survey.submitted` | journey spine | `onSurveySubmitted` | 1 |
 | `diagnostic.paid` | journey spine | `onDiagnosticPaid`, `onDiagnosticPaidSoftPull`, `onDiagnosticPaidMoney` | 2 |
-| `analysis.completed` | journey spine | `onAnalysisCompleted` | 8 |
+| `analysis.completed` | journey spine | `onAnalysisCompleted`, `onAnalysisCompletedDeliverables` | 8 |
 | `booking.created` | journey spine | `onBookingCreated`, `onInterviewBooked` | 9 |
 | `booking.rescheduled` | journey spine | `onBookingRescheduled` | 2 |
 | `booking.cancelled` | journey spine | `onBookingCancelled` | 0 |

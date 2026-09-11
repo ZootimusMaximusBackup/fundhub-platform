@@ -1303,11 +1303,26 @@
       toast((r.error && (r.error.message || r.error)) || "Could not complete that action");
       return;
     }
+    /* F41. This action used to report success no matter what came back. On a
+       clean file the pack is empty, nothing is stored and no email goes out —
+       and the presenter was still told "Deliverables sent to client." The
+       endpoint now answers with `delivered` and, when it is false, the reason,
+       so the screen says what actually happened. */
+    if (action === "generate_letters") {
+      var ok = r.delivered === true;
+      if (act) markSent(act, ok);
+      if (ok) {
+        var n = r.documentsStored || r.letterCount || 0;
+        toast((state.edu ? "Deliverables sent. " : "Letters sent. ") + n + " document(s) saved to the client portal.");
+      } else {
+        toast("Nothing was sent — " + (r.reason || "the pack came out empty") + ".");
+      }
+      return;
+    }
     if (act) markSent(act, true);
     if (action === "send_soft_pull") toast("Soft pull emailed — pay link + approval form.");
     else if (action === "send_ebook") toast("E-book email sent with PDF attached.");
     else if (action === "send_pay_link") toast("Agreement and pay link sent.");
-    else if (action === "generate_letters") toast(state.edu ? "Deliverables sent to client." : "Letters generating. Client emailed.");
     else toast("Disposition written to contact record.");
   }
 
