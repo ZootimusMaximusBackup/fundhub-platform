@@ -274,7 +274,8 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/022_partner_welcome.sql",
   "seed/023_ds02_letters_portal_copy.sql",
   "seed/024_partner_welcome_password.sql",
-  "seed/025_creditor_bureau_map.sql"
+  "seed/025_creditor_bureau_map.sql",
+  "seed/295_sms_copy_2026_09.sql"
 ]);
 
 export default EXPECTED_MIGRATIONS;
