@@ -1,5 +1,68 @@
 # TODO
 
+## Competitor gaps — MyFundalytics, measured 2026-09-12
+
+Their site is blocked from the agent environment, so this is measured against the
+feature list Chris supplied, checked line by line against main at 5f7ad13.
+
+**Correction to the first pass on 2026-09-11.** It reported the lender table empty
+and white-label custom domains missing. Both were wrong, from stopping at one grep.
+The book holds 313 banks and custom domains are built and routed. What follows is
+the measured version.
+
+### What they have that we do not
+
+1. **The bureau each bank pulls is unknown for 237 of 307 banks.**
+   This is the real gap and it is data, not code. `src/lenders/match.mjs` already
+   ranks by bureau rotation — spreading credit checks so no one bureau gets hit
+   twice — and `db/migrations/365_lenders_bureaus_from_datapoints.sql` filled in
+   70 rows from Alec's datapoints and the inquiry master. 237 banks stay blank
+   because no source names them. 365's own header says that is a data gap and not
+   a guess to fill, which is right. So the rotation ranking is running on about
+   a quarter of the book.
+   *Needs: a source that names the bureau for the other 237. Not a build.*
+
+2. **No minimum credit score on a lender row.**
+   `src/lenders/match.mjs` filter 4 is written to skip a bank whose stated minimum
+   score is above the client's file — and its own comment says it "reads almost
+   nothing today" because there is no `minimum_credit_score` column on `lenders`
+   at all. Their "Approval Radar" (odds against a named lender) is mostly this one
+   column. Without it we filter on state and bureau but not on score.
+   *Needs: a column, a migration, and the numbers to put in it.*
+
+3. **191 of 313 banks have no application link.**
+   A match a client cannot act on is half a match.
+
+### What we have that they advertise — verified, not assumed
+
+* 3-bureau ingestion: `src/deliverables/credit-analysis.mjs`, `src/sales/cockpit.mjs`
+* Lender matching with real rules: `src/lenders/match.mjs` (state, bureau
+  sensitivity, bureau rotation, no business credit card without a business on file)
+* 313 banks, loaded by `scripts/lenders-import-alec.mjs` from
+  `docs/legacy-strong/lenders-legacy-strong.csv` — four times their advertised 80+
+* Funding blueprint: `src/deliverables/roadmap.mjs`, `src/deliverables/lender-list.mjs`
+* AI coach, deeper than theirs reads: `src/agents/` — registry, runtime, guardrails,
+  model selection, shadow logging
+* Intake-to-funded pipeline: `src/http/pipeline.pg.test.mjs`, application status enum
+  in `db/migrations/138_lenders.sql`
+* Fee, commission split and invoicing: `src/commissions/`
+* White-label with real custom domains: `api/partner-brand/verify-domain.mjs` does a
+  live DNS TXT check and sets `partner_brand.domain_verified`. Routed in
+  `netlify/functions/api.mjs`. Plus `public/app/brand-studio.html`
+* Row-level security, unprivileged app role, audit logging: `db/migrations/104_app_role.sql`,
+  guarded by `npm run guard:rls`
+
+### The gap that is not technical
+
+They explain their product in eight bullets on one page. We cannot. That is a
+positioning problem and it blocks nothing above.
+
+### Company note
+
+MYFUNDALYTICS LLC, Florida, registered 2026-03-03 — six months old. 777 Brickell Ave
+Suite 500 is a virtual office. One named principal. A small fast shop that packaged
+better, not a funded competitor that out-built us.
+
 ## Tomorrow 9/4 — read this first
 
 The 2026-09-03 fix batch shipped overnight. 30 of 37 walkthrough defects fixed,
