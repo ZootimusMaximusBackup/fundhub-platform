@@ -56,16 +56,17 @@ Per **$1** of ad spend, at a $150 cost per sale:
 | Money | Arrives | Per $1 of ad spend |
 |---|---|---|
 | $297 front end, less 3% processing | **Day 7** | **$1.92** |
-| $200 and $1,000 repair sales, less processing | **Day ~28** | **$0.54** |
-| $3,000 deposit, less processing and the closer's 16.67% | **Day ~28** | **$0.92** |
+| Repair sales, less processing and 20% fulfillment | **Day ~28** | **$0.43** |
+| $3,000 deposit, less processing, commission and $1,000 fulfillment | **Day ~28** | **$0.54** |
 | Fee balance, less processing | **Day ~90** | **$1.75** |
-| | | **$5.13 total** |
+| | | **$4.64 total** |
 
-**The ramp table below leaves the repair lines out.** They were added to the
-model after the ramp was built, and leaving them out makes the table
-conservative rather than wrong — about **$0.54 more per dollar of ad spend
-arrives around day 28** than the table shows. Every week from 5 onward has more
-cash in it than the number printed.
+**The ramp table below shows the deposit line before fulfillment cost, and
+leaves the repair lines out entirely.** The two roughly cancel: repair adds
+about $0.43 per dollar of ad spend around day 28, funding fulfillment takes
+about $0.38 away over the same window. **Treat the ramp as accurate to within a
+few percent, not as conservative.** The front-end line — the $1.92 on day 7 that
+actually recycles the bankroll — is unaffected by either.
 
 **The front end alone returns $1.92 for every $1, seven days later.** That is
 what makes this scalable on a small bankroll. We are not waiting on funding

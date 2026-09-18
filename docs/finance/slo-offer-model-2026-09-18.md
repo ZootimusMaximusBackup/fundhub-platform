@@ -60,6 +60,8 @@ less than nothing.
 | Balance of the fee actually collected | 70% | 85% | 95% |
 | Card processing | 3% of everything collected | | |
 | Front-end delivery cost per buyer (AI generation + portal) | $8 | | |
+| **Repair fulfillment** | **20% of repair revenue** (owner-set 2026-09-18) | | |
+| **Funding fulfillment** | **$1,000 per funding client** (owner-set 2026-09-18) | | |
 
 **The average deal size is no longer the open question.** Chris set it at
 $100,000 on 2026-09-18. What is still unmeasured is how many clients reach a
@@ -117,6 +119,31 @@ revenue lines, expected case, per **1,000 buyers**:
 **One $297 buyer generates about $789. We pay $150 to get them. That is 5.3× on
 ad spend, gross.**
 
+### And what it costs — per buyer
+
+| Cost | Per buyer |
+|---|---|
+| Ad spend | $150.00 |
+| Card processing, 3% of everything collected | $23.67 |
+| Blueprint delivery | $8.00 |
+| Repair fulfillment, 20% of $84 of repair revenue | $16.80 |
+| Funding fulfillment, $1,000 × 5.7% of buyers | $57.00 |
+| Sales commission, $850 × 5.7% of buyers | $48.45 |
+| **Total cost per buyer** | **$303.92** |
+
+**Net: about $485 per buyer, on $150 of ad spend. That is 3.2× net, after
+everything except payroll, software and overhead.**
+
+**Per funding client, once its own costs come out:**
+
+| | |
+|---|---|
+| Deposit + collected fee balance | $7,165 |
+| Commission | −$850 |
+| Fulfillment | −$1,000 |
+| Processing | −$215 |
+| **Net per funding client** | **$5,100** |
+
 Where that money sits: **38% of it is the front end and repair** — cash that
 lands within thirty days and does not depend on a single funding deal closing.
 **62% is the funding engagement**, and $237 of it is the fee balance, which is
@@ -150,19 +177,21 @@ acquisition cost.
 | Success-fee balances | $45,815 | $95,795 | $158,270 |
 | **Total collected** | **$155,015** | **$317,195** | **$526,270** |
 | Ad spend | −$30,000 | −$60,000 | −$100,000 |
-| Processing + delivery | −$6,250 | −$12,716 | −$21,124 |
+| Processing + blueprint delivery | −$6,250 | −$12,716 | −$21,124 |
+| Repair fulfillment (20%) | −$3,360 | −$6,720 | −$11,200 |
+| Funding fulfillment ($1,000/client) | −$11,000 | −$23,000 | −$38,000 |
 | Sales commission (§5a) | −$9,350 | −$19,550 | −$32,300 |
-| **Left over** | **+$109,415** | **+$224,929** | **+$372,846** |
+| **Left over** | **+$95,055** | **+$195,209** | **+$323,646** |
 
 **The two repair lines add $16,800 a month at $30,000 of ad spend and $33,600 at
 $60,000** — off buyers we already paid for, who were never going to close a
 funding deal anyway.
 
-**Not costed here:** what it costs to fulfil repair. Letters, postage, and the
-labour behind the dispute rounds are real and are not recorded anywhere in this
-repo as a number I can use. The $200 trial in particular is capped at 2 rounds
-and priced as a proof-of-concept, so its margin is thin by design. Treat the
-repair rows as revenue, not profit, until somebody costs a round.
+**Fulfillment is now costed** (owner-set 2026-09-18): repair runs at **20% of
+repair revenue**, funding at **$1,000 per funding client**. Both are in the
+tables above. Neither is measured — they are Chris's working figures, and the
+repair one in particular should be checked against a real dispute round, since
+the $200 trial is capped at 2 rounds and priced as a proof of concept.
 
 ## 5. Monthly model — all three cases at $60,000/mo ad spend
 
@@ -177,9 +206,11 @@ repair rows as revenue, not profit, until somebody costs a round.
 | Success-fee balances | $21,560 | $95,795 | $276,973 |
 | **Total collected** | **$181,160** | **$317,195** | **$598,773** |
 | Ad spend | −$60,000 | −$60,000 | −$60,000 |
-| Processing + delivery | −$8,635 | −$12,716 | −$21,163 |
+| Processing + blueprint delivery | −$8,635 | −$12,716 | −$21,163 |
+| Repair fulfillment (20%) | −$3,360 | −$6,720 | −$11,200 |
+| Funding fulfillment ($1,000/client) | −$8,000 | −$23,000 | −$49,000 |
 | Sales commission | −$6,200 | −$19,550 | −$45,325 |
-| **Left over** | **+$106,325** | **+$224,929** | **+$472,285** |
+| **Left over** | **+$94,965** | **+$195,209** | **+$412,085** |
 
 **The low case still works.** That is the point of this offer. Even if only 8 of
 400 buyers ever become funding clients, the front end covers the ads and the
