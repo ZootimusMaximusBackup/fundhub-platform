@@ -1,0 +1,75 @@
+# The new lead flow — what's coming to your calendar
+
+Date: 2026-09-18. For the closer. Send as-is.
+
+## What changed
+
+We are running ads to a **$297 blueprint**. A person pays $297, tells us about
+their situation, and gets a custom plan for fixing their own credit and getting
+funding-ready fast. They keep portal access.
+
+**Nobody hits your calendar until they have paid us $297.** That is the whole
+point. You are not calling cold leads and you are not calling people who
+downloaded a free thing. Everyone you talk to has already taken out a card and
+paid us money.
+
+## Where your calls come from
+
+Two ways:
+
+1. **They book themselves.** After they buy, they answer six questions and get
+   offered a call.
+2. **Our outbound people call them.** Every buyer gets called whether they
+   booked or not.
+
+Before the call you will see their six answers: credit score range, recent
+derogatory marks, whether they have a business and how old it is, how much
+funding they want, how fast they need it, and whether they can start this week.
+
+**680 or better, has a business, needs it this month → straight to you.** The
+rest get worked first.
+
+## What you are selling
+
+Same thing as always. **$3,000 to start, and it counts toward the 10%.**
+
+The math you can say out loud — an example, not a promise:
+
+> Funded for $75,000 → 10% is $7,500 → you already paid $3,000 → the rest is
+> $4,500.
+
+Nothing about the offer changed. Only where the person came from changed.
+
+## Volume you should expect
+
+At the ad spend we are planning, per month:
+
+| Ad spend | Calls booked | Calls you hold | Qualified | Deals you should close |
+|---|---|---|---|---|
+| $30,000 | 90 | 63 | 38 | 11 |
+| $60,000 | 180 | 126 | 76 | 23 |
+| $100,000 | 300 | 210 | 126 | 38 |
+
+These are planning numbers, not a promise. The line that matters to you is the
+last one: **about 3 in 10 qualified calls should close.** If you are under that
+for two weeks running, something upstream is wrong and we want to know — it is
+probably the ad bringing the wrong person, not you.
+
+## Two things to watch for
+
+1. **Some of these people want to do it themselves.** That is fine. They bought
+   the do-it-yourself plan. Your job is to find the ones who want it done for
+   them and are ready now. Do not fight the others — they stay in the portal and
+   can upgrade themselves later with a button.
+2. **Small requests are still worth your time.** We do not cancel people who
+   want under $50,000. That was somebody else's rule. It is not ours.
+
+## Your pay
+
+**TO BE FILLED IN BY CHRIS.** Commission on the $3,000 start and on the fee
+balance is not written down anywhere in our system yet. Do not send this page to
+the closer until this section says a real number.
+
+## The full model
+
+`docs/finance/slo-offer-model-2026-09-18.md`
