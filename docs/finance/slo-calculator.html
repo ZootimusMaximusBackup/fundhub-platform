@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*{box-sizing:border-box}html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Ad Spend to Revenue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #FBFAF7;
+    --surface: #FFFFFF;
+    --surface-sunk: #F2F1EC;
+    --line: #E0DFD8;
+    --line-strong: #C9C8BF;
+    --ink: #1A1D19;
+    --ink-soft: #5C6158;
+    --ink-faint: #8A8F83;
+    --rev: #0B6E4F;
+    --rev-soft: #D7EBE2;
+    --cost: #A8501E;
+    --cost-soft: #F2E1D5;
+    --net: #1A1D19;
+    --focus: #0B6E4F;
+    --shadow: 0 1px 2px rgba(26,29,25,.05), 0 8px 24px -12px rgba(26,29,25,.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0F1210;
+      --surface: #171B18;
+      --surface-sunk: #121614;
+      --line: #282E29;
+      --line-strong: #3A423B;
+      --ink: #E9EBE6;
+      --ink-soft: #A2A99E;
+      --ink-faint: #767D71;
+      --rev: #4FC79A;
+      --rev-soft: #17362B;
+      --cost: #E08A54;
+      --cost-soft: #382317;
+      --net: #E9EBE6;
+      --focus: #4FC79A;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0F1210;
+    --surface: #171B18;
+    --surface-sunk: #121614;
+    --line: #282E29;
+    --line-strong: #3A423B;
+    --ink: #E9EBE6;
+    --ink-soft: #A2A99E;
+    --ink-faint: #767D71;
+    --rev: #4FC79A;
+    --rev-soft: #17362B;
+    --cost: #E08A54;
+    --cost-soft: #382317;
+    --net: #E9EBE6;
+    --focus: #4FC79A;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 40px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---- masthead ---- */
+  header { display: flex; flex-direction: column; gap: 10px; }
+  .eyebrow {
+    font-size: 11px; font-weight: 600; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  h1 {
+    font-family: Archivo, system-ui, sans-serif;
+    font-weight: 700; font-size: clamp(30px, 6vw, 42px);
+    line-height: 1.05; letter-spacing: -.025em;
+    margin: 0; text-wrap: balance;
+  }
+  .sub { color: var(--ink-soft); max-width: 62ch; margin: 0; }
+
+  /* ---- controls ---- */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+    display: grid;
+    gap: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+  .ctrl { display: flex; flex-direction: column; gap: 7px; }
+  .ctrl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .ctrl label { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+  .ctrl output { font-size: 17px; font-weight: 600; color: var(--ink); }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 22px; background: transparent; margin: 0; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px; background: var(--line-strong);
+  }
+  input[type=range]::-moz-range-track {
+    height: 4px; border-radius: 2px; background: var(--line-strong);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; margin-top: -7px; border-radius: 50%;
+    background: var(--rev); border: 2px solid var(--surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--rev); border: 2px solid var(--surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  }
+  input[type=range]:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 4px; }
+  .hint { font-size: 11.5px; color: var(--ink-faint); }
+
+  /* ---- headline result ---- */
+  .result {
+    display: grid; gap: 1px;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .rcell { background: var(--surface); padding: 20px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .rcell .k { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
+  .rcell .v {
+    font-family: Archivo, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700; font-size: clamp(22px, 4.6vw, 31px);
+    letter-spacing: -.02em; line-height: 1.1;
+  }
+  .rcell .n { font-size: 12px; color: var(--ink-soft); }
+  .v.rev { color: var(--rev); }
+  .v.net { color: var(--net); }
+  @media (max-width: 620px) { .result { grid-template-columns: 1fr; } }
+
+  /* ---- ledger ---- */
+  section h2 {
+    font-family: Archivo, system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-faint);
+    margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  }
+  .rows { display: flex; flex-direction: column; }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 88px 92px;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .row .label { font-size: 14px; }
+  .row .meta { font-size: 11.5px; color: var(--ink-faint); display: block; }
+  .row .bar { height: 7px; border-radius: 2px; }
+  .row .amt { text-align: right; font-size: 14px; font-weight: 500; }
+  .bar-track { background: var(--surface-sunk); border-radius: 2px; height: 7px; }
+  .bar.rev { background: var(--rev); }
+  .bar.cost { background: var(--cost); }
+  .amt.cost { color: var(--cost); }
+  .row.total {
+    border-bottom: none; border-top: 2px solid var(--ink);
+    margin-top: 4px; padding-top: 12px;
+  }
+  .row.total .label { font-weight: 600; }
+  .row.total .amt { font-weight: 700; font-size: 16px; }
+  @media (max-width: 480px) {
+    .row { grid-template-columns: 1fr 88px; }
+    .row .bar-track { display: none; }
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  @media (max-width: 680px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ---- scale table ---- */
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-faint); border-bottom: 1px solid var(--line-strong);
+  }
+  tbody tr.here { background: var(--rev-soft); }
+  tbody tr.here td:first-child::after {
+    content: "you are here"; display: block;
+    font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--rev); font-weight: 600;
+  }
+  td.pos { color: var(--rev); font-weight: 600; }
+
+  /* ---- notes ---- */
+  .notes {
+    background: var(--surface-sunk);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 22px;
+  }
+  .notes h2 { border-bottom: none; padding-bottom: 0; margin-bottom: 10px; }
+  .notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
+  .notes li { font-size: 13.5px; color: var(--ink-soft); }
+  .notes b { color: var(--ink); font-weight: 600; }
+  footer { font-size: 12px; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">$297 blueprint &rarr; funding engagement</div>
+    <h1>Ad spend to revenue</h1>
+    <p class="sub">Move the sliders. Everything below recalculates. Built on the FundHub offer stack &mdash; a $297 front end that pays for the lead, then credit repair and the $3,000 funding deposit behind it.</p>
+  </header>
+
+  <div class="panel">
+    <div class="ctrl">
+      <div class="ctrl-top"><label for="spend">Monthly ad spend</label><output class="num" id="spend-v">$60,000</output></div>
+      <input type="range" id="spend" min="5000" max="200000" step="5000" value="60000">
+      <span class="hint">What you put into Meta each month</span>
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-top"><label for="cpa">Cost per $297 sale</label><output class="num" id="cpa-v">$150</output></div>
+      <input type="range" id="cpa" min="75" max="300" step="5" value="150">
+      <span class="hint">Ad dollars to get one blueprint buyer</span>
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-top"><label for="conv">Buyers who become funding clients</label><output class="num" id="conv-v">5.7%</output></div>
+      <input type="range" id="conv" min="1" max="15" step="0.1" value="5.7">
+      <span class="hint">Books a call, qualifies, pays the $3,000</span>
+    </div>
+    <div class="ctrl">
+      <div class="ctrl-top"><label for="deal">Average funding deal</label><output class="num" id="deal-v">$100,000</output></div>
+      <input type="range" id="deal" min="25000" max="250000" step="5000" value="100000">
+      <span class="hint">You bill 10% of it, minus the deposit already paid</span>
+    </div>
+  </div>
+
+  <div class="result">
+    <div class="rcell">
+      <span class="k">Revenue</span>
+      <span class="v rev num" id="out-rev">$317,195</span>
+      <span class="n num" id="out-rev-n">from 400 buyers</span>
+    </div>
+    <div class="rcell">
+      <span class="k">Money left over</span>
+      <span class="v net num" id="out-net">$195,209</span>
+      <span class="n num" id="out-net-n">after every cost below</span>
+    </div>
+    <div class="rcell">
+      <span class="k">Return on ad spend</span>
+      <span class="v num" id="out-roas">5.3&times;</span>
+      <span class="n num" id="out-roas-n">$789 back per buyer</span>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <section>
+      <h2>Where the money comes from</h2>
+      <div class="rows" id="rev-rows"></div>
+    </section>
+
+    <section>
+      <h2>What it costs</h2>
+      <div class="rows" id="cost-rows"></div>
+    </section>
+  </div>
+
+  <section>
+    <h2>If you scaled the spend</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ad spend</th><th>Buyers</th><th>Funding clients</th><th>Revenue</th><th>Left over</th>
+          </tr>
+        </thead>
+        <tbody id="scale-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="notes">
+    <h2>Two numbers that decide everything</h2>
+    <ul>
+      <li><b>Break-even cost per sale is <span class="num" id="be-total">$635</span>.</b> Above that, the whole machine stops paying for itself. The front end alone breaks even at <b class="num">$280</b> &mdash; below that figure the $297 covers its own ad and every deposit behind it is free.</li>
+      <li><b>The cash comes back in seven days.</b> Card money clears the processor in about a week, so the same bankroll gets spent roughly four times a month. You never need a month of ad budget sitting in the bank &mdash; you need seven days of it.</li>
+      <li><b>Repair buyers and funding buyers are different people.</b> The 560-score buyer who can't be funded yet takes the $200 trial or the $1,000 done-for-you. Same ad, same $297, no extra cost to acquire them.</li>
+    </ul>
+  </div>
+
+  <footer>
+    Planning model, not a forecast. Prices are real and set in the system: $297 blueprint, $200 repair trial, $1,000 repair done-for-you, $3,000 deposit against a 10% success fee. Conversion rates and fulfillment costs are estimates, not measured results.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var FRONT = 297, TRIAL = 200, TRIAL_RATE = 0.12, DFY = 1000, DFY_RATE = 0.06;
+  var DEPOSIT = 3000, FEE_PCT = 0.10, REACH = 0.70, COLLECT = 0.85;
+  var PROC = 0.03, DELIVERY = 8, REPAIR_FULFILL = 0.20, FUND_FULFILL = 1000;
+  var CLOSER_FRONT = 0.1667, BACKEND_COMM = 0.005;
+
+  function money(n) {
+    var neg = n < 0;
+    var s = "$" + Math.round(Math.abs(n)).toLocaleString("en-US");
+    return neg ? "−" + s : s;
+  }
+
+  function model(spend, cpa, convPct, deal) {
+    var buyers = spend / cpa;
+    var clients = buyers * (convPct / 100);
+    var funded = clients * REACH;
+    var balance = Math.max(0, deal * FEE_PCT - DEPOSIT);
+
+    var r = {
+      front:    buyers * FRONT,
+      trial:    buyers * TRIAL_RATE * TRIAL,
+      dfy:      buyers * DFY_RATE * DFY,
+      deposits: clients * DEPOSIT,
+      fees:     funded * balance * COLLECT
+    };
+    r.total = r.front + r.trial + r.dfy + r.deposits + r.fees;
+
+    var c = {
+      ads:        spend,
+      processing: r.total * PROC,
+      delivery:   buyers * DELIVERY,
+      repair:     (r.trial + r.dfy) * REPAIR_FULFILL,
+      funding:    clients * FUND_FULFILL,
+      commission: clients * (DEPOSIT * CLOSER_FRONT) + funded * deal * BACKEND_COMM
+    };
+    c.total = c.ads + c.processing + c.delivery + c.repair + c.funding + c.commission;
+
+    return {
+      buyers: buyers, clients: clients, rev: r, cost: c,
+      net: r.total - c.total,
+      perBuyer: buyers > 0 ? r.total / buyers : 0,
+      roas: spend > 0 ? r.total / spend : 0,
+      breakEven: buyers > 0 ? (r.total - (c.total - c.ads)) / buyers : 0
+    };
+  }
+
+  function rowHTML(label, meta, amount, pct, kind) {
+    return '<div class="row">' +
+      '<span class="label">' + label + '<span class="meta">' + meta + '</span></span>' +
+      '<span class="bar-track"><span class="bar ' + kind + '" style="width:' + Math.max(2, pct * 100).toFixed(1) + '%"></span></span>' +
+      '<span class="amt ' + (kind === "cost" ? "cost" : "") + ' num">' + (kind === "cost" ? "−" : "") + money(amount) + '</span>' +
+      '</div>';
+  }
+
+  function totalRowHTML(label, amount, kind) {
+    return '<div class="row total">' +
+      '<span class="label">' + label + '</span><span class="bar-track" style="background:none"></span>' +
+      '<span class="amt ' + (kind === "cost" ? "cost" : "") + ' num">' + (kind === "cost" ? "−" : "") + money(amount) + '</span>' +
+      '</div>';
+  }
+
+  var ids = ["spend", "cpa", "conv", "deal"];
+  var els = {};
+  ids.forEach(function (id) { els[id] = document.getElementById(id); });
+
+  function render() {
+    var spend = +els.spend.value, cpa = +els.cpa.value;
+    var conv = +els.conv.value, deal = +els.deal.value;
+
+    document.getElementById("spend-v").textContent = money(spend);
+    document.getElementById("cpa-v").textContent = money(cpa);
+    document.getElementById("conv-v").textContent = conv.toFixed(1) + "%";
+    document.getElementById("deal-v").textContent = money(deal);
+
+    var m = model(spend, cpa, conv, deal);
+
+    document.getElementById("out-rev").textContent = money(m.rev.total);
+    document.getElementById("out-rev-n").textContent = "from " + Math.round(m.buyers).toLocaleString("en-US") + " buyers";
+    document.getElementById("out-net").textContent = money(m.net);
+    document.getElementById("out-net-n").textContent = Math.round(m.clients) + " funding clients closed";
+    document.getElementById("out-roas").textContent = m.roas.toFixed(1) + "×";
+    document.getElementById("out-roas-n").textContent = money(m.perBuyer) + " back per buyer";
+    document.getElementById("be-total").textContent = money(m.breakEven);
+
+    var rmax = Math.max(m.rev.front, m.rev.trial, m.rev.dfy, m.rev.deposits, m.rev.fees, 1);
+    document.getElementById("rev-rows").innerHTML =
+      rowHTML("$297 blueprint", "every buyer", m.rev.front, m.rev.front / rmax, "rev") +
+      rowHTML("$200 repair trial", "12% of buyers", m.rev.trial, m.rev.trial / rmax, "rev") +
+      rowHTML("$1,000 repair, done for you", "6% of buyers", m.rev.dfy, m.rev.dfy / rmax, "rev") +
+      rowHTML("$3,000 funding deposits", Math.round(m.clients) + " clients", m.rev.deposits, m.rev.deposits / rmax, "rev") +
+      rowHTML("Success fee balance", "10% of the deal, less the deposit", m.rev.fees, m.rev.fees / rmax, "rev") +
+      totalRowHTML("Total collected", m.rev.total, "rev");
+
+    var cmax = Math.max(m.cost.ads, m.cost.processing, m.cost.delivery, m.cost.repair, m.cost.funding, m.cost.commission, 1);
+    document.getElementById("cost-rows").innerHTML =
+      rowHTML("Ad spend", "what you put in", m.cost.ads, m.cost.ads / cmax, "cost") +
+      rowHTML("Card processing", "3% of everything collected", m.cost.processing, m.cost.processing / cmax, "cost") +
+      rowHTML("Blueprint delivery", "$8 a buyer", m.cost.delivery, m.cost.delivery / cmax, "cost") +
+      rowHTML("Repair fulfillment", "20% of repair revenue", m.cost.repair, m.cost.repair / cmax, "cost") +
+      rowHTML("Funding fulfillment", "$1,000 a client", m.cost.funding, m.cost.funding / cmax, "cost") +
+      rowHTML("Sales commission", "16.67% of deposit + 0.5% of funded", m.cost.commission, m.cost.commission / cmax, "cost") +
+      totalRowHTML("Total cost", m.cost.total, "cost");
+
+    var levels = [15000, 30000, 60000, 100000, 150000];
+    if (levels.indexOf(spend) === -1) { levels.push(spend); levels.sort(function (a, b) { return a - b; }); }
+    document.getElementById("scale-rows").innerHTML = levels.map(function (lv) {
+      var s = model(lv, cpa, conv, deal);
+      return '<tr class="' + (lv === spend ? "here" : "") + '">' +
+        '<td class="num">' + money(lv) + '</td>' +
+        '<td class="num">' + Math.round(s.buyers).toLocaleString("en-US") + '</td>' +
+        '<td class="num">' + Math.round(s.clients) + '</td>' +
+        '<td class="num">' + money(s.rev.total) + '</td>' +
+        '<td class="num ' + (s.net > 0 ? "pos" : "") + '">' + money(s.net) + '</td>' +
+        '</tr>';
+    }).join("");
+  }
+
+  ids.forEach(function (id) { els[id].addEventListener("input", render); });
+  render();
+})();
+</script>
+</body>
+</html>

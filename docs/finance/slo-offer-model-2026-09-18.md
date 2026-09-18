@@ -375,6 +375,8 @@ $50,000 at $60,000/mo ad spend.
 
 ## Related
 
+* `docs/finance/slo-calculator.html` — the interactive version of this model.
+  Open it in a browser, drag the sliders. Same numbers, no spreadsheet.
 * `docs/CLOSEOUT-FEE-BASIS.md` — how the 10% is calculated
 * `src/commissions/commission-model-open-questions.md` — the comp decisions
 * `docs/ops/2026-09-18-outside-financing-not-approved.md` — why the SLO is the
