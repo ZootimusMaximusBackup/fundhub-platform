@@ -37,6 +37,9 @@ less than nothing.
 |---|---|---|
 | Success fee | **10% of confirmed approvals** | `docs/CLOSEOUT-FEE-BASIS.md` (owner-set 2026-08-30) |
 | Deposit counts toward the fee | Yes — the $3,000 is part of the 10%, not on top | `docs/company-resources/closer-playbook-2026-08-24.md` |
+| Closer front end | **$500 flat per deposit collected** (no deposit, no commission) | `src/commissions/commission-model-open-questions.md` #1, #4 |
+| Closer back end | **0.25% of amount funded**, per round, paid whether or not the fee is collected | same, #2, #3 |
+| Funding advisor back end | **0.25% of amount funded** | same |
 | "Confirmed approval" | A bank yes **with a dollar amount recorded**. A yes with no amount bills nothing. | `docs/CLOSEOUT-FEE-BASIS.md` |
 
 ### Assumptions (marked because they are not measured anywhere in this repo)
@@ -137,6 +140,46 @@ deposits are profit.
 
 ---
 
+## 5a. Sales commission — what the deals cost us to close
+
+Rates are in the repo (`src/commissions/commission-model-open-questions.md`,
+Chris 2026-07-26). **They are marked provisional pending Darwin, and no rates
+are actually loaded — `013_commission_rules.sql` seeds zero.** Somebody has to
+enter them before the system pays anyone.
+
+Per funding client, expected case:
+
+| | |
+|---|---|
+| Closer, front end — $500 per deposit collected | $500 |
+| Closer, back end — 0.25% of funded (70% of clients × $60,000) | $105 |
+| Funding advisor, back end — 0.25% of funded | $105 |
+| **Total commission per funding client** | **$710** |
+
+Monthly, expected case:
+
+| | $30,000/mo ads | $60,000/mo ads | $100,000/mo ads |
+|---|---|---|---|
+| Funding clients | 11 | 23 | 38 |
+| Commission cost | −$7,810 | −$16,330 | −$26,980 |
+| **After ads, processing and commission** | **+$69,264** | **+$142,459** | **+$236,119** |
+
+That is before hourly pay, outbound staff, software, and fulfillment labour —
+none of which are recorded in this repo as numbers I can use.
+
+**Two things about the commission rules worth knowing:**
+
+1. **No deposit, no closer commission.** The $500 fires on money in the door,
+   not on the signature. A closed deal with an outstanding deposit pays nothing
+   at all. The closer's dashboard will show a closed deal with no commission
+   against it, and somebody will ask about it.
+2. **Back-end commission is paid whether or not we collect the fee.** It is
+   earned when the round funds. So if balance collection slips, we still pay
+   the 0.5% on it. That makes section 7's point about collection a real cost,
+   not just missed revenue.
+
+---
+
 ## 6. When the cash actually lands
 
 Not all of this arrives the same month.
@@ -208,9 +251,14 @@ That single split is worth more than any change to the ad.
 
 ## 9. What I need from you to make this real
 
-One number, and it changes the whole back end: **the average confirmed approval
-amount** across rounds we have actually closed. If nobody has it yet, say so and
-we run on the $60,000 middle figure until we have measured ten rounds.
+1. **The average confirmed approval amount** across rounds we have actually
+   closed. It changes the whole back end. If nobody has it, we run on the
+   $60,000 middle figure until we have measured ten rounds.
+2. **Somebody has to load the commission rates.** They exist as a decision in
+   `src/commissions/commission-model-open-questions.md` and as text on the
+   closer dashboard design, but `013_commission_rules.sql` seeds zero rows, so
+   the system currently calculates no commission for anybody. That is not a
+   modelling problem, it is a live gap.
 
 ---
 

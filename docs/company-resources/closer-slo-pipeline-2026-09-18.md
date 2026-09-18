@@ -66,9 +66,42 @@ probably the ad bringing the wrong person, not you.
 
 ## Your pay
 
-**TO BE FILLED IN BY CHRIS.** Commission on the $3,000 start and on the fee
-balance is not written down anywhere in our system yet. Do not send this page to
-the closer until this section says a real number.
+Two pieces, and they arrive at different times.
+
+| | What | When |
+|---|---|---|
+| Front end | **$500 flat per deposit collected** | The day the deposit lands |
+| Back end | **0.25% of the amount the client gets funded** | The day the round funds — usually 45–90 days later |
+
+$500 is per deposit, not per $1,000. One deposit, one $500. A part-paid deposit
+still fires the whole $500.
+
+**You are paid on money in the door, not on the signature.** A closed deal with
+no deposit yet pays nothing — not a pending amount, nothing. The $500 appears
+the moment the first deposit is recorded. If you have closed a deal and see no
+commission against it, that is why, and it is working as designed.
+
+The back end is paid whether or not we ever collect the fee balance. Once the
+round funds, you have earned it. Chasing the invoice is not your problem.
+
+### What that looks like per month
+
+Planning numbers, expected case:
+
+| Ad spend | Deposits you close | Front end | Back end | **Your month** |
+|---|---|---|---|---|
+| $30,000 | 11 | $5,500 | $1,155 | **~$6,655** |
+| $60,000 | 23 | $11,500 | $2,415 | **~$13,915** |
+| $100,000 | 38 | $19,000 | $3,990 | **~$22,990** |
+
+Back-end figures assume 7 in 10 clients get funded, at an average of $60,000.
+Both of those are estimates, not measured. And remember the back end lags — in
+month one you get the front end only.
+
+**Source:** `src/commissions/commission-model-open-questions.md` (Chris, 2026-07-26).
+These rates are marked provisional pending Darwin's sign-off, and **no rates are
+loaded in the system yet** — `013_commission_rules.sql` seeds zero. Somebody has
+to enter them before a commission actually calculates.
 
 ## The full model
 
