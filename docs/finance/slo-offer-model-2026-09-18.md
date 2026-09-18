@@ -37,6 +37,8 @@ less than nothing.
 
 | Input | Value | Source |
 |---|---|---|
+| Credit repair, done for you | **$1,000, charged once** (not monthly — owner-set) | `src/config/offers.mjs` `REPAIR_DFY` |
+| Credit repair trial | **$200, charged once**, capped at 2 dispute rounds | `src/config/offers.mjs` `REPAIR_TRIAL`; cap owner-set 2026-09-04 |
 | Success fee | **10% of confirmed approvals** | `docs/CLOSEOUT-FEE-BASIS.md` (owner-set 2026-08-30) |
 | Deposit counts toward the fee | Yes — the $3,000 is part of the 10%, not on top | `docs/company-resources/closer-playbook-2026-08-24.md` |
 | "Confirmed approval" | A bank yes **with a dollar amount recorded**. A yes with no amount bills nothing. | `docs/CLOSEOUT-FEE-BASIS.md` |
@@ -52,6 +54,8 @@ less than nothing.
 | Qualifies (credit + situation good enough to pursue funding now) | 50% | 60% | 70% |
 | Closes the $3,000 deposit | 20% | 30% | 40% |
 | **Buyer → funding client** (the four above, multiplied) | **2.1%** | **5.7%** | **12.3%** |
+| Buyer takes the **$200 repair trial** | 6% | 12% | 20% |
+| Buyer takes **$1,000 repair done-for-you** | 3% | 6% | 10% |
 | Funding client reaches a confirmed approval | 55% | 70% | 85% |
 | Balance of the fee actually collected | 70% | 85% | 95% |
 | Card processing | 3% of everything collected | | |
@@ -96,8 +100,37 @@ buyer. That is the number to watch when ads get expensive — not $150.
 
 **Back end, per $297 buyer (expected case):** 5.7% × $7,165 = **$408**.
 
-**So one $297 buyer is worth about $538 in total, and costs $167 to acquire and
-deliver. That is a 3.2× return before staff pay.**
+### The whole stack — every line a buyer can pay us
+
+This is the answer to "how much does one $297 buyer actually generate." Five
+revenue lines, expected case, per **1,000 buyers**:
+
+| Line | Take-up | Per 1,000 buyers | **Per buyer** |
+|---|---|---|---|
+| $297 blueprint | 100% | $297,000 | **$297** |
+| $200 repair trial | 12% | $24,000 | **$24** |
+| $1,000 repair done-for-you | 6% | $60,000 | **$60** |
+| $3,000 funding deposit | 5.7% | $171,000 | **$171** |
+| ~$7,000 success-fee balance | 5.7% × 70% reach × 85% collected | $237,405 | **$237** |
+| **Total** | | **$789,405** | **$789** |
+
+**One $297 buyer generates about $789. We pay $150 to get them. That is 5.3× on
+ad spend, gross.**
+
+Where that money sits: **38% of it is the front end and repair** — cash that
+lands within thirty days and does not depend on a single funding deal closing.
+**62% is the funding engagement**, and $237 of it is the fee balance, which is
+an invoice somebody has to chase 90 days later.
+
+### The repair lines and the funding line are mostly different people
+
+Worth saying plainly, because it changes how the survey should route. The buyer
+who scores 680+ with a business goes to the closer for the $3,000 engagement.
+The buyer at 560 with recent charge-offs cannot be funded now — that person is
+the $200 trial or the $1,000 done-for-you. **Right now that second group is
+worth nothing to us; with the repair offers in the flow they are worth $24 and
+$60 a head across the whole buyer base.** Same ads, same $297, no extra
+acquisition cost.
 
 ---
 
@@ -110,14 +143,26 @@ deliver. That is a 3.2× return before staff pay.**
 | Calls held | 63 | 126 | 210 |
 | Qualified on the call | 38 | 76 | 126 |
 | **Funding clients closed** | **11** | **23** | **38** |
-| Front-end revenue | $59,400 | $118,800 | $198,000 |
-| Deposits collected | $33,000 | $69,000 | $114,000 |
-| Fee balances collected | $45,815 | $95,795 | $158,270 |
-| **Total collected** | **$138,215** | **$283,595** | **$470,270** |
+| $297 blueprints | $59,400 | $118,800 | $198,000 |
+| $200 repair trials | $4,800 | $9,600 | $16,000 |
+| $1,000 repair done-for-you | $12,000 | $24,000 | $40,000 |
+| $3,000 deposits | $33,000 | $69,000 | $114,000 |
+| Success-fee balances | $45,815 | $95,795 | $158,270 |
+| **Total collected** | **$155,015** | **$317,195** | **$526,270** |
 | Ad spend | −$30,000 | −$60,000 | −$100,000 |
-| Processing + delivery | −$5,746 | −$11,708 | −$19,444 |
+| Processing + delivery | −$6,250 | −$12,716 | −$21,124 |
 | Sales commission (§5a) | −$9,350 | −$19,550 | −$32,300 |
-| **Left over** | **+$93,119** | **+$192,337** | **+$318,526** |
+| **Left over** | **+$109,415** | **+$224,929** | **+$372,846** |
+
+**The two repair lines add $16,800 a month at $30,000 of ad spend and $33,600 at
+$60,000** — off buyers we already paid for, who were never going to close a
+funding deal anyway.
+
+**Not costed here:** what it costs to fulfil repair. Letters, postage, and the
+labour behind the dispute rounds are real and are not recorded anywhere in this
+repo as a number I can use. The $200 trial in particular is capped at 2 rounds
+and priced as a proof-of-concept, so its margin is thin by design. Treat the
+repair rows as revenue, not profit, until somebody costs a round.
 
 ## 5. Monthly model — all three cases at $60,000/mo ad spend
 
@@ -125,14 +170,16 @@ deliver. That is a 3.2× return before staff pay.**
 |---|---|---|---|
 | $297 buyers | 400 | 400 | 400 |
 | **Funding clients closed** | **8** | **23** | **49** |
-| Front-end revenue | $118,800 | $118,800 | $118,800 |
-| Deposits collected | $24,000 | $69,000 | $147,000 |
-| Fee balances collected | $21,560 | $95,795 | $276,973 |
-| **Total collected** | **$164,360** | **$283,595** | **$542,773** |
+| $297 blueprints | $118,800 | $118,800 | $118,800 |
+| $200 repair trials | $4,800 | $9,600 | $16,000 |
+| $1,000 repair done-for-you | $12,000 | $24,000 | $40,000 |
+| $3,000 deposits | $24,000 | $69,000 | $147,000 |
+| Success-fee balances | $21,560 | $95,795 | $276,973 |
+| **Total collected** | **$181,160** | **$317,195** | **$598,773** |
 | Ad spend | −$60,000 | −$60,000 | −$60,000 |
-| Processing + delivery | −$8,131 | −$11,708 | −$19,483 |
+| Processing + delivery | −$8,635 | −$12,716 | −$21,163 |
 | Sales commission | −$6,200 | −$19,550 | −$45,325 |
-| **Left over** | **+$90,029** | **+$192,337** | **+$417,965** |
+| **Left over** | **+$106,325** | **+$224,929** | **+$472,285** |
 
 **The low case still works.** That is the point of this offer. Even if only 8 of
 400 buyers ever become funding clients, the front end covers the ads and the

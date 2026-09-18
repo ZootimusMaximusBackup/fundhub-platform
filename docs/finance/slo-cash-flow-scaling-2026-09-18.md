@@ -56,9 +56,16 @@ Per **$1** of ad spend, at a $150 cost per sale:
 | Money | Arrives | Per $1 of ad spend |
 |---|---|---|
 | $297 front end, less 3% processing | **Day 7** | **$1.92** |
+| $200 and $1,000 repair sales, less processing | **Day ~28** | **$0.54** |
 | $3,000 deposit, less processing and the closer's 16.67% | **Day ~28** | **$0.92** |
 | Fee balance, less processing | **Day ~90** | **$1.75** |
-| | | **$4.59 total** |
+| | | **$5.13 total** |
+
+**The ramp table below leaves the repair lines out.** They were added to the
+model after the ramp was built, and leaving them out makes the table
+conservative rather than wrong — about **$0.54 more per dollar of ad spend
+arrives around day 28** than the table shows. Every week from 5 onward has more
+cash in it than the number printed.
 
 **The front end alone returns $1.92 for every $1, seven days later.** That is
 what makes this scalable on a small bankroll. We are not waiting on funding
