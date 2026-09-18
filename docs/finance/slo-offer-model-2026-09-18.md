@@ -269,23 +269,21 @@ That single split is worth more than any change to the ad.
 
 ---
 
-## 9. Is $60,000 a month a lot?
+## 9. Can we afford $60,000 a month?
 
-Not for this offer. Two reasons.
+Yes, on $20,000 of cash, because the money recycles in seven days.
 
-**The money comes back the same month.** At $150 a sale, $60,000 buys 400
-buyers, and those buyers pay us $118,800 on the front end alone. We are not
-spending $60,000 and waiting — we are spending $60,000 and getting $118,800 back
-inside thirty days, before a single funding deal closes.
+Money spent on ads comes back seven days later — Commas holds 72 hours, then
+2–3 business days to the checking account. So the cash tied up at any moment is
+**seven days of ad spend**, not a month of it. $2,000/day is $14,000 in flight
+against $20,000 on hand, and $2,000/day is $60,000 a month.
 
-**The real limit is closers, not cash.** $60,000/mo produces about 180 booked
-calls, which is 8 calls a working day. One closer covers that. At $100,000/mo it
-is 300 bookings, about 14 a day — that needs two closers seated before the spend
-goes up, or we pay for calls nobody takes. That is the most expensive mistake
-available, because unlike bad targeting it wastes 100% of the extra money.
+**Rule: daily ad spend = cash on hand ÷ 10.** Seven days of float plus a buffer.
 
-**So the sequence is: prove the $150 cost per sale at $30,000/mo, seat the second
-closer, then go to $60,000.** Do not raise spend ahead of closer capacity.
+We do not start at $60,000/mo, because the cost per sale is unproven. We start at
+$500/day, which puts $3,500 at risk before the first money lands, and step up
+from there. Full week-by-week ramp, including the bank balance at each step:
+**`docs/finance/slo-cash-flow-scaling-2026-09-18.md`**.
 
 ---
 
