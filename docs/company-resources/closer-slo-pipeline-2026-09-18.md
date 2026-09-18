@@ -33,10 +33,13 @@ rest get worked first.
 
 Same thing as always. **$3,000 to start, and it counts toward the 10%.**
 
-The math you can say out loud — an example, not a promise:
+The math you can say out loud — **an example, not a promise**:
 
-> Funded for $75,000 → 10% is $7,500 → you already paid $3,000 → the rest is
-> $4,500.
+> Funded for $100,000 → 10% is $10,000 → you already paid $3,000 → the rest is
+> $7,000.
+
+Say "example, not a promise" out loud every time. We do not promise an amount
+and we do not promise a score move. Lenders decide.
 
 Nothing about the offer changed. Only where the person came from changed.
 
@@ -70,11 +73,12 @@ Two pieces, and they arrive at different times.
 
 | | What | When |
 |---|---|---|
-| Front end | **$500 flat per deposit collected** | The day the deposit lands |
+| Front end | **16.67% of the deposit you collect** | The day the deposit lands |
 | Back end | **0.25% of the amount the client gets funded** | The day the round funds — usually 45–90 days later |
 
-$500 is per deposit, not per $1,000. One deposit, one $500. A part-paid deposit
-still fires the whole $500.
+**On a full $3,000 deposit that is $500.** The percentage matters when a deposit
+comes in part-paid: $1,500 collected pays you $250, and you get the other $250
+when the rest lands. You are paid in step with the money, not ahead of it.
 
 **You are paid on money in the door, not on the signature.** A closed deal with
 no deposit yet pays nothing — not a pending amount, nothing. The $500 appears
@@ -90,18 +94,20 @@ Planning numbers, expected case:
 
 | Ad spend | Deposits you close | Front end | Back end | **Your month** |
 |---|---|---|---|---|
-| $30,000 | 11 | $5,500 | $1,155 | **~$6,655** |
-| $60,000 | 23 | $11,500 | $2,415 | **~$13,915** |
-| $100,000 | 38 | $19,000 | $3,990 | **~$22,990** |
+| $30,000 | 11 | $5,500 | $1,925 | **~$7,425** |
+| $60,000 | 23 | $11,500 | $4,025 | **~$15,525** |
+| $100,000 | 38 | $19,000 | $6,650 | **~$25,650** |
 
-Back-end figures assume 7 in 10 clients get funded, at an average of $60,000.
-Both of those are estimates, not measured. And remember the back end lags — in
-month one you get the front end only.
+Back-end figures assume 7 in 10 clients reach a funded approval, at an average
+deal of $100,000. The $100,000 is Chris's number. The 7 in 10 is an estimate
+nobody has measured yet. And remember the back end lags — in month one you get
+the front end only.
 
-**Source:** `src/commissions/commission-model-open-questions.md` (Chris, 2026-07-26).
-These rates are marked provisional pending Darwin's sign-off, and **no rates are
-loaded in the system yet** — `013_commission_rules.sql` seeds zero. Somebody has
-to enter them before a commission actually calculates.
+**Source:** `src/commissions/commission-model-open-questions.md` (Chris,
+2026-07-26), with the front end changed from a flat $500 to 16.67% of deposit
+collected on 2026-09-18. These rates are provisional pending Darwin's sign-off,
+and **no rates are loaded in the system yet** — `013_commission_rules.sql` seeds
+zero. Somebody has to enter them before a commission actually calculates.
 
 ## The full model
 

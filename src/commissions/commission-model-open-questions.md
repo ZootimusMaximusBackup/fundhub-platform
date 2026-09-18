@@ -72,7 +72,27 @@ least ordinary SQL in the set:
 
 *(Except **#9**, which is settled by LOCK 9 and carries no provisional flag.)*
 
-### 1. `$500 flat per $3K deposit` — flat per sale ✅
+### 1. `$500 flat per $3K deposit` — flat per sale ✅ **SUPERSEDED 2026-09-18**
+
+> **OWNER DECISION 2026-09-18 (Chris, direct).** The closer front end is now a
+> **percentage of the deposit collected, not a flat amount.** The rate is
+> hardened at whatever $500 is of $3,000: **16.67%**.
+>
+> On a full $3,000 deposit this is the same $500. It differs on a part-paid
+> deposit, which now pays pro-rata ($1,500 collected → $250) instead of firing
+> the whole $500. That is precisely the change the Darwin note below asked
+> about, and it is now decided: **pro-rate it.**
+>
+> Configuration, not code: `calc_method = 'percent'`, `percent = 16.67`,
+> `amount_basis = 'deposit_collected'`. The `flat` method stays in the model for
+> other products.
+>
+> The test named `front end: no deposit means no commission, even on a flat
+> rule` still holds — a percent rule on a zero base also produces no row.
+>
+> Context: `docs/finance/slo-offer-model-2026-09-18.md` §5a.
+
+The original answer, kept because the rate is derived from it:
 
 > One deposit, one $500. Not per-unit.
 
@@ -350,7 +370,7 @@ Reading of spec §14, under CHRIS PROVISIONAL 1–4:
 
 | name | basis | stacking | scope | method | amount_basis |
 |---|---|---|---|---|---|
-| Closer — deposit | `front_end` | `base` | role `closer`, product Card Stacking DFY | `flat` $500 | `deposit_collected` |
+| Closer — deposit | `front_end` | `base` | role `closer`, product Card Stacking DFY | `percent` 16.67 *(was `flat` $500 — see #1, owner decision 2026-09-18)* | `deposit_collected` |
 | Closer — funded | `back_end` | `base` | role `closer` | `percent` 0.25 | `amount_funded` |
 | Advisor — funded | `back_end` | `base` | role `funding_advisor` | `percent` 0.25 | `amount_funded` |
 

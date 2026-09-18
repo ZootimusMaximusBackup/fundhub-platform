@@ -2,8 +2,8 @@
 
 Date: **2026-09-18**
 Owner-set inputs: Chris, direct, this session.
-Status: planning model. Nothing here is measured. Every number is labelled
-either **owner-set**, **from the repo**, or **assumption**.
+Status: planning model. Every number is labelled either **owner-set**, **from
+the repo**, or **assumption**.
 
 ---
 
@@ -30,6 +30,8 @@ less than nothing.
 | Front-end price | $297 |
 | Target cost to get one $297 sale | $150 |
 | Funding deposit | $3,000 |
+| **Average funding deal** | **$100,000** (owner-set 2026-09-18; Chris expects it to run higher, $100k is the round number for planning) |
+| **Closer front-end pay** | **16.67% of the deposit collected** (owner-set 2026-09-18 — see §5a; this replaces the flat $500) |
 
 ### From the repo (already decided, not assumptions)
 
@@ -37,10 +39,9 @@ less than nothing.
 |---|---|---|
 | Success fee | **10% of confirmed approvals** | `docs/CLOSEOUT-FEE-BASIS.md` (owner-set 2026-08-30) |
 | Deposit counts toward the fee | Yes — the $3,000 is part of the 10%, not on top | `docs/company-resources/closer-playbook-2026-08-24.md` |
-| Closer front end | **$500 flat per deposit collected** (no deposit, no commission) | `src/commissions/commission-model-open-questions.md` #1, #4 |
-| Closer back end | **0.25% of amount funded**, per round, paid whether or not the fee is collected | same, #2, #3 |
-| Funding advisor back end | **0.25% of amount funded** | same |
 | "Confirmed approval" | A bank yes **with a dollar amount recorded**. A yes with no amount bills nothing. | `docs/CLOSEOUT-FEE-BASIS.md` |
+| Closer back end | **0.25% of amount funded**, per round, paid whether or not the fee is collected | `src/commissions/commission-model-open-questions.md` #2, #3 |
+| Funding advisor back end | **0.25% of amount funded** | same |
 
 ### Assumptions (marked because they are not measured anywhere in this repo)
 
@@ -52,16 +53,14 @@ less than nothing.
 | Closes the $3,000 deposit | 20% | 30% | 40% |
 | **Buyer → funding client** (the four above, multiplied) | **2.1%** | **5.7%** | **12.3%** |
 | Funding client reaches a confirmed approval | 55% | 70% | 85% |
-| Average confirmed approval amount | $40,000 | $60,000 | $75,000 |
 | Balance of the fee actually collected | 70% | 85% | 95% |
 | Card processing | 3% of everything collected | | |
 | Front-end delivery cost per buyer (AI generation + portal) | $8 | | |
 
-**The one number we cannot source.** Average confirmed approval amount. The
-$75,000 figure used across the closer material is written there as an *example,
-not a promise* — it is not an average and must not be treated as one. Until we
-have run enough rounds to measure it, the model carries it as a range. This is
-the single input that most changes the answer.
+**The average deal size is no longer the open question.** Chris set it at
+$100,000 on 2026-09-18. What is still unmeasured is how many clients reach a
+**confirmed** approval — a bank yes with an amount actually written against it.
+That is now the number that moves the answer most.
 
 ---
 
@@ -89,17 +88,16 @@ buyer. That is the number to watch when ads get expensive — not $150.
 | | |
 |---|---|
 | Deposit | $3,000 |
-| Confirmed approval (70% of clients × $60,000) | $42,000 average across all clients |
-| 10% fee on that | $4,200 |
-| Less the deposit already paid | −$2,100 (only for the 70% who got approved) |
-| Balance billed | $2,100 per client on average |
-| Collected at 85% | **$1,785** |
-| **Total per funding client** | **$4,785** |
+| 10% of a $100,000 approval | $10,000 |
+| Less the $3,000 already paid | balance of $7,000 |
+| Only 70% of clients reach a confirmed approval | $4,900 average balance billed |
+| Collected at 85% | **$4,165** |
+| **Total per funding client** | **$7,165** |
 
-**Back end, per $297 buyer (expected case):** 5.7% × $4,785 = **$273**.
+**Back end, per $297 buyer (expected case):** 5.7% × $7,165 = **$408**.
 
-**So one $297 buyer is worth about $403 in total, and costs $167 to acquire and
-deliver.** That is a 2.4× return before staff pay.
+**So one $297 buyer is worth about $538 in total, and costs $167 to acquire and
+deliver. That is a 3.2× return before staff pay.**
 
 ---
 
@@ -114,11 +112,12 @@ deliver.** That is a 2.4× return before staff pay.
 | **Funding clients closed** | **11** | **23** | **38** |
 | Front-end revenue | $59,400 | $118,800 | $198,000 |
 | Deposits collected | $33,000 | $69,000 | $114,000 |
-| Fee balances collected | $19,635 | $41,055 | $67,830 |
-| **Total collected** | **$112,035** | **$228,855** | **$379,830** |
+| Fee balances collected | $45,815 | $95,795 | $158,270 |
+| **Total collected** | **$138,215** | **$283,595** | **$470,270** |
 | Ad spend | −$30,000 | −$60,000 | −$100,000 |
-| Processing + delivery | −$4,961 | −$10,066 | −$16,731 |
-| **Before staff pay** | **+$77,074** | **+$158,789** | **+$263,099** |
+| Processing + delivery | −$5,746 | −$11,708 | −$19,444 |
+| Sales commission (§5a) | −$9,350 | −$19,550 | −$32,300 |
+| **Left over** | **+$93,119** | **+$192,337** | **+$318,526** |
 
 ## 5. Monthly model — all three cases at $60,000/mo ad spend
 
@@ -128,11 +127,12 @@ deliver.** That is a 2.4× return before staff pay.
 | **Funding clients closed** | **8** | **23** | **49** |
 | Front-end revenue | $118,800 | $118,800 | $118,800 |
 | Deposits collected | $24,000 | $69,000 | $147,000 |
-| Fee balances collected | $6,160 | $41,055 | $141,491 |
-| **Total collected** | **$148,960** | **$228,855** | **$407,291** |
+| Fee balances collected | $21,560 | $95,795 | $276,973 |
+| **Total collected** | **$164,360** | **$283,595** | **$542,773** |
 | Ad spend | −$60,000 | −$60,000 | −$60,000 |
-| Processing + delivery | −$7,669 | −$10,066 | −$15,419 |
-| **Before staff pay** | **+$81,291** | **+$158,789** | **+$331,872** |
+| Processing + delivery | −$8,131 | −$11,708 | −$19,483 |
+| Sales commission | −$6,200 | −$19,550 | −$45,325 |
+| **Left over** | **+$90,029** | **+$192,337** | **+$417,965** |
 
 **The low case still works.** That is the point of this offer. Even if only 8 of
 400 buyers ever become funding clients, the front end covers the ads and the
@@ -140,43 +140,59 @@ deposits are profit.
 
 ---
 
-## 5a. Sales commission — what the deals cost us to close
+## 5a. Sales commission
 
-Rates are in the repo (`src/commissions/commission-model-open-questions.md`,
-Chris 2026-07-26). **They are marked provisional pending Darwin, and no rates
-are actually loaded — `013_commission_rules.sql` seeds zero.** Somebody has to
-enter them before the system pays anyone.
+**Owner change, 2026-09-18.** The closer's front-end pay moves from a **flat
+$500 per deposit** to **a percentage of the deposit collected, hardened at the
+rate $500 is of $3,000: 16.67%.**
+
+On a full $3,000 deposit the two are the same money — $500. The difference shows
+up on a part-paid deposit:
+
+| Deposit collected | Old flat rule | New percentage rule |
+|---|---|---|
+| $3,000 | $500 | $500 |
+| $1,500 | $500 | $250 |
+| $1,000 | $500 | $167 |
+
+The old rule paid the whole $500 the moment any deposit landed. The new one pays
+in step with the money. **This is a configuration change, not a code change** —
+the commission rule moves from `calc_method = 'flat'` to `percent` 16.67 on
+`amount_basis = 'deposit_collected'`. `src/commissions/commission-model-open-questions.md`
+#1 anticipated exactly this swap.
+
+Everything else is unchanged: closer 0.25% of funded, funding advisor 0.25% of
+funded, both earned on the funding date whether or not we collect the fee.
 
 Per funding client, expected case:
 
 | | |
 |---|---|
-| Closer, front end — $500 per deposit collected | $500 |
-| Closer, back end — 0.25% of funded (70% of clients × $60,000) | $105 |
-| Funding advisor, back end — 0.25% of funded | $105 |
-| **Total commission per funding client** | **$710** |
+| Closer, front end — 16.67% of a $3,000 deposit | $500 |
+| Closer, back end — 0.25% of $100,000 funded (70% of clients) | $175 |
+| Funding advisor, back end — 0.25% of funded | $175 |
+| **Total commission per funding client** | **$850** |
 
-Monthly, expected case:
-
-| | $30,000/mo ads | $60,000/mo ads | $100,000/mo ads |
-|---|---|---|---|
-| Funding clients | 11 | 23 | 38 |
-| Commission cost | −$7,810 | −$16,330 | −$26,980 |
-| **After ads, processing and commission** | **+$69,264** | **+$142,459** | **+$236,119** |
+Monthly: −$9,350 at $30k ad spend, −$19,550 at $60k, −$32,300 at $100k. Those
+are the rows already in §4.
 
 That is before hourly pay, outbound staff, software, and fulfillment labour —
-none of which are recorded in this repo as numbers I can use.
+none of which exist in this repo as numbers I can use.
 
 **Two things about the commission rules worth knowing:**
 
-1. **No deposit, no closer commission.** The $500 fires on money in the door,
-   not on the signature. A closed deal with an outstanding deposit pays nothing
-   at all. The closer's dashboard will show a closed deal with no commission
-   against it, and somebody will ask about it.
+1. **No deposit, no closer commission.** Pay fires on money in the door, not on
+   the signature. A closed deal with nothing collected pays nothing at all — not
+   a pending amount. The closer's dashboard will show a closed deal with no
+   commission against it, and somebody will ask about it.
 2. **Back-end commission is paid whether or not we collect the fee.** It is
-   earned when the round funds. So if balance collection slips, we still pay
-   the 0.5% on it. That makes section 7's point about collection a real cost,
-   not just missed revenue.
+   earned when the round funds. So if balance collection slips, we still pay the
+   0.5% on it. That makes §7's point about collection a real cost, not just
+   missed revenue.
+
+**Still not loaded.** `013_commission_rules.sql` seeds zero rates. The decision
+exists in two places and the system calculates nothing for anybody until
+somebody enters the rows.
 
 ---
 
@@ -190,16 +206,17 @@ Not all of this arrives the same month.
 | $3,000 deposit | Days 3–30 after the buy (outbound takes time to reach them) |
 | Fee balance | 45–90 days after the deposit — a funding round has to run and approvals have to come back with amounts on them |
 
-So month one collects the front end and some deposits. **Balances do not show up
+Month one collects the front end and the deposits. **Balances do not show up
 until roughly month three.** Do not read month one and conclude the back end is
 broken.
 
-Rough ramp at $60,000/mo ad spend, expected case:
+Ramp at $60,000/mo ad spend, expected case, after ads, processing and
+commission:
 
-| | Month 1 | Month 2 | Month 3 | Month 4+ |
-|---|---|---|---|---|
-| Collected | $164,000 | $198,000 | $229,000 | $229,000 |
-| After ads and processing | $94,000 | $128,000 | $159,000 | $159,000 |
+| | Month 1 | Month 2 | Month 3+ |
+|---|---|---|---|
+| Collected | $187,800 | $235,800 | $283,595 |
+| **Left over** | **+$107,466** | **+$150,001** | **+$192,337** |
 
 ---
 
@@ -210,15 +227,18 @@ In the order that matters.
 1. **Cost per $297 sale climbs past $280.** Then the front end stops paying for
    the leads and every funding client starts costing real money. Watch this
    weekly. $150 is the target, $280 is the wall.
-2. **The qualified rate.** If most buyers are people whose credit is too far
-   gone to fund in the next 90 days, the call volume looks great and the close
-   rate looks terrible. This is what the survey is for (section 8).
-3. **Confirmed approvals with no dollar amount.** A bank yes with no amount
+2. **Confirmed approvals with no dollar amount.** A bank yes with no amount
    recorded bills **nothing** — that is the rule in `docs/CLOSEOUT-FEE-BASIS.md`.
    If advisors do not write the amounts in, the back end silently disappears
-   from the model even though the work got done.
-4. **Balance collection.** The $3,000 is in hand. The remaining $1,000–$4,500 is
-   an invoice, and invoices need chasing.
+   from the model even though the work got done, **and we still pay the 0.5%
+   back-end commission on it.** This is the most expensive failure available
+   here and it is an admin failure, not a sales one.
+3. **The qualified rate.** If most buyers are people whose credit is too far
+   gone to fund in the next 90 days, the call volume looks great and the close
+   rate looks terrible. This is what the survey is for (§8).
+4. **Balance collection.** At a $100,000 deal the balance is **$7,000** — more
+   than twice the deposit. This is no longer a rounding error. Most of the money
+   in this business is now an invoice that has to be chased.
 
 ---
 
@@ -249,22 +269,39 @@ That single split is worth more than any change to the ad.
 
 ---
 
-## 9. What I need from you to make this real
+## 9. Is $60,000 a month a lot?
 
-1. **The average confirmed approval amount** across rounds we have actually
-   closed. It changes the whole back end. If nobody has it, we run on the
-   $60,000 middle figure until we have measured ten rounds.
-2. **Somebody has to load the commission rates.** They exist as a decision in
-   `src/commissions/commission-model-open-questions.md` and as text on the
-   closer dashboard design, but `013_commission_rules.sql` seeds zero rows, so
-   the system currently calculates no commission for anybody. That is not a
-   modelling problem, it is a live gap.
+Not for this offer. Two reasons.
+
+**The money comes back the same month.** At $150 a sale, $60,000 buys 400
+buyers, and those buyers pay us $118,800 on the front end alone. We are not
+spending $60,000 and waiting — we are spending $60,000 and getting $118,800 back
+inside thirty days, before a single funding deal closes.
+
+**The real limit is closers, not cash.** $60,000/mo produces about 180 booked
+calls, which is 8 calls a working day. One closer covers that. At $100,000/mo it
+is 300 bookings, about 14 a day — that needs two closers seated before the spend
+goes up, or we pay for calls nobody takes. That is the most expensive mistake
+available, because unlike bad targeting it wastes 100% of the extra money.
+
+**So the sequence is: prove the $150 cost per sale at $30,000/mo, seat the second
+closer, then go to $60,000.** Do not raise spend ahead of closer capacity.
+
+---
+
+## 10. What I still need
+
+**How many funding clients reach a confirmed approval** — a bank yes with a
+dollar amount actually recorded. The model runs on 70%. Nobody has measured it.
+At $100,000 deals this single percentage swings the monthly result by roughly
+$50,000 at $60,000/mo ad spend.
 
 ---
 
 ## Related
 
 * `docs/CLOSEOUT-FEE-BASIS.md` — how the 10% is calculated
+* `src/commissions/commission-model-open-questions.md` — the comp decisions
 * `docs/ops/2026-09-18-outside-financing-not-approved.md` — why the SLO is the
   funding path now
 * `docs/company-resources/closer-slo-pipeline-2026-09-18.md` — the one-pager for
