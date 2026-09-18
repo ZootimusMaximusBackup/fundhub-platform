@@ -10,7 +10,9 @@ actually have."**
 
 ## The problem in one paragraph
 
-We have **$20,000**. Money spent on ads leaves the account today. Money a
+We have **$15,000** to spend (owner-corrected 2026-09-18 — $20,000 is the
+account balance, $15,000 is what is actually available for ads). Money spent on
+ads leaves the account today. Money a
 customer pays comes back **seven days later** — Commas holds it 72 hours, then
 it takes 2–3 business days to reach the checking account, usually next day once
 released. So every dollar of ad spend is locked up for a week before it can be
@@ -30,18 +32,20 @@ spent on ads and not yet available. It never goes down while ads are running.
 |---|---|---|
 | $500 | $15,000 | $3,500 |
 | $1,000 | $30,000 | $7,000 |
-| $2,000 | $60,000 | $14,000 |
-| $2,857 | $85,700 | $20,000 — **every dollar we have** |
-| $3,500 | $105,000 | $24,500 — more than we have |
+| $1,500 | $45,000 | $10,500 |
+| $2,143 | $64,300 | $15,000 — **every dollar we have** |
+| $3,500 | $105,000 | $24,500 — far more than we have |
 
 **The rule to remember: daily ad spend = cash on hand ÷ 10.**
 
 That is seven days of float plus a 30% buffer for a slow Commas release, a
-chargeback, a weekend, or a bank holiday. At $20,000 on hand that is **$2,000 a
-day, which is $60,000 a month.**
+chargeback, a weekend, or a bank holiday. At $15,000 available that is **$1,500 a
+day, which is $45,000 a month** — and that is the ceiling on day one, not the
+starting point.
 
-So the answer to "is $60,000 a month possible on $20,000" is **yes** — but not
-on day one, because on day one we do not yet know the cost per sale.
+**$60,000/month is reachable, but it is a week 6 number, not a week 1 number.**
+The float has to grow into it, and it does that on its own out of front-end
+revenue. See the ramp below.
 
 ---
 
@@ -77,7 +81,7 @@ first three weeks. Everything below it still recycles, just slower.
 
 ---
 
-## The ramp — twelve weeks from $20,000
+## The ramp — eight weeks from $15,000
 
 Ads start small because the cost per sale is unproven, and step up only once the
 previous week's money has landed. Every figure below is **cash actually in the
@@ -86,21 +90,29 @@ already taken out of the deposits.
 
 | Week | Daily budget | Ad spend | Front end in (from 7 days ago) | Deposits in (net of commission) | **Bank at week end** |
 |---|---|---|---|---|---|
-| Start | — | — | — | — | **$20,000** |
-| 1 | $500 | $3,500 | $0 | $0 | $16,500 |
-| 2 | $750 | $5,250 | $6,720 | $0 | $17,970 |
-| 3 | $1,100 | $7,700 | $10,080 | $0 | $20,350 |
-| 4 | $1,600 | $11,200 | $14,784 | $0 | $23,934 |
-| 5 | $2,000 | $14,000 | $21,504 | $3,205 | $34,643 |
-| 6 | $2,500 | $17,500 | $26,880 | $4,808 | $48,831 |
-| 7 | $3,000 | $21,000 | $33,600 | $7,052 | $68,483 |
-| 8 | $3,500 | $24,500 | $40,320 | $10,257 | **$94,560** |
+| Start | — | — | — | — | **$15,000** |
+| 1 | $500 | $3,500 | $0 | $0 | $11,500 |
+| 2 | $750 | $5,250 | $6,720 | $0 | $12,970 |
+| 3 | $1,100 | $7,700 | $10,080 | $0 | $15,350 |
+| 4 | $1,500 | $10,500 | $14,784 | $0 | $19,634 |
+| 5 | $1,800 | $12,600 | $20,160 | $3,205 | $30,399 |
+| 6 | $2,500 | $17,500 | $24,192 | $4,808 | $41,899 |
+| 7 | $3,000 | $21,000 | $33,600 | $7,052 | $61,551 |
+| 8 | $3,500 | $24,500 | $40,320 | $11,539 | **$88,910** |
 
-**Month 1 ad spend: $27,650. Month 2 ad spend: $77,000.**
+**Month 1 ad spend: $26,950. Month 2 ad spend: $75,600.**
+
+Every week's daily budget obeys the ÷10 rule against the cash on hand at the
+start of that week. Weeks 3 and 4 are the tight ones — $15,350 backing $1,500 a
+day is right on the line. **Do not get ahead of the table in weeks 3 and 4.**
+That is where an early step-up would actually run the account dry.
 
 By the end of week 8 the daily budget is $3,500 — a **$105,000/month run rate** —
-and there is $94,560 in the bank backing it. The ÷10 rule says $94,560 supports
-$9,456 a day, so from week 9 the cash stops being the limit entirely.
+with $88,910 in the bank behind it. The ÷10 rule says that supports $8,891 a
+day, so from week 9 the cash stops being the limit at all.
+
+**The $60,000/month you asked about lands in week 6**, at $2,500/day, with
+$41,899 in the bank. Five weeks from the day the first ad turns on.
 
 **None of the above counts fee balances.** Those start landing around week 13
 and are the largest single inflow in the business — roughly $1.75 per dollar of
@@ -109,10 +121,10 @@ engine that the table above does not show.
 
 ### The low point is week 1
 
-The bank dips to **$16,500** at the end of week 1 and never goes lower. That is
+The bank dips to **$11,500** at the end of week 1 and never goes lower. That is
 the entire downside exposure of starting: **$3,500 at risk before the first
 money comes back.** If the cost per sale comes in at $400 and the offer is
-broken, we find out having spent $3,500, not $20,000.
+broken, we find out having spent $3,500, not $15,000.
 
 ---
 
@@ -135,11 +147,12 @@ the ramp finishes, which is the right way round.
 
 ## Two things that would break this
 
-1. **Commas holds longer than 72 hours.** Every extra day of hold is another
-   day of ad spend locked up. At $2,000/day a 10-day hold instead of 7 needs
-   $20,000 in flight instead of $14,000 — the whole bankroll. **Before stepping
-   past $2,000/day, confirm the actual release timing on a real batch, not the
-   advertised one.**
+1. **Commas holds longer than 72 hours.** Every extra day of hold is another day
+   of ad spend locked up. At $1,500/day a 10-day hold instead of 7 needs $15,000
+   in flight instead of $10,500 — the entire bankroll, with nothing spare. On
+   $15,000 this is the single most dangerous variable in the plan. **Confirm the
+   real release timing on the first batch in week 1, before week 3 raises the
+   budget to $1,100/day.**
 2. **A chargeback spike.** Front-end refunds on a $297 impulse purchase are
    normal, and each one is money that never arrives on day 7 even though the ad
    for it was already paid for. Not modelled here — the assumption is a clean
