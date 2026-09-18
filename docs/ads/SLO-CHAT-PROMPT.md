@@ -6,11 +6,18 @@ Written 2026-09-18. This is the self-contained prompt Chris pastes into a Claude
 the $297 SLO ads and short VSL without the repo attached. Every rule below is copied from
 `docs/ads/RULES.md`, `docs/ads/VOICE.md` and `docs/ads/ANGLE-GENERATOR.md` — nothing here is new.
 
-**Open question, unanswered as of writing:** `src/config/offers.mjs` prices Capital Blueprint
-(`UWIQ_DELIVERABLES`) at **$5,000**, owner-set 2026-09-03 and backed by the executed contract that
-names $5,000 twice. Chris says the SLO is **$297**. Whether $297 buys all six deliverables or a
-cut-down set is not recorded anywhere. The prompt below assumes all six and says so in line 1 so it
-can be edited in five seconds. That absence is a finding, not a decision.
+**Pricing, OWNER-SET 2026-09-18.** Chris: *"its allll the deliverables and the 6 rounds of repair
+plus escalation letters."* So $297 buys all six deliverables PLUS the full six-round dispute
+program with escalation letters. `src/config/offers.mjs` still prices Capital Blueprint
+(`UWIQ_DELIVERABLES`) at $5,000, owner-set 2026-09-03 against the executed contract. Those two
+numbers now disagree and that is recorded here, not resolved here — the catalogue is a separate
+decision nobody has made yet.
+
+**The rounds are real and they are capped at six.** Traced in `docs/journeys/dispute-rounds-actual.md`
+and `src/repair/analyze.mjs`: rounds run R1–R6 against a program cap, round 2 and later are the
+escalation letters, and an escalation asks the bureau HOW it verified the item and names the
+specific problem with its answer. Round 2+ also requires a credit pull newer than the last round's
+letters, and the whole thing requires a signed repair agreement or a live dispute authorization.
 
 **Two owner calls that override RULES.md, logged as owner-set 2026-09-18:**
 
@@ -33,8 +40,7 @@ style suggestions, they are a published SOP and a compliance screen.
 
 ### THE OFFER — $297
 
-A done-for-you credit and funding package. All six deliverables at $297 (edit this line if it's a
-cut-down set):
+A done-for-you credit and funding package. Everything below is included at $297.
 
 1. **Credit Analysis Report** — their real file, all three bureaus
 2. **Dispute Letter Pack** — the letters, written, ready to send
@@ -45,12 +51,21 @@ cut-down set):
    need a business entity first
 6. **"How To Use This" mini course**
 
+Plus the full dispute program:
+
+7. **Six rounds of credit repair** — R1 through R6, done for them
+8. **Escalation letters from round two on** — these don't re-ask. They demand the bureau explain
+   HOW it verified the item, and name the specific problem with that answer.
+
 ### THE POSITIONING — the whole argument, do not drift off it
 
 Every other company in this space sells an education rabbit hole. Course, modules, homework,
 community, "trust the process" — and six months later they still don't know if they're fundable.
-We do the opposite. Everything upfront. Their real numbers off their real credit file, the exact
-roadmap, and the actual lender list. No modules. No guessing. Days, not months.
+We do the opposite. Day one, it's all in their hands: their real numbers off their real credit
+file, the exact roadmap, the actual lender list, and six rounds of disputes already in motion.
+No modules. No guessing. Days, not months.
+
+(Write the idea, never the word — see compliance rule 4. "Upfront" is blocked.)
 
 The enemy is the rabbit hole. The mechanism is handing over the finished file. Speed and certainty
 are the product.
@@ -153,8 +168,14 @@ This offer includes a Dispute Letter Pack, so the credit-repair rules fire. All 
 2. No promise to remove accurate information. Only wrong or unprovable items can be disputed.
 3. Do not name late payments, collections, charge-offs, bankruptcies, repossessions, foreclosures,
    judgments or tax liens as things that come off.
-4. No advance-fee language on repair — no "upfront", "in advance", "before we start", "to get
-   started".
+4. **No advance-fee language on repair.** The words "upfront", "in advance", "before we start" and
+   "to get started" are a pattern match that blocks the ad automatically. This one bites hard here,
+   because $297 is paid before six rounds of repair run. **THE WORD "UPFRONT" IS BANNED IN THESE
+   SCRIPTS.** Never write "everything upfront", "pay upfront", "$297 upfront", or any variant.
+   The idea is fine and it is the whole positioning — only the word is blocked. Say it as:
+   "everything in your hands on day one" · "the whole file, handed to you" · "nothing held back" ·
+   "you get all of it before you've done a thing" · "it's all sitting there when you log in".
+   Never attach a price to a repair-start phrase.
 5. Never mention a CPN, credit privacy number, file segregation, a new credit file or identity, a
    second social, or using an EIN instead of an SSN. Federal fraud, not a wording problem.
 6. No guaranteed timeline. No results promised in any number of days, weeks or months.
@@ -365,6 +386,8 @@ Real examples from the running ads:
 5. Every ad is 150–200 words. Count them and print the count.
 6. Ten distinct arguments, not ten rewrites of one.
 7. No promise of approval, a funding amount, a score result, or a deletion.
-8. Read every line out loud in your head. If Chris wouldn't say it, rewrite it.
+8. The word "upfront" appears nowhere. Search for it before you hand anything over.
+9. No round-count promise about outcomes — six rounds is what we DO, never what it achieves.
+10. Read every line out loud in your head. If Chris wouldn't say it, rewrite it.
 
 Give me A first, then B.
