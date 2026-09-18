@@ -6,18 +6,34 @@ Written 2026-09-18. This is the self-contained prompt Chris pastes into a Claude
 the $297 SLO ads and short VSL without the repo attached. Every rule below is copied from
 `docs/ads/RULES.md`, `docs/ads/VOICE.md` and `docs/ads/ANGLE-GENERATOR.md` — nothing here is new.
 
-**Pricing, OWNER-SET 2026-09-18.** Chris: *"its allll the deliverables and the 6 rounds of repair
-plus escalation letters."* So $297 buys all six deliverables PLUS the full six-round dispute
-program with escalation letters. `src/config/offers.mjs` still prices Capital Blueprint
-(`UWIQ_DELIVERABLES`) at $5,000, owner-set 2026-09-03 against the executed contract. Those two
-numbers now disagree and that is recorded here, not resolved here — the catalogue is a separate
-decision nobody has made yet.
+**Pricing and scope, OWNER-SET 2026-09-18.** $297 buys all six deliverables plus the full six-round
+dispute letter program with escalation letters. `src/config/offers.mjs` still prices Capital
+Blueprint (`UWIQ_DELIVERABLES`) at $5,000, owner-set 2026-09-03 against the executed contract.
+Those two numbers disagree. Recorded here, not resolved here — the catalogue is a separate decision
+nobody has made yet.
 
-**The rounds are real and they are capped at six.** Traced in `docs/journeys/dispute-rounds-actual.md`
-and `src/repair/analyze.mjs`: rounds run R1–R6 against a program cap, round 2 and later are the
+**It is a product, not a service, OWNER-SET 2026-09-18.** Chris: *"We're not doing credit repair
+for them. They're paying for an outcome — they're paying for deliverables."* No contracts. It runs
+like an e-commerce offer. The buyer sends their own letters; FundHub sends them for a fee as an
+add-on. That distinction IS the offer, and it changes every script: nobody is being sold a service
+performed on them, they are buying the finished playbook built on their own file.
+
+**What that does to the compliance screen, mechanically.** `docs/ads/RULES.md` §1.5: *"The offer
+type decides which rules fire. A funding ad is not screened under the credit-repair rules."* The
+screen in `src/compliance/screen.mjs` is a plain pattern match keyed on the campaign's offer type.
+Classified as a funding/deliverables offer, rules 1–6, 11 and 12 do not fire — so the earlier hard
+ban on "upfront" is lifted. Classified as repair, they all fire. The classification set on the
+campaign decides it, not the wording in the script. **Rules 7–10 fire on every ad regardless and
+are never optional.**
+
+**Said once and dropped, per CLAUDE.md.** The package includes dispute letters, so how an outside
+reader classifies it is not settled by what we call it internally. Chris has decided. Logged, not
+raised again.
+
+**The rounds are real and capped at six.** Traced in `docs/journeys/dispute-rounds-actual.md` and
+`src/repair/analyze.mjs`: rounds run R1–R6 against a program cap, round 2 and later are the
 escalation letters, and an escalation asks the bureau HOW it verified the item and names the
-specific problem with its answer. Round 2+ also requires a credit pull newer than the last round's
-letters, and the whole thing requires a signed repair agreement or a live dispute authorization.
+specific problem with its answer.
 
 **Two owner calls that override RULES.md, logged as owner-set 2026-09-18:**
 
@@ -40,50 +56,90 @@ style suggestions, they are a published SOP and a compliance screen.
 
 ### THE OFFER — $297
 
-A done-for-you credit and funding package. Everything below is included at $297.
+**This is a product, not a service. Get this right or every script is wrong.**
+
+Nobody is doing credit repair *for* them. They are buying **deliverables** — a finished package
+built on their own credit file. They send their own letters. They follow their own roadmap. There
+is no contract. It works like buying anything else online: pay, and it's yours.
+
+Everything below is included at $297.
 
 1. **Credit Analysis Report** — their real file, all three bureaus
-2. **Dispute Letter Pack** — the letters, written, ready to send
-3. **Credit Optimization Roadmap** — the exact steps, in order, built off their own data
-4. **Funding Snapshot** — what they're pre-approved for today, what they'd be pre-approved for
-   after they optimize the file, and the gap between the two
-5. **Bank & Lender Match List** — the specific lenders they qualify for right now, and which ones
+2. **Dispute Letter Pack** — every letter written for them, ready to send
+3. **Credit Optimization Roadmap** — the exact steps, in the exact order, built off their own data
+4. **Funding Snapshot** — what their file supports today, what it would support once they work the
+   roadmap, and the gap between the two
+5. **Bank & Lender Match List** — the specific lenders their file fits right now, and which ones
    need a business entity first
 6. **"How To Use This" mini course**
-
-Plus the full dispute program:
-
-7. **Six rounds of credit repair** — R1 through R6, done for them
+7. **Six rounds of dispute letters** — R1 through R6, all written for them
 8. **Escalation letters from round two on** — these don't re-ask. They demand the bureau explain
    HOW it verified the item, and name the specific problem with that answer.
 
+**Support that comes with it:** advisors they can reach along the way, and the community they're
+in from the day they buy.
+
+**Paid add-on, mention only where it fits:** FundHub will mail the letters for them for a fee. It
+is not included and it is never the point of an ad.
+
 ### THE POSITIONING — the whole argument, do not drift off it
 
-Every other company in this space sells an education rabbit hole. Course, modules, homework,
-community, "trust the process" — and six months later they still don't know if they're fundable.
-We do the opposite. Day one, it's all in their hands: their real numbers off their real credit
-file, the exact roadmap, the actual lender list, and six rounds of disputes already in motion.
-No modules. No guessing. Days, not months.
+**The enemy is the learning curve.** Not a competitor, not a broker. The six months.
 
-(Write the idea, never the word — see compliance rule 4. "Upfront" is blocked.)
+People don't want to learn funding. They want funding. Fast, and the most of it they can get. And
+right now there is no clear road to it — so they buy a course, and the course teaches. Modules,
+homework, community, trust the process. Six months of trial and error later, they've got skills
+they didn't ask for and still no money. The skills are real. They're just not the thing they were
+buying.
 
-The enemy is the rabbit hole. The mechanism is handing over the finished file. Speed and certainty
-are the product.
+**The mechanism: download the brain of someone who's done this hundreds of times.** Go from A to Z
+without the middle. We're shortcutting the learning curve to zero, because they don't need to know
+anything — they just need to follow the instructions.
+
+Chris's own framing, use it or something like it in at least one script: *Frodo doesn't need the
+whole journey. Fly straight to the mountain, drop the ring in the lava, done.*
+
+**What they actually do with it:**
+- Send the letters
+- Work the roadmap to get the file where it needs to be
+- Follow the instructions
+- See what they pre-qualify for
+- See where they are now, where they're going to be, how long it takes, and how fast they get there
+
+That last one is the whole product in one line: **now, next, how long, how fast.**
+
+**Why they buy instead of learning it:** they have a business to run. They're busy. That's not a
+weakness to agitate — it's the reason the package exists. Most people don't have time to sit there
+and learn this. With the deliverables they don't have to.
+
+**Honesty rail, keep it in:** this doesn't skip the work. The letters still go out, the file still
+has to get optimized, and that takes as long as it takes. What gets deleted is the *learning*, not
+the work. Say it that way — it's true and it's stronger than pretending otherwise.
 
 ### AN EXAMPLE OF WHAT THE PACKAGE OUTPUTS
 
 Use this to show the *shape* of what they receive. Never as a promise, never as a typical result,
 never as what the viewer will get:
 
-> "Approved for Funding. Pre-approved today: $199,350. After you fix two things on your file:
-> $221,500. That's $22,150 sitting on the table. 15 lenders matched — 6 you qualify for right now,
-> 9 that need a business entity."
+> "Pre-qualified today: $199,350. Once you work the roadmap: $221,500. That's $22,150 your file
+> isn't reaching yet. 15 lenders matched — 6 your file fits right now, 9 that need a business
+> entity."
+
+**How to frame that number, every time.** It is what their *file* supports — an estimate off their
+own data. It is never what a bank will hand them. Say "pre-qualified", "what your file supports",
+"where your file puts you". Never "what you'll get", never "what the bank will give you", never a
+guaranteed figure. ("Up to", with the conditions said out loud, is the only other allowed shape —
+see the never-say table.)
 
 ### AUDIENCE
 
-Business owners and entrepreneurs who want capital. They've been declined, gotten the runaround, or
-simply don't know what they qualify for and nobody will tell them straight. Default credit gate is
-600+.
+Business owners and entrepreneurs who want capital and are **busy**. They have a business to run.
+They've been declined, gotten the runaround, or simply don't know where they stand and nobody will
+tell them straight. Some of them have already bought a course and are months in with nothing to
+show. Default credit gate is 600+.
+
+The one thing they all have in common: they do not want to become an expert in this. They want the
+money and they want to go back to work.
 
 ---
 
@@ -161,24 +217,25 @@ with trust, earn the speed claim second, and use the real number — about 7 day
 
 ### The compliance rules — these block an ad automatically
 
-This offer includes a Dispute Letter Pack, so the credit-repair rules fire. All of them apply.
+**Rules 7–10 fire on every ad and are never optional. Obey them absolutely.**
 
-**Credit-repair:**
+Rules 1–6 are the credit-repair screen. Whether they fire depends on how the campaign is
+classified, not on wording — this is sold as a deliverables product, so they may not fire at all.
+**Write as if they do.** They cost nothing to obey and they are all things we could not honestly
+claim anyway. The one thing lifted: **"upfront" is no longer banned** — it is a deliverables
+purchase, not a fee paid before repair begins. Use it where it's the right word.
+
 1. No guaranteed score increase. No points, no jump, no boost, no score movement of any kind.
 2. No promise to remove accurate information. Only wrong or unprovable items can be disputed.
 3. Do not name late payments, collections, charge-offs, bankruptcies, repossessions, foreclosures,
    judgments or tax liens as things that come off.
-4. **No advance-fee language on repair.** The words "upfront", "in advance", "before we start" and
-   "to get started" are a pattern match that blocks the ad automatically. This one bites hard here,
-   because $297 is paid before six rounds of repair run. **THE WORD "UPFRONT" IS BANNED IN THESE
-   SCRIPTS.** Never write "everything upfront", "pay upfront", "$297 upfront", or any variant.
-   The idea is fine and it is the whole positioning — only the word is blocked. Say it as:
-   "everything in your hands on day one" · "the whole file, handed to you" · "nothing held back" ·
-   "you get all of it before you've done a thing" · "it's all sitting there when you log in".
-   Never attach a price to a repair-start phrase.
+4. Do not promise the letters produce deletions. Six rounds is what they GET, never what it
+   achieves.
 5. Never mention a CPN, credit privacy number, file segregation, a new credit file or identity, a
    second social, or using an EIN instead of an SSN. Federal fraud, not a wording problem.
-6. No guaranteed timeline. No results promised in any number of days, weeks or months.
+6. No guaranteed timeline. Never promise results in any number of days, weeks or months. You may
+   say how long the *process* runs — that is a fact about the work, not a promise about the
+   outcome.
 
 **Every ad:**
 7. No "guaranteed", "100%", "assured" or "everyone is approved" anywhere near approve, accept or
@@ -189,8 +246,10 @@ This offer includes a Dispute Letter Pack, so the credit-repair rules fire. All 
     families only", "if you make less than $…". This one catches ordinary-sounding lines — read it
     twice.
 
-**Also:** a credit-repair funnel must carry the words "Consumer Credit File Rights Under State and
-Federal Law". And TikTok bans credit repair outright — do not write these for TikTok.
+**Two more, both keyed on classification, not wording.** A credit-repair funnel must carry the
+words "Consumer Credit File Rights Under State and Federal Law", and TikTok bans credit repair
+outright. Classified as a deliverables product neither applies. Classified as repair, both do — and
+on TikTok there is no wording that gets around it.
 
 ### Proof — this is the entire list, do not embroider it
 
@@ -334,7 +393,7 @@ GATE      600+ | 700+ no negatives | premium | open
 
 HOOK      0–3s     (first two sentences, must pass all four cause-first checks)
 BODY      10–60s   Validate → Reveal the mechanism → Connect to the desire → Proof
-CTA       last 10–30s
+CTA       last 10–30s   (checkout, never a booked call)
 CLOSE     the two promises
 
 WORDS     <count>
@@ -348,18 +407,34 @@ Structure:
 1. Hook — cause-first, same four checks
 2. The problem, one line
 3. What we do differently, one line
-4. The six deliverables as rapid-fire bullets, one line each
+4. All eight deliverables as rapid-fire bullets, one line each
 5. The contrast — everyone else sells a course, we hand you the finished file
-6. **The refusal.** Mandatory, non-negotiable: *"I know there are a lot of people in this space who
-   will tell you whatever you want to hear to get you on a call. We're not going to do that."* Then
-   the honest alternative — if the credit needs work first, we say so. A VSL without this is not
-   our VSL.
+6. **The refusal.** Mandatory, non-negotiable. The house line is *"I know there are a lot of people
+   in this space who will tell you whatever you want to hear to get you on a call. We're not going
+   to do that."* Adapt the tail to this funnel — there is no call — but keep the refusal itself
+   intact, then give the honest alternative: this doesn't skip the work, it skips the learning.
+   The letters still have to go out and the file still has to get optimized. A script without the
+   refusal is not ours.
 7. CTA
 8. Close — the two promises
 
 If a bullet needs a sentence to explain it, cut the bullet.
 
 Then give me a 60-second cut and a 30-second cut of the same thing.
+
+### The CTA — this is a checkout, not a call
+
+The running FundHub ads send people to a two-minute application and a booked call. **These do not.**
+This is a $297 product and the ad sells it directly. The CTA is: click, buy it, it's yours.
+
+Keep the *shape* of Chris's CTA — flat back-to-back commands with a real number in them — and point
+it at the purchase:
+
+> *"Click the link below. Grab the package. Everything's in your account in [X]."*
+
+Fill in the real turnaround or leave a bracket for Chris. Do not invent a number.
+
+Never send them to "book a free strategy call" — wrong funnel. Never ask them to apply first.
 
 ### The close carries two promises, always. Both, in every script.
 
@@ -386,8 +461,10 @@ Real examples from the running ads:
 5. Every ad is 150–200 words. Count them and print the count.
 6. Ten distinct arguments, not ten rewrites of one.
 7. No promise of approval, a funding amount, a score result, or a deletion.
-8. The word "upfront" appears nowhere. Search for it before you hand anything over.
-9. No round-count promise about outcomes — six rounds is what we DO, never what it achieves.
-10. Read every line out loud in your head. If Chris wouldn't say it, rewrite it.
+8. Six rounds is framed as what they GET, never as what it achieves.
+9. No script implies FundHub performs the repair. They send their own letters.
+10. The funding number is what their FILE supports, never what a bank will give them.
+11. At least one script uses the Frodo / skip-the-journey framing.
+12. Read every line out loud in your head. If Chris wouldn't say it, rewrite it.
 
 Give me A first, then B.
