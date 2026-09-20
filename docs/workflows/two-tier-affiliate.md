@@ -153,6 +153,7 @@ needed adding, which is why the §12 unrouted-handler trap does not apply here.
 | `src/http/routes.test.mjs` + `auth-gate.test.mjs` | 18 pass, 0 fail |
 | `npm run journeys` staleness test | 18 pass, 0 fail (was failing before) |
 | Full suite vs baseline | sorted failure-name lists **byte-identical in both directions** — no new failure by name |
+| `npx playwright test` (whole e2e suite) | 388 passed, 18.3 min, exit 0 |
 
 **Pre-existing failures, NOT caused by this work — verified by stashing and re-running**
 
@@ -163,6 +164,12 @@ needed adding, which is why the §12 unrouted-handler trap does not apply here.
 - The 9 named failures the full suite carries on `main` are unchanged and unrelated
   (Arizona clocks, the superuser-connection artifact CLAUDE.md §12 describes, PDF
   baselines, and others).
+- `e2e/messaging-inbox.spec.mjs` (4) and `e2e/pipeline.spec.mjs` (1) fail when those two
+  specs are run on their own. **Verified pre-existing**: checked out `HEAD~1` into a
+  throwaway worktree and ran the identical command there — the same 5, by name. The whole
+  e2e suite still exits 0 because Playwright's sharding runs them in a passing order; run
+  alone they fail either way. Neither spec touches anything this task changed. Written
+  down, not fixed.
 
 **Swept in, and said so rather than hidden:** `npm run journeys` regenerates all nine
 journey files at once, and eight of them were already stale from route changes nobody
