@@ -12,14 +12,14 @@
 // payload. Sticky: only ever set once, never overwritten (the CRM's own rule) — enforced
 // by gating on the field currently being empty before writing.
 //
-// Also writes affiliate_referrals via attribute() when a1 matches a live tracking
+// Also writes affiliate_referrals via attributeWithUpline() when a1 matches a live
 // id, so portal REFERRED counts and later convert() can settle commissions.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
-import { attribute } from "../affiliates/economics.mjs";
+import { attributeWithUpline } from "../affiliates/economics.mjs";
 
 async function currentOwners(db, clientId) {
   const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
@@ -62,11 +62,14 @@ export async function handle({ event, db, step }) {
         [client.org_id, a1]
       )).rows[0];
       if (!aff) return { attributed: false, reason: "unknown_tracking_id" };
-      return attribute(db, {
+      /* attributeWithUpline, not attribute — it writes the tier-1 row exactly
+         as before AND the tier-2 row above it, so the 5% downline rate finally
+         has a production caller. See its header in src/affiliates/economics.mjs
+         for why the upline comes from affiliates.recruited_by and not from a2. */
+      return attributeWithUpline(db, {
         orgId: client.org_id,
         affiliateId: aff.id,
         clientId,
-        tier: "direct",
         trackingIdUsed: a1,
         source: "af-02",
         sourceEvent: event?.name ? String(event.name) : undefined

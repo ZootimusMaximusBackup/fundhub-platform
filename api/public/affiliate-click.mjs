@@ -31,13 +31,13 @@
 // column stays NULL, which says "not recorded" rather than pretending.
 //
 //
-// *** NOTHING CALLS THIS YET. ***
+// *** IT IS CALLED. THE LINE ABOVE SAID IT WAS NOT, AND WAS WRONG. ***
 //
-// public/start.html is owned by another thread; it still writes the code to
-// localStorage and immediately location.replace()s to apply.fundhub.ai without
-// touching a server. Until that one line lands, this table stays empty and the
-// affiliate screen keeps its honest "link clicks are not recorded yet" state.
-// The exact one-line change is on the board.
+// Corrected 2026-09-20. public/start.html:29-58 reads ?ref= or ?a1= off the
+// address, stores it under fh_ref, POSTs here, and only then redirects. The
+// change this comment was waiting for landed; the comment did not notice, and
+// a stale "nothing calls this" is worse than no comment at all — it is exactly
+// the sentence that persuades the next reader not to look.
 
 import crypto from "node:crypto";
 import { db } from "../../src/db.mjs";

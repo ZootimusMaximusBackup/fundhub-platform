@@ -98,6 +98,66 @@ export async function attribute(db, {
   };
 }
 
+/* attributeWithUpline — record the direct referral AND the downline one above it.
+
+   THIS IS THE SECOND TIER. Before 2026-09-20 nothing in production ever called
+   attribute() with tier "downline": the only callers were this file's own
+   tests, so the 5% rate seeded by db/migrations/261_affiliate_tier1_20pct_20260824.sql
+   was defined, tested and unreachable. Measured 2026-09-20 —
+   `grep -rn "tier: *[\'\"]downline" src/ api/ scripts/` hit test files only.
+
+   OWNER-SET 2026-09-20 — WHERE THE UPLINE COMES FROM. The downline credit goes
+   to `affiliates.recruited_by` of the direct referrer. It is NOT read from the
+   `a2` URL parameter. a2 lives in the address bar, so the person who profits
+   from changing it is the person who can change it; recruited_by is written
+   once, server-side, by api/affiliates/refer.mjs, from an attribution row that
+   is immutable by trigger.
+
+   af-02-referral-ownership-capture.mjs still mirrors a2 into
+   clients.custom_fields.affiliate_tier2_owner. That stays as the CRM record of
+   what the link claimed. It is not what gets paid.
+
+   The direct result is returned unchanged, so a caller that only cares about
+   tier 1 reads this exactly as it read attribute(). A downline that cannot be
+   written is never an error: no recruiter, or a downline row already owned by
+   somebody else, both mean there is nothing to pay and the direct attribution
+   still stands. */
+export async function attributeWithUpline(db, opts = {}) {
+  const direct = await attribute(db, { ...opts, tier: "direct" });
+
+  /* Only a NEW direct attribution opens the downline. A repeat call that hits
+     "already_attributed" must not re-walk the chain — the downline row is
+     already there from the first call, or was deliberately not written. */
+  if (!direct.attributed) return { ...direct, downline: { attributed: false, reason: "direct_not_new" } };
+
+  const { rows } = await db.query(
+    `SELECT recruited_by FROM affiliates WHERE id = $1 AND org_id = $2`,
+    [opts.affiliateId, opts.orgId]
+  );
+  const recruiter = rows[0] && rows[0].recruited_by;
+  if (!recruiter) return { ...direct, downline: { attributed: false, reason: "no_recruiter" } };
+
+  /* A recruiter cannot be their own downline. The database refuses a circular
+     recruit chain (033_affiliates.sql:167-175) so this should be unreachable,
+     but a self-referral would silently pay somebody twice for one sale, which
+     is worth one comparison to rule out. */
+  if (String(recruiter) === String(opts.affiliateId)) {
+    return { ...direct, downline: { attributed: false, reason: "self_recruit" } };
+  }
+
+  const downline = await attribute(db, {
+    ...opts,
+    affiliateId: recruiter,
+    tier: "downline",
+    /* The tracking id used was the DIRECT referrer's. Carrying it here would
+       claim the recruiter's own code was on the link, which it was not. */
+    trackingIdUsed: null,
+    detail: { ...(opts.detail || {}), viaAffiliateId: String(opts.affiliateId) }
+  });
+
+  return { ...direct, downline };
+}
+
 /* qualifyingOutcome — is this sale a completed outcome that earns commission?
    Returns { qualifies, kind, basis } or { qualifies: false, reason }.
 

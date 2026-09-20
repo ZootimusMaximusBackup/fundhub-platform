@@ -65,6 +65,7 @@ import { safeError } from "../../src/http/health.mjs";
  */
 export { shareUrlFor } from "../../src/affiliates/share-link.mjs";
 import { shareUrlFor } from "../../src/affiliates/share-link.mjs";
+import { maybeUnlockTier2 } from "../../src/affiliates/economics.mjs";
 
 /* The name on the affiliate row. The account's own name first, then the
  * client's, then the email's local part. Never a blank: affiliates.name is NOT
@@ -155,16 +156,63 @@ export default async function handler(req, res, deps = {}) {
         )).rows[0] || null
       : null;
 
+    /* THE UPLINE. OWNER-SET 2026-09-20: a new affiliate's recruiter is
+       whoever referred THEM as a client.
+
+       This is what makes the second tier form on its own. Mike refers Sarah.
+       Sarah presses this button. Sarah's affiliate row is recruited_by Mike,
+       so Mike earns the 5% downline rate on everyone Sarah goes on to bring
+       in — see attributeWithUpline() in src/affiliates/economics.mjs.
+
+       Before this line affiliates.recruited_by had NO production writer at
+       all: economics.mjs:464 read it and api/read/affiliates.mjs:83 read it,
+       and nothing anywhere ever set it, so the column was always NULL and the
+       5% tier could never pay anybody. Measured 2026-09-20.
+
+       It is read from affiliate_referrals — the structured attribution row —
+       and NOT from a URL parameter, because a URL parameter is a thing the
+       person pressing the button can edit. A tier-1 referral row was written
+       by AF-02 from a first-touch that is immutable by trigger
+       (033_affiliates.sql:388-397), so it cannot be pointed somewhere else
+       after the fact.
+
+       A voided referral does not confer an upline. The org scope is repeated
+       here even though affiliates_recruiter_guard() (033:157-188) would also
+       refuse a cross-org recruiter — a constraint is the backstop, not the
+       excuse for an unscoped read. */
+    const upline = account.client_id
+      ? (await client.query(
+          `SELECT affiliate_id
+             FROM affiliate_referrals
+            WHERE client_id = $1 AND org_id = $2
+              AND tier = 'direct' AND status <> 'void'
+            LIMIT 1`,
+          [account.client_id, principal.orgId]
+        )).rows[0] || null
+      : null;
+
     /* tracking_id is NOT passed. 033_affiliates.sql:125-139 assigns it in a
        BEFORE INSERT trigger off a sequence, unique per org case-insensitively
        (033:147). Generating one here would be a second code generator racing
-       the first. */
+       the first. recruited_at is likewise left to the trigger, which stamps it
+       whenever recruited_by is set (033:180). */
     const affiliate = (await client.query(
-      `INSERT INTO affiliates (org_id, name, status, activated_at)
-       VALUES ($1, $2, 'active', now())
-       RETURNING id, tracking_id`,
-      [principal.orgId, displayName(principal, clientRow)]
+      `INSERT INTO affiliates (org_id, name, status, activated_at, recruited_by)
+       VALUES ($1, $2, 'active', now(), $3)
+       RETURNING id, tracking_id, recruited_by`,
+      [principal.orgId, displayName(principal, clientRow),
+       upline ? upline.affiliate_id : null]
     )).rows[0];
+
+    /* Gaining a recruit is itself a tier-2 qualifying event for the recruiter
+       (maybeUnlockTier2 checks `recruited_by` at economics.mjs:463-464). Doing
+       it here means the upline is earning from the moment the downline exists,
+       rather than on whatever payment happens to arrive next. */
+    if (affiliate.recruited_by) {
+      await maybeUnlockTier2(client, {
+        orgId: principal.orgId, affiliateId: affiliate.recruited_by
+      });
+    }
 
     await client.query(
       `UPDATE accounts SET affiliate_id = $1, updated_at = now()
@@ -179,7 +227,8 @@ export default async function handler(req, res, deps = {}) {
       enrolled: true,
       created: true,
       code: affiliate.tracking_id,
-      shareUrl: shareUrlFor(affiliate.tracking_id, deps.env || process.env)
+      shareUrl: shareUrlFor(affiliate.tracking_id, deps.env || process.env),
+      recruitedBy: affiliate.recruited_by || null
     });
   } catch (err) {
     try { await client.query("ROLLBACK"); } catch { /* the connection is going back to the pool either way */ }

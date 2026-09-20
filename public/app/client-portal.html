@@ -327,6 +327,23 @@ body.no-dispute-consent #dispute-auth-card{display:none !important}
 .contact-btn{border:1px solid var(--line);background:transparent;border-radius:8px;padding:8px 14px;font-size:var(--fs-body);font-weight:700;transition:background .12s}
 .contact-btn:hover{background:var(--soft)}
 
+/* ── 7b · refer a friend ───────────────────────────────────────────────────
+   Its own full-width card under the rail, NOT a third cell in .rail — that
+   grid is two columns (see .rail above) and a third card would leave a hole
+   next to it at every width.
+   No new box-shadow and no new font-size: it borrows .card, .card-title and
+   the token sizes, per UI-STANDARDS §12.1 and §12.7. */
+.ref-card{border:1px solid var(--line);background:var(--surface)}
+.ref-lead{font-size:var(--fs-body);color:var(--text);line-height:1.5;max-width:60ch}
+.ref-sub{font-size:var(--fs-caption);color:var(--text-faint);margin-top:9px}
+.ref-acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:13px}
+.ref-link{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:13px}
+.ref-url{font-family:var(--mono);font-size:var(--fs-caption);background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:9px 11px;flex:1;min-width:220px;word-break:break-all;color:var(--text)}
+.ref-stats{display:flex;gap:22px;flex-wrap:wrap;margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}
+.ref-stat .rs-n{font-family:var(--mono);font-size:var(--fs-title);font-weight:700;color:var(--text)}
+.ref-stat .rs-l{font-size:var(--fs-caption);color:var(--text-faint)}
+.ref-err{font-size:var(--fs-caption);color:var(--text-faint);margin-top:11px}
+
 /* ── demoted: account & history ──────────────────────────────────────────────
    Payments, documents, the activity timeline and messages were four cards the
    client had to scroll past to find the one thing we need from them. Nothing
@@ -919,6 +936,55 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
                   style="margin-top:11px">Ask for a call</button>
         </section>
       </div>
+
+      <!-- ══ 7b · REFER A FRIEND ═════════════════════════════════════════
+           NUMBERED 7b, NOT 8, DELIBERATELY. The section numbers in this file
+           are referenced from comments, from docs/journeys/ and from the CSS
+           block headers above. Inserting a new "8" would shift NOTIFICATIONS
+           to 9 and silently falsify every one of them — the same reason
+           CLAUDE.md leaves its own owner-decisions section unnumbered.
+
+           WHY IT IS HERE AT ALL. The button already existed, on
+           /progress.html:213 — a different page, two clicks away, under
+           "What has happened so far". The welcome video at the top of THIS
+           page asks people to press it, so it has to be on THIS page.
+           Both call the same endpoint and the endpoint is idempotent, so a
+           client who pressed it there and presses it here gets the same link,
+           not a second one (api/affiliates/refer.mjs:109-146).
+
+           IT RENDERS NOTHING UNTIL THE READ ANSWERS. UI-STANDARDS §5: a
+           control that cannot work does not render. Signed out, or a read that
+           failed, and this card says so rather than showing a button whose
+           press would go nowhere. -->
+      <section class="card ref-card" id="ref-card" aria-labelledby="ref-t" hidden>
+        <div class="card-title" id="ref-t">Refer a friend</div>
+
+        <!-- NOT ENROLLED — one button, nothing else. -->
+        <div id="ref-join" hidden>
+          <div class="ref-lead">Know somebody stuck on what you were stuck on? Send them your
+            own link. You earn on anyone who comes through it, and on anyone they send after that.</div>
+          <div class="ref-sub">One press. No application, nobody to approve you.</div>
+          <div class="ref-acts">
+            <button class="btn-book" type="button" id="ref-go">Get my link</button>
+          </div>
+        </div>
+
+        <!-- ENROLLED — the link, a copy button, and their own numbers. -->
+        <div id="ref-have" hidden>
+          <div class="ref-lead">This is your link. Anyone who comes through it is yours.</div>
+          <div class="ref-link">
+            <div class="ref-url" id="ref-url">—</div>
+            <button class="btn-book" type="button" id="ref-copy">Copy</button>
+          </div>
+          <div class="ref-stats" id="ref-stats" hidden>
+            <div class="ref-stat"><div class="rs-n" id="ref-n-sent">0</div><div class="rs-l">People sent</div></div>
+            <div class="ref-stat"><div class="rs-n" id="ref-n-conv">0</div><div class="rs-l">Signed up</div></div>
+          </div>
+          <div class="ref-sub" id="ref-rates"></div>
+        </div>
+
+        <div class="ref-err" id="ref-err" hidden></div>
+      </section>
 
       <!-- ══ 8 · NOTIFICATIONS ═══════════════════════════════════════════
            HIDDEN UNTIL THE SCRIPT KNOWS THERE IS SOMETHING TRUE TO SAY.
@@ -3122,6 +3188,211 @@ document.addEventListener("DOMContentLoaded", async function () {
       });
       return paintReady(reg);
     });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
+  }
+})();
+</script>
+
+<!-- ══ REFER A FRIEND ══════════════════════════════════════════════════════
+     Reads /api/read/affiliate-portal on load, which answers
+     {ok:true, enrolled:false, ...} with a 200 for a client who has never
+     pressed the button (api/read/affiliate-portal.mjs:243-251) — so one read
+     decides which half of the card to show, and a client who already has a
+     link never sees a button that would do nothing.
+
+     The press posts to /api/affiliates/refer. That endpoint is idempotent
+     three ways over, so a double click, a retry, or the same person having
+     already pressed the copy on /progress.html all return the SAME code.
+     ════════════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  "use strict";
+
+  var READ_PATH  = "/api/read/affiliate-portal";
+  var JOIN_PATH  = "/api/affiliates/refer";
+
+  function $(id) { return document.getElementById(id); }
+  function show(el, on) { if (el) { if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", ""); } }
+
+  /* Same key and same header shape as every other read on this page. */
+  function token() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+
+  function esc(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* THE READ DID NOT ANSWER. Say that and nothing else — never a link, never
+     a count. A number here that came from a failed read is a number about
+     somebody's money. */
+  function failed(msg) {
+    var card = $("ref-card"), err = $("ref-err");
+    show($("ref-join"), false);
+    show($("ref-have"), false);
+    if (err) err.textContent = msg;
+    show(err, true);
+    show(card, true);
+  }
+
+  function paintRates(rates) {
+    var el = $("ref-rates");
+    if (!el || !rates) return;
+    /* shapeTier returns null when no rule matches, and a min/max spread when
+       the live rules disagree (affiliate-portal.mjs:178-206). Print only a
+       single agreed percent; anything else prints nothing rather than picking
+       a number out of a range. */
+    function pct(t) {
+      if (!t || typeof t.percent !== "number") return null;
+      return t.percent;
+    }
+    var d = pct(rates.direct), n = pct(rates.downline);
+    if (d == null && n == null) { el.textContent = ""; return; }
+    var parts = [];
+    if (d != null) parts.push(esc(d) + "% on anyone you send");
+    if (n != null) parts.push(esc(n) + "% on anyone they send");
+    el.textContent = parts.join(" \u00b7 ");
+  }
+
+  function paintEnrolled(d) {
+    var a = d.affiliate || {};
+    if (!a.shareUrl) {
+      /* Enrolled, but the row carries no code. That is a broken join, not an
+         empty state, and a blank box the client could copy is worse than a
+         sentence saying so. */
+      return failed("Your link is not ready yet. Say so in chat and we will sort it out.");
+    }
+    var url = $("ref-url");
+    if (url) url.textContent = a.shareUrl;
+
+    var refs = Array.isArray(d.referrals) ? d.referrals : [];
+    /* Their own numbers count the DIRECT tier only. A downline row on this
+       list was earned by somebody they recruited, and putting it under
+       "People sent" would be claiming they sent someone they did not. */
+    var direct = refs.filter(function (r) { return r && r.tier === "direct" && r.status !== "void"; });
+    var signed = direct.filter(function (r) { return r.status === "converted" || r.status === "paid"; });
+    if (direct.length) {
+      var ns = $("ref-n-sent"), nc = $("ref-n-conv");
+      if (ns) ns.textContent = String(direct.length);
+      if (nc) nc.textContent = String(signed.length);
+      show($("ref-stats"), true);
+    }
+
+    paintRates(d.rates);
+    show($("ref-err"), false);
+    show($("ref-join"), false);
+    show($("ref-have"), true);
+    show($("ref-card"), true);
+  }
+
+  function paintJoin() {
+    show($("ref-err"), false);
+    show($("ref-have"), false);
+    show($("ref-join"), true);
+    show($("ref-card"), true);
+  }
+
+  function load() {
+    var t = token();
+    if (!t) return;                      // signed out: not this card's message to write
+    fetch(READ_PATH, {
+      headers: { authorization: "Bearer " + t, accept: "application/json" },
+      credentials: "same-origin"
+    }).then(function (r) {
+      return r.ok ? r.json() : null;
+    }).then(function (d) {
+      if (!d || d.ok !== true) {
+        return failed("We could not load your referral link just now. Nothing is wrong with your "
+                    + "account — this box did not load. Try again in a few minutes.");
+      }
+      return d.enrolled ? paintEnrolled(d) : paintJoin();
+    }).catch(function () {
+      failed("We could not load your referral link just now. Nothing is wrong with your "
+           + "account — this box did not load. Try again in a few minutes.");
+    });
+  }
+
+  function join() {
+    var btn = $("ref-go");
+    var t = token();
+    if (!btn || !t) return;
+    btn.disabled = true;
+    btn.textContent = "Getting your link\u2026";
+    fetch(JOIN_PATH, {
+      method: "POST",
+      headers: { authorization: "Bearer " + t, accept: "application/json" },
+      credentials: "same-origin"
+    }).then(function (r) {
+      return r.json().catch(function () { return null; });
+    }).then(function (d) {
+      if (!d || d.ok !== true || !d.shareUrl) {
+        btn.disabled = false;
+        btn.textContent = "Get my link";
+        var err = $("ref-err");
+        if (err) {
+          err.textContent = "That did not go through. Try once more, and if it still will not "
+                          + "work say so in chat.";
+          show(err, true);
+        }
+        return;
+      }
+      /* Re-read rather than painting from the POST. The POST knows the link;
+         only the read knows the rates and the counts, and one painter for one
+         card is one thing to keep right. */
+      btn.textContent = "Get my link";
+      btn.disabled = false;
+      load();
+    }).catch(function () {
+      btn.disabled = false;
+      btn.textContent = "Get my link";
+    });
+  }
+
+  function copy() {
+    var url = $("ref-url"), btn = $("ref-copy");
+    if (!url || !btn) return;
+    var text = url.textContent || "";
+    if (!text || text === "\u2014") return;
+
+    function done() {
+      btn.textContent = "Copied";
+      setTimeout(function () { btn.textContent = "Copy"; }, 1600);
+    }
+
+    /* navigator.clipboard is absent on an insecure origin and can be refused
+       even on a secure one. The selection fallback is what makes this button
+       work on an older phone browser instead of doing nothing silently. */
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(select);
+      return;
+    }
+    select();
+
+    function select() {
+      try {
+        var r = document.createRange();
+        r.selectNodeContents(url);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(r);
+        btn.textContent = "Press copy";
+        setTimeout(function () { btn.textContent = "Copy"; }, 2400);
+      } catch (e) { /* nothing left to try — the link is on screen to read */ }
+    }
+  }
+
+  function start() {
+    var go = $("ref-go"), cp = $("ref-copy");
+    if (go) go.addEventListener("click", join);
+    if (cp) cp.addEventListener("click", copy);
+    load();
   }
 
   if (document.readyState === "loading") {

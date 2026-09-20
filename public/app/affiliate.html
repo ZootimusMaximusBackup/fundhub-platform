@@ -467,7 +467,11 @@ function payCls(k){return PAY_CLS[k]||'b-gray'}
 
    This screen used to carry `var RATE=0.12` and multiply the basis by it. The
    real Tier 1 rate is 20%, owner-set 2026-08-24 and shipped in
-   db/migrations/261_affiliate_tier1_20pct_20260824.sql. Nothing fetches LEADS
+   db/migrations/261_affiliate_tier1_20pct_20260824.sql. (CORRECTED 2026-09-20:
+   LEADS and PAYOUTS ARE fetched and assigned now, at :1193 and :1207 inside
+   load(). The sentences below that say otherwise are stale — left visible with
+   this correction rather than quietly deleted, because a future reader who
+   half-remembers them should find the correction and not the claim.) Nothing fetches LEADS
    yet, so nobody saw it — but the moment this table had a row in it every
    affiliate would have been shown a commission 40% short of what they are owed.
 

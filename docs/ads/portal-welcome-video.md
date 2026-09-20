@@ -33,17 +33,26 @@ Read from `public/app/client-portal.html` and `netlify/functions/api.mjs` ROUTES
 | 16 | **Want More Funding?** | Books a 20-minute call on what a bigger approval would take. | Yes |
 | 17 | **Phone notifications** | Turn on alerts so they hear about their file without logging in. | No |
 
-### Referral — what exists and what does not
+### Referral — what exists (CORRECTED 2026-09-20)
 
-- **The back end is built and live.** `POST /api/affiliates/refer` turns a client into
-  a light affiliate and hands back their own share link. One press. No application, no
-  approval queue, no second login. It is safe to press twice — same link every time.
-- **The commission schedule is owner-set:** 20% on people they send directly, 5% on the
-  next level down (`db/migrations/261_affiliate_tier1_20pct_20260824.sql`).
-- **FINDING — there is no button.** `client-portal.html` has no referral card, no share
-  link, nothing. The endpoint is routed and working; the client cannot reach it.
-  The script below asks for referrals, so **a "Refer a friend" card has to be added to
-  the portal before this video goes live**, or the ask points at nothing.
+**An earlier version of this file said the Refer a friend button did not exist. That was
+wrong, and it was wrong because it searched one file.** Exactly the failure CLAUDE.md §2
+warns about. What was true is narrower: the button existed on `/progress.html:213`, a
+different page. It was absent from `client-portal.html`, which is the page this video
+plays on.
+
+- **It is now on the portal page too** — `client-portal.html` section 7b, added 2026-09-20.
+  Same endpoint, and the endpoint is idempotent, so a client who already pressed it on the
+  progress page gets the same link back rather than a second one.
+- `POST /api/affiliates/refer` turns a client into an affiliate in one press. No
+  application, no approval queue, no second login.
+- **Commission is owner-set: 20% direct, 5% on the tier below**
+  (`db/migrations/261_affiliate_tier1_20pct_20260824.sql`).
+- **The 5% tier now actually pays.** Until 2026-09-20 it did not — see the affiliate entry
+  in `docs/journeys/CHANGELOG.md` for what was broken and what fixed it.
+- **STILL OPEN:** commission is calculated and owed, but nothing pays it out. There is no
+  payout job in this repo. Do not tell anyone on camera that money arrives automatically,
+  because today it does not arrive at all without somebody moving it by hand.
 
 ---
 
@@ -115,13 +124,18 @@ Read from `public/app/client-portal.html` and `netlify/functions/api.mjs` ROUTES
   dollar examples, screenshots of earnings, or "people make $X a month."
 - Portal names in the script match the on-screen labels exactly: *Send a file*,
   *What You Own*, *Unlock More*, *Refer a friend*.
-- If the referral card is not built yet, cut the section from "There's a **Refer a
-  friend** button" through "...five percent off that too" and keep the closing two
-  paragraphs. The ask still works; the mechanism is just missing.
+- The referral card is live on the portal page as of 2026-09-20, so the script's
+  "There's a **Refer a friend** button on this page" is now literally true. Film it as
+  written.
 
 ---
 
 ## 4. Blockers
 
-1. **Refer a friend card does not exist in the portal.** Back end is live and routed.
-   Front end has nothing. Needs to be built before this ships as written.
+None for filming. The card is on the page and the two tiers both accrue.
+
+One thing to know before you promise anything about money: **nothing pays an affiliate
+out automatically.** What they are owed is calculated and recorded correctly; turning that
+into an actual payment is a job that has not been built. Decisions needed before it can be:
+how often you pay, the minimum you will pay out, and whether an unsigned license or missing
+tax form stops a payout being created or only stops it being released.
