@@ -50,9 +50,12 @@ plays on.
   (`db/migrations/261_affiliate_tier1_20pct_20260824.sql`).
 - **The 5% tier now actually pays.** Until 2026-09-20 it did not — see the affiliate entry
   in `docs/journeys/CHANGELOG.md` for what was broken and what fixed it.
-- **STILL OPEN:** commission is calculated and owed, but nothing pays it out. There is no
-  payout job in this repo. Do not tell anyone on camera that money arrives automatically,
-  because today it does not arrive at all without somebody moving it by hand.
+- **Payouts are built now too** (2026-09-21). A monthly job batches what each affiliate is
+  owed into a payout: previous whole calendar month, $50 minimum with anything under it
+  rolling to next month, and an unsigned partner license or missing tax form putting the
+  payout on hold rather than dropping it. It creates the payout; a person still releases it.
+  So the money is counted, batched and ready — it is not wired to a bank. Don't say on
+  camera that cash lands in their account by itself.
 
 ---
 
@@ -132,10 +135,11 @@ plays on.
 
 ## 4. Blockers
 
-None for filming. The card is on the page and the two tiers both accrue.
+None for filming. The card is on the page, both tiers accrue, and payouts get built
+monthly.
 
-One thing to know before you promise anything about money: **nothing pays an affiliate
-out automatically.** What they are owed is calculated and recorded correctly; turning that
-into an actual payment is a job that has not been built. Decisions needed before it can be:
-how often you pay, the minimum you will pay out, and whether an unsigned license or missing
-tax form stops a payout being created or only stops it being released.
+The one limit worth knowing: **the last step is still a person.** The system works out
+what everyone is owed and builds the payout. Actually sending the money is a human
+action — there is no bank connection in this repository. So the script's "you get paid
+on it" is true, and "it happens automatically without anyone lifting a finger" would
+not be. The script as written doesn't claim that.

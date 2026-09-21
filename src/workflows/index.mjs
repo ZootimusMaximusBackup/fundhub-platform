@@ -18,6 +18,7 @@ import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
 import { hiringOutreachCadence } from './hiring-outreach-cadence.mjs';
 import { waypointNudgeSweeper } from './waypoint-nudge-sweeper.mjs';
 import { paidCheckoutExpirySweeper } from './paid-checkout-expiry-sweeper.mjs';
+import { affiliatePayoutRun } from './affiliate-payout-run.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { partnerProductionFloorReview } from './partner-production-floor.mjs';
@@ -200,6 +201,31 @@ export const functions = [
 
      COMPLIANCE REVIEW REQUIRED: payment rails and fee timing. */
   paidCheckoutExpirySweeper,
+
+  /* THE AFFILIATE PAYOUT RUN. Registered 2026-09-21, and it closes the second
+     half of a feature that has been sold as whole since August.
+
+     Commission accrued correctly onto affiliate_referrals.commission_due from
+     2026-08-31 and NOTHING EVER BATCHED IT. Measured 2026-09-20: every single
+     INSERT into affiliate_payouts or affiliate_payout_lines in this repository
+     was a test fixture or demo seed data — no workflow, no sweeper, no endpoint
+     and no script wrote one. So an affiliate's balance grew for ever and there
+     was no object in the system that could be paid.
+
+     IT MOVES NO MONEY. It writes 'pending' and 'held' rows. Moving one to
+     'processing' or 'paid' is a human action against a payment rail this repo
+     does not have, and affiliate_payouts_guard() in 033_affiliates.sql refuses
+     that move for any affiliate without a signed partner license no matter who
+     asks. Double-paying is prevented by the schema, not by this code:
+     affiliate_payout_lines_commission_once is a unique index on referral_id.
+
+     Owner-set 2026-09-21: monthly over the previous whole calendar month, $50
+     minimum with anything under it rolling forward untouched, and an unsigned
+     license or missing tax form creating the run 'held' rather than skipping
+     it, so the money stays counted and visible while it cannot leave.
+
+     COMPLIANCE REVIEW REQUIRED: payment rails. */
+  affiliatePayoutRun,
 
   meetTranscriptSweeper,
 

@@ -66,7 +66,22 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 72 since the paid checkout expiry sweeper (2026-09-06) — the clock that
+  /* 73 since the affiliate payout run (2026-09-21) — the first thing in this
+     repository that ever turned an affiliate's accrued commission into a payout
+     object. Commission had been accruing correctly onto
+     affiliate_referrals.commission_due since 2026-08-31 and nothing batched a
+     penny of it: measured 2026-09-20, EVERY insert into affiliate_payouts or
+     affiliate_payout_lines anywhere in this repo was a test fixture or demo
+     seed. So the balance grew for ever and there was no object that could be
+     paid.
+     Registering it MOVES NO MONEY. It writes 'pending' and 'held' rows and
+     stops. 'processing' and 'paid' are a human action against a payment rail
+     this repo does not contain, and affiliate_payouts_guard() in
+     033_affiliates.sql refuses that move outright for an affiliate with no
+     signed partner license. Paying the same referral twice is prevented by
+     affiliate_payout_lines_commission_once — a unique index — and not by the
+     new code being careful.
+     Was 72 since the paid checkout expiry sweeper (2026-09-06) — the clock that
      ends a hosted checkout invitation nobody accepted. Nothing in this
      repository ever moved a paid_service_requests row off 'awaiting_payment' on
      its own: the payment webhook could, and docs/journeys/paid-round-actual.md
@@ -143,7 +158,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 72, `expected 72, got ${functions.length}`);
+  assert.equal(functions.length, 73, `expected 73, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);

@@ -77,8 +77,13 @@ import { isSyntheticRow } from "./synthetic.mjs";
 
    It is a cron with no event trigger, so no journey can ever reach it and it
    will always appear in neverFired — the same note the sweepers above carry,
-   and the correct outcome for a scheduled job rather than a coverage hole. */
-const REGISTERED = 72;
+   and the correct outcome for a scheduled job rather than a coverage hole.
+
+   73 since the affiliate payout run (2026-09-21) — the first thing here that
+   ever turned an affiliate's accrued commission into a payout object. It is a
+   monthly cron with no event trigger, so it too will always sit in neverFired,
+   for the same reason and not because anything is missing. */
+const REGISTERED = 73;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);
