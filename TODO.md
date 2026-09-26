@@ -1,5 +1,34 @@
 # TODO
 
+## Personal — errands
+
+### DEXA scan, Gilbert AZ — priced 2026-09-26
+
+What a DEXA scan costs near Gilbert. A DEXA scan is an X-ray that measures body fat,
+muscle, and bone density.
+
+| Where | Price | Notes |
+|---|---|---|
+| RadiologyAssist (Gilbert) | $111.11 | Cheapest found. Cash price, no referral. |
+| Body composition scan, Gilbert average | from $149 | Self-pay. Insurance almost never covers it — they call it wellness. |
+| Bone density scan, Gilbert average | from $199 | Insurance often DOES cover this one if a doctor writes it as medically necessary. |
+| US average, any DEXA | $200–$500 | Varies by body part scanned. |
+
+**DexaFit Gilbert** — 5656 S. Power Road, Suite 124, Gilbert AZ. Open Tue–Sat, 8am–4pm.
+Also does VO2 max and resting metabolic rate testing.
+
+**Not verified:** DexaFit Gilbert's own single-scan price. Their website is blocked from
+the agent environment, so the exact number has to come from a phone call. Do not quote
+a DexaFit price until someone calls.
+
+HSA and FSA cards are accepted at these places.
+
+**Next action:** call DexaFit Gilbert to confirm single-scan price, or book
+RadiologyAssist at $111.11 if price is the only thing that matters.
+
+Sources: dexascans.com/az/gilbert · radiologyassist.com (Gilbert DEXA rates) ·
+dexafit.com/locations/arizona/gilbert · phoenix.dexafit.com/gilbert
+
 ## Competitor gaps — MyFundalytics, measured 2026-09-12
 
 Their site is blocked from the agent environment, so this is measured against the
