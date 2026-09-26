@@ -4,30 +4,63 @@
 
 ### DEXA scan, Gilbert AZ — priced 2026-09-26
 
-What a DEXA scan costs near Gilbert. A DEXA scan is an X-ray that measures body fat,
-muscle, and bone density.
+**The place that does it all: DexaFit Gilbert.**
+5656 S. Power Road, Suite 124, Gilbert AZ · (480) 336-9062 · Tue–Sat 8am–4pm ·
+no doctor referral needed. One location for the body scan, the treadmill test,
+and the metabolism test.
 
-| Where | Price | Notes |
+#### What ONE DEXA scan already includes (no extra charge)
+
+* Body fat percent, total and by limb
+* Lean muscle mass, total and by limb — this is the athletic benchmark most people want
+* Visceral fat — the fat around your organs, the one that matters for health
+* **Bone density with a T-score** — yes, bone density is in the same scan. Same price.
+  A T-score compares your bones to a healthy young adult.
+
+Takes about 5 minutes. Accurate to within about 1.5%.
+
+#### What is NOT included — separate tests, separate money
+
+| Test | What it tells you | Included in DEXA? |
 |---|---|---|
-| RadiologyAssist (Gilbert) | $111.11 | Cheapest found. Cash price, no referral. |
-| Body composition scan, Gilbert average | from $149 | Self-pay. Insurance almost never covers it — they call it wellness. |
-| Bone density scan, Gilbert average | from $199 | Insurance often DOES cover this one if a doctor writes it as medically necessary. |
-| US average, any DEXA | $200–$500 | Varies by body part scanned. |
+| VO2 max | How well your heart and lungs use oxygen. The real fitness number. Done on a treadmill or bike with a mask. | **No** |
+| RMR (resting metabolic rate) | Exactly how many calories you burn doing nothing. Sets your food targets. | **No** |
+| Grip strength, jump, sprint benchmarks | Athletic performance testing | **No** — DexaFit does not do these |
 
-**DexaFit Gilbert** — 5656 S. Power Road, Suite 124, Gilbert AZ. Open Tue–Sat, 8am–4pm.
-Also does VO2 max and resting metabolic rate testing.
+#### Prices
 
-**Not verified:** DexaFit Gilbert's own single-scan price. Their website is blocked from
-the agent environment, so the exact number has to come from a phone call. Do not quote
-a DexaFit price until someone calls.
+Single DEXA, Gilbert area:
 
-HSA and FSA cards are accepted at these places.
+| Where | Price |
+|---|---|
+| RadiologyAssist (Gilbert) | $111.11 — cheapest found, cash, no referral. Scan only. |
+| Gilbert body-composition average | from $149 |
+| Bone-density-only order | from $199 (insurance often covers THIS one if a doctor writes it as medically necessary) |
+| US average, any DEXA | $200–$500 |
 
-**Next action:** call DexaFit Gilbert to confirm single-scan price, or book
-RadiologyAssist at $111.11 if price is the only thing that matters.
+Bundles at other DexaFit locations, as a guide to what Gilbert will quote:
 
-Sources: dexascans.com/az/gilbert · radiologyassist.com (Gilbert DEXA rates) ·
-dexafit.com/locations/arizona/gilbert · phoenix.dexafit.com/gilbert
+| Bundle | Denver | Nashua | Cincinnati |
+|---|---|---|---|
+| Single DEXA | $99 | $119 | — |
+| DEXA + RMR | $179 | $219 | $385 |
+| DEXA + VO2 max | $189 | $219 | $399 |
+| All three | $289 | $319 | $575 |
+
+So expect Gilbert's all-three bundle somewhere in the $289–$575 range. HSA and FSA
+cards are accepted.
+
+**Not verified:** DexaFit Gilbert's own published prices. Their website is blocked
+from the agent environment. Do not quote a DexaFit Gilbert number until someone
+calls (480) 336-9062.
+
+**Next action:** call (480) 336-9062 and ask for the 3-service bundle price
+(DEXA + VO2 max + RMR).
+
+Sources: dexafit.com/locations/arizona/gilbert · phoenix.dexafit.com/gilbert ·
+dexascans.com/az/gilbert · radiologyassist.com (Gilbert DEXA rates) ·
+denver.dexafit.com · nashua.dexafit.com · cincinnati.dexafit.com ·
+bodyspec.com (what a DEXA report contains)
 
 ## Competitor gaps — MyFundalytics, measured 2026-09-12
 
