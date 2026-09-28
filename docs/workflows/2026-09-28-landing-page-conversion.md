@@ -39,6 +39,18 @@ money went in. Those are worth fixing before spending another dollar.
 
 Read from the repo copy of the funnel: `clickfunnels-fragments/slo/`.
 
+### Owner correction, 2026-09-28
+
+Chris confirmed the live site works and the pixels are set up. Findings 1, 4, 5 and 6 below
+describe the **repo copy only** and do not reflect the live funnel. Treat them as closed unless
+someone re-checks the live pages directly. Do not spend time chasing them.
+
+Finding 2 (no ad id carried into the SLO order) and Finding 3 (empty proof section) have not
+been confirmed either way and are still worth a look.
+
+The headline answer stands on its own and does not depend on any of it: **$200 is too little
+spend to produce a sale at a $297 price point.**
+
 ### Could not verify live
 
 `fundhub.ai` and `apply.fundhub.ai` are both blocked by this environment's network policy
