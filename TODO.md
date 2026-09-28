@@ -1,5 +1,66 @@
 # TODO
 
+## Google Knowledge Panel for Chris / FundHub — parked 2026-09-28
+
+Not started. Chris saw an Instagram ad for Lindy Panels (lindypanels.com), a service
+that sells Google Knowledge Panels — the info box Google shows on the right when you
+search a person or company name. He wants it done in-house instead of paying them.
+Parked for cost, not cancelled.
+
+**Measured 2026-09-28: this repo has zero structured data.** No JSON-LD, no
+schema.org markup, no microdata, anywhere. Grep for `ld+json|schema.org|itemtype=`
+returns nothing across the whole tree. That is the first reason Google has nothing
+to build a panel from.
+
+**Their site is blocked from the agent environment** — `lindypanels.com` returns a
+403 at the egress proxy, same class as `api.netlify.com` in CLAUDE.md §11. What they
+sell was read from search results, not from their page. If a teardown of their funnel
+is ever wanted, Chris has to paste the page text.
+
+### What a Knowledge Panel actually needs
+
+Three parts. Two are in our control, one is not.
+
+1. **Markup on our own site** — tells Google what the entity is. Repo work.
+2. **Matching profiles everywhere else** — LinkedIn, Crunchbase, X, YouTube,
+   Instagram, Google Business Profile all agreeing on the same name, title and
+   company string. Inconsistency is what stops a panel.
+3. **Outside sources that mention Chris by name** — press, podcasts, bylines,
+   directory listings. This is the part nobody controls and the part that usually
+   stalls the whole thing.
+
+**Nobody can guarantee a panel.** Parts 1 and 2 make the entity eligible. Part 3 is
+what fires it.
+
+### The split, when it runs — 4 workflows, no dependencies
+
+Shared board: `docs/workflows/knowledge-panel-<date>.md`. Write the ground brief
+(canonical name strings, `@id` URIs, sameAs list, production domain) to the board
+BEFORE launching any workflow — A and B both need those exact strings and must not
+invent them.
+
+| # | Owns | Writes |
+|---|---|---|
+| A | FundHub the company | `public/index.html` — Organization + WebSite JSON-LD |
+| B | Chris the person | new `public/founder.html` — entity home page + Person JSON-LD |
+| C | Off-site audit | `docs/seo/entity-audit.md` — every live profile, name-string diffs, honest third-party source count |
+| D | Wikidata + claim | `docs/seo/knowledge-panel-runbook.md` — Wikidata item drafts with a reference per statement, notability verdict, claim procedure |
+
+A and B would collide over shared markup IDs; fixing the `@id` strings on the board
+first removes it. C and D touch no code. Full copy-paste prompts for all four were
+written in session `claude/lindy-panels-review-9xz9sj` — regenerate them from this
+table, they are mechanical.
+
+Model for this work: Opus for the split and the entity design, Sonnet for A–D.
+
+### Blocker before anything starts
+
+**The live production domain FundHub serves on.** Every `@id` and `sameAs` string
+hangs off it. Guessing it poisons all four workflows. Ask Chris, do not infer it
+from Netlify.
+
+---
+
 ## Competitor gaps — MyFundalytics, measured 2026-09-12
 
 Their site is blocked from the agent environment, so this is measured against the
