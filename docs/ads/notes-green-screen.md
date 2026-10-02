@@ -3,8 +3,10 @@
 Oct 2, 2026 · Chris Stanbridge. Saved to the repo 2026-10-02 from Chris's concept doc. The tool
 analogy ads were rewritten the same day to be funnier (flat tire and a hammer, owner ask).
 
-Scripts are headed `Script N — …` so `npm run ads:check -- docs/ads/notes-green-screen.md` scans
-them. Earlier drafts are headed differently on purpose so the checker skips them.
+**Owner-set 2026-10-02: this doc's copy rules win over the ad checker.** `npm run ads:check` flags
+these scripts for "optimize" (banned in `docs/ads/rules-data.mjs`) and for the missing RULES.md 3.6
+close (no hard pull, nothing moves without consent). Chris overruled both: those checker rules are
+outdated. The scripts stay as written.
 
 ## The concept
 
